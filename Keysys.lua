@@ -201,7 +201,7 @@ local function loadMainScript()
     print("✅ Main script loaded successfully!")
     
     -- You can add your actual script here:
-    -- loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_SCRIPT"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/NorthHub/refs/heads/main/Toh.lua"))()
 end
 
 -- Function to run when "Check Key" button is pressed
