@@ -1,11 +1,3 @@
---- hackmanhub deober v1.2
--- ob MoonSecV3
-
---- https://discord.gg/cuwKyeuCVR
-
---- script from hackmanhub self
-
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -2341,4 +2333,5 @@ if settings.flingEnabled then
 end
 
 openGUI()
+
 switchTab("Main")
