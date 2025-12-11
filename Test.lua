@@ -2784,13 +2784,6 @@ end)
         startBaselockReminder()
         print("🔄 Reloaded Baselock Reminder after respawn")
     end
-    if webslingControlEnabled then
-    task.wait(1)
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/WebslingControl.lua"))()
-    end)
-    print("🔄 Reloaded Websling Control after respawn")
-end
 
 -- ==================== TAB CONTENT ====================
 
