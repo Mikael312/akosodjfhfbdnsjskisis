@@ -2874,7 +2874,6 @@ end)
         scan(newCharacter)
         if unwalkAnimationWatcher then unwalkAnimationWatcher:Disconnect() end
         unwalkAnimationWatcher = newCharacter.DescendantAdded:Connect(added)
-        end)
         print("🔄 Reloaded Unwalk Animation after respawn")
     end
 
