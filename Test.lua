@@ -99,6 +99,14 @@ local touchFlingConnection = nil
 
 -- Allow Friends Variables (NEW)
 local allowFriendsEnabled = false
+
+-- Baselock Reminder Variables (NEW)
+local baselockReminderEnabled = false
+local baselockAlertGui = nil
+local baselockConnection = nil
+local bellSoundPlayed = false
+local currentBellSound = nil
+local BELL_SOUND_ID = "rbxassetid://3302969109"
 -- ==================== UI CREATION ====================
 for _, gui in pairs(game.CoreGui:GetChildren()) do
     if gui.Name == "NightmareHubUI" then
@@ -1183,6 +1191,249 @@ local function toggleTouchFling(state)
         enableTouchFling()
     else
         disableTouchFling()
+    end
+end
+
+-- ==================== BASELOCK REMINDER FUNCTION (NEW) ====================
+local function parseTimeToSeconds(timeText)
+    if not timeText or timeText == "" then return nil end
+    
+    local minutes, seconds = timeText:match("(%d+):(%d+)")
+    if minutes and seconds then
+        return tonumber(minutes) * 60 + tonumber(seconds)
+    end
+    
+    local secondsOnly = timeText:match("(%d+)s")
+    if secondsOnly then
+        return tonumber(secondsOnly)
+    end
+    
+    local minutesOnly = timeText:match("(%d+)m")
+    if minutesOnly then
+        return tonumber(minutesOnly) * 60
+    end
+    
+    return nil
+end
+
+local function playBellSound()
+    if bellSoundPlayed then return end
+    
+    -- Stop previous bell sound if exists
+    if currentBellSound then
+        currentBellSound:Stop()
+        currentBellSound:Destroy()
+        currentBellSound = nil
+    end
+    
+    local sound = Instance.new("Sound")
+    sound.SoundId = BELL_SOUND_ID
+    sound.Volume = 0.7
+    sound.Parent = game:GetService("SoundService")
+    
+    currentBellSound = sound
+    sound:Play()
+    
+    bellSoundPlayed = true
+    
+    -- Stop after 3 seconds
+    task.delay(3, function()
+        if sound and sound.Parent then
+            sound:Stop()
+            sound:Destroy()
+        end
+        currentBellSound = nil
+    end)
+end
+
+local function createAlertGui()
+    if baselockAlertGui then return end
+    
+    baselockAlertGui = Instance.new("ScreenGui")
+    baselockAlertGui.Name = "BaselockReminderAlert"
+    baselockAlertGui.ResetOnSpawn = false
+    baselockAlertGui.Parent = game.CoreGui
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 380, 0, 90)
+    frame.Position = UDim2.new(0.5, -190, 0.15, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 33)
+    frame.BorderSizePixel = 0
+    frame.Active = true
+    frame.Parent = baselockAlertGui
+    
+    local frameCorner = Instance.new("UICorner")
+    frameCorner.CornerRadius = UDim.new(0, 15)
+    frameCorner.Parent = frame
+    
+    local frameStroke = Instance.new("UIStroke")
+    frameStroke.Color = Color3.fromRGB(200, 30, 30)
+    frameStroke.Thickness = 3
+    frameStroke.Parent = frame
+    
+    -- Bell Icon
+    local bellIcon = Instance.new("TextLabel")
+    bellIcon.Size = UDim2.new(0, 60, 0, 60)
+    bellIcon.Position = UDim2.new(0, 15, 0.5, -30)
+    bellIcon.BackgroundColor3 = Color3.fromRGB(255, 220, 80)
+    bellIcon.BorderSizePixel = 0
+    bellIcon.Text = "🔔"
+    bellIcon.TextSize = 35
+    bellIcon.Font = Enum.Font.GothamBold
+    bellIcon.Parent = frame
+    
+    local bellCorner = Instance.new("UICorner")
+    bellCorner.CornerRadius = UDim.new(1, 0)
+    bellCorner.Parent = bellIcon
+    
+    -- Bell shake animation
+    local shakeTween = TweenService:Create(
+        bellIcon,
+        TweenInfo.new(0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        {Rotation = 15}
+    )
+    shakeTween:Play()
+    
+    -- Reminder Text
+    local reminderLabel = Instance.new("TextLabel")
+    reminderLabel.Size = UDim2.new(1, -100, 0, 35)
+    reminderLabel.Position = UDim2.new(0, 85, 0, 15)
+    reminderLabel.BackgroundTransparency = 1
+    reminderLabel.Text = "⚠️ Base Lock Reminder!"
+    reminderLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+    reminderLabel.Font = Enum.Font.GothamBold
+    reminderLabel.TextSize = 18
+    reminderLabel.TextXAlignment = Enum.TextXAlignment.Left
+    reminderLabel.TextStrokeTransparency = 0.3
+    reminderLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    reminderLabel.Parent = frame
+    
+    -- Time Text
+    local timeLabel = Instance.new("TextLabel")
+    timeLabel.Name = "TimeLabel"
+    timeLabel.Size = UDim2.new(1, -100, 0, 35)
+    timeLabel.Position = UDim2.new(0, 85, 0, 45)
+    timeLabel.BackgroundTransparency = 1
+    timeLabel.Text = "Your Base Lock Time: --"
+    timeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    timeLabel.Font = Enum.Font.GothamBold
+    timeLabel.TextSize = 16
+    timeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    timeLabel.TextStrokeTransparency = 0.5
+    timeLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    timeLabel.Parent = frame
+    
+    -- Border flash animation
+    local flashTween = TweenService:Create(
+        frameStroke,
+        TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        {Color = Color3.fromRGB(255, 60, 60)}
+    )
+    flashTween:Play()
+end
+
+local function updateAlertGui(timeText)
+    if not baselockAlertGui or not baselockAlertGui.Parent then return end
+    
+    local timeLabel = baselockAlertGui:FindFirstChild("Frame"):FindFirstChild("TimeLabel")
+    if timeLabel then
+        timeLabel.Text = "Your Base Lock Time: " .. timeText
+    end
+end
+
+local function removeAlertGui()
+    if baselockAlertGui then
+        baselockAlertGui:Destroy()
+        baselockAlertGui = nil
+    end
+    
+    -- Stop bell sound when removing alert
+    if currentBellSound then
+        currentBellSound:Stop()
+        currentBellSound:Destroy()
+        currentBellSound = nil
+    end
+    
+    bellSoundPlayed = false
+end
+
+local function checkMyBaseTimer()
+    if not baselockReminderEnabled then return end
+    
+    local plots = Workspace:FindFirstChild("Plots")
+    if not plots then return end
+
+    local playerBaseName = player.DisplayName .. "'s Base"
+    
+    for _, plot in pairs(plots:GetChildren()) do
+        if plot:IsA("Model") or plot:IsA("Folder") then
+            local plotSignText = ""
+            local signPath = plot:FindFirstChild("PlotSign")
+            if signPath and signPath:FindFirstChild("SurfaceGui") and signPath.SurfaceGui:FindFirstChild("Frame") and signPath.SurfaceGui.Frame:FindFirstChild("TextLabel") then
+                plotSignText = signPath.SurfaceGui.Frame.TextLabel.Text
+            end
+            
+            if plotSignText == playerBaseName then
+                local plotTimeText = ""
+                local purchasesPath = plot:FindFirstChild("Purchases")
+                if purchasesPath and purchasesPath:FindFirstChild("PlotBlock") and purchasesPath.PlotBlock:FindFirstChild("Main") and purchasesPath.PlotBlock.Main:FindFirstChild("BillboardGui") then
+                    local billboardGui = purchasesPath.PlotBlock.Main.BillboardGui
+                    if billboardGui:FindFirstChild("RemainingTime") then
+                        plotTimeText = billboardGui.RemainingTime.Text
+                    end
+                end
+
+                local remainingSeconds = parseTimeToSeconds(plotTimeText)
+                
+                if remainingSeconds and remainingSeconds <= 10 and remainingSeconds > 0 then
+                    if not baselockAlertGui then
+                        createAlertGui()
+                        playBellSound()
+                    end
+                    updateAlertGui(plotTimeText)
+                else
+                    if baselockAlertGui then
+                        removeAlertGui()
+                    end
+                end
+                
+                break
+            end
+        end
+    end
+end
+
+local function startBaselockReminder()
+    if baselockReminderEnabled then return end
+    
+    baselockReminderEnabled = true
+    print("✅ Baselock Reminder: ON")
+    
+    baselockConnection = RunService.Heartbeat:Connect(function()
+        task.wait(0.5)
+        pcall(checkMyBaseTimer)
+    end)
+end
+
+local function stopBaselockReminder()
+    if not baselockReminderEnabled then return end
+    
+    baselockReminderEnabled = false
+    print("❌ Baselock Reminder: OFF")
+    
+    if baselockConnection then
+        baselockConnection:Disconnect()
+        baselockConnection = nil
+    end
+    
+    removeAlertGui()
+end
+
+local function toggleBaselockReminder(state)
+    if state then
+        startBaselockReminder()
+    else
+        stopBaselockReminder()
     end
 end
 -- ==================== ESP PLAYERS FUNCTION (FIXED) ====================
@@ -2510,6 +2761,12 @@ end)
         enableTouchFling()
         print("🔄 Reloaded Touch Fling V2 after respawn")
     end
+    if baselockReminderEnabled then
+        task.wait(1)
+        stopBaselockReminder()
+        startBaselockReminder()
+        print("🔄 Reloaded Baselock Reminder after respawn")
+    end
 
 
 -- ==================== TAB CONTENT ====================
@@ -2552,6 +2809,9 @@ table.insert(tabContent["Main"], createToggleButton("Websling Kill", function(st
     else
         print("❌ Websling Kill: OFF")
     end
+end))
+table.insert(tabContent["Main"], createToggleButton("Baselock Reminder", function(state)
+    toggleBaselockReminder(state)
 end))
 
 -- VISUAL TAB (5 TOGGLES - Renamed Brainrot ESP to Esp Best)
