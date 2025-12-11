@@ -2924,7 +2924,6 @@ discordBtn.MouseButton1Click:Connect(function()
 end)
 
 table.insert(tabContent["Discord"], discordBtn)
-
 -- ==================== ADD ALL CONTENT TO SCROLLFRAME FIRST ====================
 for tabName, items in pairs(tabContent) do
     for _, item in ipairs(items) do
