@@ -2924,9 +2924,6 @@ discordBtn.MouseButton1Click:Connect(function()
 end)
 
 table.insert(tabContent["Discord"], discordBtn)
--- Section Server
-local serverSection = createSection("Server")
-table.insert(tabContent["Discord"], serverSection)
 
 -- ==================== ADD ALL CONTENT TO SCROLLFRAME FIRST ====================
 for tabName, items in pairs(tabContent) do
