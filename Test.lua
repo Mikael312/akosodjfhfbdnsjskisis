@@ -107,11 +107,6 @@ local baselockConnection = nil
 local bellSoundPlayed = false
 local currentBellSound = nil
 local BELL_SOUND_ID = "rbxassetid://3302969109"
-
--- Unwalk Animation Variables
-local unwalkAnimationEnabled = false
-local savedAnims = {}
-local unwalkWatcher = nil
 -- ==================== UI CREATION ====================
 for _, gui in pairs(game.CoreGui:GetChildren()) do
     if gui.Name == "NightmareHubUI" then
@@ -1125,6 +1120,101 @@ local function toggleAllowFriends(state)
     end
 end
 
+-- ==================== UNWALK ANIMATION FUNCTION ====================
+local unwalkAnimationEnabled = false
+local savedAnims = {}
+local unwalkWatcher = nil
+
+local function isWalkAnim(anim)
+    return anim and anim:IsA("Animation") and anim.Name:lower():find("walk")
+end
+
+local function stopWalks(hum)
+    if not hum then return end
+    for _, t in ipairs(hum:GetPlayingAnimationTracks()) do
+        if t.Name:lower():find("walk") then
+            t:Stop()
+        end
+    end
+end
+
+local function saveAndClear(anim)
+    for _, v in ipairs(savedAnims) do
+        if v.instance == anim then return end
+    end
+    table.insert(savedAnims, {instance = anim, id = anim.AnimationId})
+    anim.AnimationId = ""
+end
+
+local function restoreAnims()
+    for _, v in ipairs(savedAnims) do
+        if v.instance then
+            v.instance.AnimationId = v.id
+        end
+    end
+end
+
+local function added(desc)
+    if unwalkAnimationEnabled and isWalkAnim(desc) then
+        saveAndClear(desc)
+    end
+end
+
+local function scan(character)
+    local animate = character and character:FindFirstChild("Animate")
+    if not animate then return end
+    
+    local function clear(folder, name)
+        local anim = folder and folder:FindFirstChild(name)
+        if anim and anim:IsA("Animation") then
+            saveAndClear(anim)
+        end
+    end
+    
+    clear(animate:FindFirstChild("walk"), "WalkAnim")
+    clear(animate:FindFirstChild("run"), "RunAnim")
+    
+    local hum = character:FindFirstChildOfClass("Humanoid")
+    if hum then stopWalks(hum) end
+end
+
+local function enableUnwalkAnimation()
+    local char = player.Character
+    if not char then return end
+    
+    unwalkAnimationEnabled = true
+    savedAnims = {}
+    
+    task.spawn(function()
+        scan(char)
+        if unwalkWatcher then unwalkWatcher:Disconnect() end
+        unwalkWatcher = char.DescendantAdded:Connect(added)
+    end)
+    
+    print("✅ Unwalk Animation: ON")
+end
+
+local function disableUnwalkAnimation()
+    if unwalkWatcher then 
+        unwalkWatcher:Disconnect() 
+        unwalkWatcher = nil 
+    end
+    
+    restoreAnims()
+    savedAnims = {}
+    unwalkAnimationEnabled = false
+    
+    print("❌ Unwalk Animation: OFF")
+end
+
+local function toggleUnwalkAnimation(state)
+    if state then
+        enableUnwalkAnimation()
+    else
+        disableUnwalkAnimation()
+    end
+end
+
 -- ==================== TOUCH FLING V2 FUNCTION (NEW) ====================
 local function enableTouchFling()
     -- Disable auto jump
@@ -1439,97 +1529,6 @@ local function toggleBaselockReminder(state)
         startBaselockReminder()
     else
         stopBaselockReminder()
-    end
-end
-
--- ==================== UNWALK ANIMATION FUNCTION ====================
-local function isWalkAnim(anim)
-    return anim and anim:IsA("Animation") and anim.Name:lower():find("walk")
-end
-
-local function stopWalks(hum)
-    if not hum then return end
-    for _, t in ipairs(hum:GetPlayingAnimationTracks()) do
-        if t.Name:lower():find("walk") then
-            t:Stop()
-        end
-    end
-end
-
-local function saveAndClear(anim)
-    for _, v in ipairs(savedAnims) do
-        if v.instance == anim then return end
-    end
-    table.insert(savedAnims, {instance = anim, id = anim.AnimationId})
-    anim.AnimationId = ""
-end
-
-local function restoreAnims()
-    for _, v in ipairs(savedAnims) do
-        if v.instance then
-            v.instance.AnimationId = v.id
-        end
-    end
-end
-
-local function added(desc)
-    if unwalkAnimationEnabled and isWalkAnim(desc) then
-        saveAndClear(desc)
-    end
-end
-
-local function scan(character)
-    local animate = character and character:FindFirstChild("Animate")
-    if not animate then return end
-    
-    local function clear(folder, name)
-        local anim = folder and folder:FindFirstChild(name)
-        if anim and anim:IsA("Animation") then
-            saveAndClear(anim)
-        end
-    end
-    
-    clear(animate:FindFirstChild("walk"), "WalkAnim")
-    clear(animate:FindFirstChild("run"), "RunAnim")
-    
-    local hum = character:FindFirstChildOfClass("Humanoid")
-    if hum then stopWalks(hum) end
-end
-
-local function enableUnwalkAnimation()
-    local char = player.Character
-    if not char then return end
-    
-    unwalkAnimationEnabled = true
-    savedAnims = {}
-    
-    task.spawn(function()
-        scan(char)
-        if unwalkWatcher then unwalkWatcher:Disconnect() end
-        unwalkWatcher = char.DescendantAdded:Connect(added)
-    end)
-    
-    print("✅ Unwalk Animation: ON")
-end
-
-local function disableUnwalkAnimation()
-    if unwalkWatcher then 
-        unwalkWatcher:Disconnect() 
-        unwalkWatcher = nil 
-    end
-    
-    restoreAnims()
-    savedAnims = {}
-    unwalkAnimationEnabled = false
-    
-    print("❌ Unwalk Animation: OFF")
-end
-
-local function toggleUnwalkAnimation(state)
-    if state then
-        enableUnwalkAnimation()
-    else
-        disableUnwalkAnimation()
     end
 end
 
