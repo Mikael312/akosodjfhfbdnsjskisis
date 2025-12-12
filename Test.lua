@@ -1126,10 +1126,6 @@ local function toggleAllowFriends(state)
 end
 
 -- ==================== UNWALK ANIMATION FUNCTION ====================
-local unwalkAnimationEnabled = false
-local savedAnims = {}
-local unwalkWatcher = nil
-
 local function isWalkAnim(anim)
     return anim and anim:IsA("Animation") and anim.Name:lower():find("walk")
 end
@@ -2873,6 +2869,7 @@ end)
         enableUnwalkAnimation()
         print("🔄 Reloaded Unwalk Animation after respawn")
     end
+end)
 
 -- ==================== TAB CONTENT ====================
 
