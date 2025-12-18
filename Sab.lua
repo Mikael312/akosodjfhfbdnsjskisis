@@ -3,6 +3,7 @@
     All functions from the original script, now integrated with NightmareLib.
     - "Respawn Desync" changed to "Use Cloner"
     - "Unwalk Animation" changed to "Admin Panel Spammer"
+    - Added "Silent Hit" to Misc tab
 ]]
 
 -- ==================== LOAD LIBRARY ====================
@@ -1110,6 +1111,10 @@ local function toggleWebslingControl(state)
     if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/WebslingControl.lua"))() end); print("✅ Websling Control: ON") else print("❌ Websling Control: OFF") end
 end
 
+-- ==================== SILENT HIT FUNCTION (NEW) ====================
+local function toggleSilentHit(state)
+    if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Silenthit.lua"))() end); print("✅ Silent Hit: ON") else print("❌ Silent Hit: OFF") end
+end
 
 -- ==================== CREATE UI AND ADD TOGGLES ====================
 NightmareHub:CreateUI()
@@ -1142,5 +1147,6 @@ NightmareHub:AddMiscToggle("Anti Ragdoll", function(state) toggleAntiRagdoll(sta
 NightmareHub:AddMiscToggle("Anti Trap", function(state) toggleAntiTrap(state) end)
 NightmareHub:AddMiscToggle("Touch Fling V2", function(state) toggleTouchFling(state) end)
 NightmareHub:AddMiscToggle("Allow Friends", function(state) toggleAllowFriends(state) end)
+NightmareHub:AddMiscToggle("Silent Hit", function(state) toggleSilentHit(state) end) -- NEW
 
 print("🎮 NightmareHub Loaded Successfully!")
