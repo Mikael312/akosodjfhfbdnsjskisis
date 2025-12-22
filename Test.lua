@@ -799,7 +799,9 @@ local function doFlyToBase()
     return true
 end
 
--- ==================== FLY/TP TO BEST FUNCTIONS (FROM YOUR ORIGINAL CODE) ====================
+-- ==================== FLY/TP TO BEST FUNCTIONS (UNIFIED & OPTIMIZED) ====================
+-- BAHARU: Fungsi pencarian telah disatukan untuk mengelakkan imbasan berganda dan ralat.
+
 -- Helper function to get trait multiplier
 local function getTraitMultiplier(model)
     if not TraitsModule then return 0 end
@@ -859,21 +861,6 @@ local function getFinalGeneration(model)
     return math.max(1, math.round(final))
 end
 
--- Format number for display
-local function formatNumber(num)
-    if num >= 1e12 then
-        return string.format("%.1fT/s", num / 1e12)
-    elseif num >= 1e9 then
-        return string.format("%.1fB/s", num / 1e9)
-    elseif num >= 1e6 then
-        return string.format("%.1fM/s", num / 1e6)
-    elseif num >= 1e3 then
-        return string.format("%.1fK/s", num / 1e3)
-    else
-        return string.format("%.0f/s", num)
-    end
-end
-
 -- Check if plot is player's plot
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
@@ -886,8 +873,8 @@ local function isPlayerPlot(plot)
     return false
 end
 
--- Find best pet
-local function findBestPet()
+-- BAHARU: Fungsi pencarian disatukan
+local function findTheAbsoluteBestPet()
     local plots = Workspace:FindFirstChild("Plots")
     if not plots then return nil end
     
@@ -911,9 +898,8 @@ local function findBestPet()
                                         plotName = plot.Name,
                                         petName = obj.Name,
                                         generation = gen,
-                                        formattedValue = formatNumber(gen),
                                         model = obj,
-                                        value = gen,
+                                        value = gen, -- This is the raw numerical value
                                         position = root.Position,
                                         cframe = root.CFrame
                                     }
@@ -930,7 +916,7 @@ local function findBestPet()
         end
     end
     
-    -- Fallback to the old text-based system
+    -- Fallback to old text-based system
     for _, plot in pairs(plots:GetChildren()) do
         if not isPlayerPlot(plot) then
             for _, obj in pairs(plot:GetDescendants()) do
@@ -983,9 +969,8 @@ local function findBestPet()
                                             plotName = plot.Name,
                                             petName = petName,
                                             generation = value,
-                                            formattedValue = genText,
                                             model = model,
-                                            value = value,
+                                            value = value, -- This is the raw numerical value
                                             position = part.Position,
                                             cframe = part.CFrame
                                         }
@@ -1153,7 +1138,7 @@ local function stopVelocityFlight()
     isFlyingToBest = false
 end
 
--- Velocity flight to pet (YOUR ORIGINAL flyToBest function)
+-- Fly to Best function (now uses the unified finder)
 local function velocityFlightToPet()
     local character = LocalPlayer.Character
     if not character then 
@@ -1167,7 +1152,8 @@ local function velocityFlightToPet()
         return false
     end
     
-    local bestPet = findBestPet()
+    -- BAHARU: Gunakan fungsi pencarian yang disatukan
+    local bestPet = findTheAbsoluteBestPet()
     
     if not bestPet then
         return false
@@ -1263,45 +1249,19 @@ local function formatNumberTP(num)
     end
 end
 
--- Find best pet (TP version)
-local function findBestPetTP()
-    local plots = Workspace:FindFirstChild("Plots")
-    if not plots then return nil end
-    
-    local highest = {value = 0}
-    
-    for _, plot in pairs(plots:GetChildren()) do
-        if not isPlayerPlot(plot) then
-            for _, obj in pairs(plot:GetDescendants()) do
-                if obj:IsA("Model") and AnimalsModule and AnimalsModule[obj.Name] then
-                    pcall(function()
-                        local gen = getFinalGeneration(obj)
-                        
-                        if gen > 0 and gen > highest.value then
-                            local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart or obj:FindFirstChildWhichIsA('BasePart')
-                                
-                            if root then
-                                highest = {
-                                    plot = plot,
-                                    plotName = plot.Name,
-                                    petName = obj.Name,
-                                    price = formatNumberTP(gen),
-                                    priceValue = gen,
-                                    model = obj,
-                                    part = root,
-                                    position = root.Position,
-                                    cframe = root.CFrame,
-                                    value = gen
-                                }
-                            end
-                        end
-                    end)
-                end
-            end
-        end
+-- Format number for display (Fly version uses /s)
+local function formatNumberFly(num)
+    if num >= 1e12 then
+        return string.format("%.1fT/s", num / 1e12)
+    elseif num >= 1e9 then
+        return string.format("%.1fB/s", num / 1e9)
+    elseif num >= 1e6 then
+        return string.format("%.1fM/s", num / 1e6)
+    elseif num >= 1e3 then
+        return string.format("%.1fK/s", num / 1e3)
+    else
+        return string.format("%.0f/s", num)
     end
-    
-    return highest.value > 0 and highest or nil
 end
 
 -- Equip Flying Carpet
@@ -1351,7 +1311,7 @@ local function stopVelocity()
     end
 end
 
--- Safe teleport to pet (YOUR ORIGINAL tpToBest function)
+-- Safe teleport to pet (now uses the unified finder)
 local function safeTeleportToPet()
     local character = LocalPlayer.Character
     if not character then 
@@ -1365,7 +1325,8 @@ local function safeTeleportToPet()
         return false
     end
     
-    local bestPet = findBestPetTP()
+    -- BAHARU: Gunakan fungsi pencarian yang disatukan
+    local bestPet = findTheAbsoluteBestPet()
     
     if not bestPet then
         return false
@@ -1440,8 +1401,8 @@ local function safeTeleportToPet()
     task.wait(0.5)
     
     return true
-end
-
+end                                
+                                                
 -- ==================== DESYNC ESP FUNCTIONS ====================
 -- Initialize ESP Folder
 local function initializeESPFolder()
