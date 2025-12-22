@@ -2162,46 +2162,60 @@ switchStroke5.Color = Color3.fromRGB(255, 50, 50)
 switchStroke5.Thickness = 1
 switchStroke5.Parent = switchButton5
 
--- Switch button click function
+-- *** NEW, IMPROVED SWITCH LOGIC ***
 switchButton5.MouseButton1Click:Connect(function()
-    -- Stop any ongoing travel when switching mode
+    -- If an action is running, stop it and reset the toggle state.
     if isFlyingToBest then
-        completeFlyToBest() -- *** FIX: Use the new function here too ***
+        completeFlyToBest()
+    end
+
+    -- If the toggle was ON, turn it OFF because we are changing the mode.
+    if isToggled5 then
         isToggled5 = false
         toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
     end
 
+    -- Now, just switch the mode.
     isFlyToBestMode = not isFlyToBestMode
     
     if isFlyToBestMode then
         toggleButton5.Text = "Fly to Best"
-        print("✈️ Mode: FLY TO BEST")
+        print("✈️ Mode switched to: FLY TO BEST")
     else
         toggleButton5.Text = "Tp to Best"
-        print("🚀 Mode: TP TO BEST")
+        print("🚀 Mode switched to: TP TO BEST")
     end
 end)
 
--- Main toggle function
+-- *** NEW, IMPROVED MAIN TOGGLE LOGIC ***
 toggleButton5.MouseButton1Click:Connect(function()
-    -- If we are currently flying, stop everything.
+    -- If an action is currently running, stop it and turn the toggle off.
     if isFlyingToBest then
-        completeFlyToBest() -- *** FIX: Use the new function here ***
+        completeFlyToBest()
         print("⚫ Flight stopped by user.")
         return -- Exit the function
     end
 
-    -- If we are not flying, start flying.
+    -- If the toggle is already ON (but no action is running), turn it OFF.
+    if isToggled5 then
+        isToggled5 = false
+        toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+        print("⚫ Toggle manually turned off.")
+        return
+    end
+
+    -- If we are here, the toggle is OFF and nothing is running. Let's start an action.
     isToggled5 = true
     toggleButton5.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
     
     if isFlyToBestMode then
         print("🔴 Fly to Best: ON")
-        velocityFlightToPet() -- Call the function to fly to the best pet
+        -- The function itself will call completeFlyToBest() when done.
+        velocityFlightToPet() 
     else
         print("🔴 Tp to Best: ON")
-        tpToBest() -- Call the new TP function
-        -- Auto toggle off after TP
+        -- The TP function is instant, so we turn off the toggle immediately after.
+        tpToBest()
         isToggled5 = false
         toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
     end
