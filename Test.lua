@@ -1257,6 +1257,18 @@ local function stopVelocityFlight()
     isFlyingToBest = false
 end
 
+-- *** NEW FUNCTION TO HANDLE COMPLETION AND UI RESET ***
+local function completeFlyToBest()
+    -- Stop the flight mechanics
+    stopVelocityFlight()
+    
+    -- Reset the UI state
+    isToggled5 = false
+    toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+    
+    print("🛑 Fly to Best toggle auto-off.")
+end
+
 local function velocityFlightToPet()
     local character = LocalPlayer.Character
     if not character then 
@@ -1355,13 +1367,13 @@ local function velocityFlightToPet()
         
         local character = LocalPlayer.Character
         if not character then
-            stopVelocityFlight()
+            completeFlyToBest() -- Use the new function
             return
         end
         
         local hrp = character:FindFirstChild("HumanoidRootPart")
         if not hrp then
-            stopVelocityFlight()
+            completeFlyToBest() -- Use the new function
             return
         end
         
@@ -1370,7 +1382,7 @@ local function velocityFlightToPet()
         
         if distanceToTarget <= 3 then
             -- REACHED TARGET - AUTO TOGGLE OFF
-            stopVelocityFlight()
+            completeFlyToBest() -- *** FIX: Call the new function here ***
             
             print("✅ Arrived! Auto-OFF")
             
@@ -2154,7 +2166,7 @@ switchStroke5.Parent = switchButton5
 switchButton5.MouseButton1Click:Connect(function()
     -- Stop any ongoing travel when switching mode
     if isFlyingToBest then
-        stopVelocityFlight()
+        completeFlyToBest() -- *** FIX: Use the new function here too ***
         isToggled5 = false
         toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
     end
@@ -2174,9 +2186,7 @@ end)
 toggleButton5.MouseButton1Click:Connect(function()
     -- If we are currently flying, stop everything.
     if isFlyingToBest then
-        isToggled5 = false
-        toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
-        stopVelocityFlight()
+        completeFlyToBest() -- *** FIX: Use the new function here ***
         print("⚫ Flight stopped by user.")
         return -- Exit the function
     end
@@ -2281,7 +2291,7 @@ LocalPlayer.CharacterAdded:Connect(function()
     
     -- Stop flying to best on respawn
     if isFlyingToBest then
-        stopVelocityFlight()
+        completeFlyToBest() -- *** FIX: Use the new function here as well ***
         isToggled5 = false
         toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
         warn("⚠️ Character respawned - Flight to best stopped")
@@ -2296,7 +2306,7 @@ end)
 
 player.CharacterRemoving:Connect(function()
     stopAllTravel()
-    stopVelocityFlight()
+    completeFlyToBest() -- *** FIX: Use the new function here as well ***
     if respawnDesyncEnabled then
         deactivateESP()
     end
