@@ -1266,7 +1266,7 @@ local function completeFlyToBest()
     isToggled5 = false
     toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
     
-    print("🛑 Fly to Best toggle auto-off.")
+    print("🛑 Fly to Best complete. Toggle auto-off.")
 end
 
 local function velocityFlightToPet()
@@ -2162,20 +2162,9 @@ switchStroke5.Color = Color3.fromRGB(255, 50, 50)
 switchStroke5.Thickness = 1
 switchStroke5.Parent = switchButton5
 
--- *** NEW, IMPROVED SWITCH LOGIC ***
+-- *** FINAL, SIMPLIFIED SWITCH LOGIC ***
 switchButton5.MouseButton1Click:Connect(function()
-    -- If an action is running, stop it and reset the toggle state.
-    if isFlyingToBest then
-        completeFlyToBest()
-    end
-
-    -- If the toggle was ON, turn it OFF because we are changing the mode.
-    if isToggled5 then
-        isToggled5 = false
-        toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
-    end
-
-    -- Now, just switch the mode.
+    -- This button ONLY switches the mode. It does not stop actions or change the main toggle.
     isFlyToBestMode = not isFlyToBestMode
     
     if isFlyToBestMode then
@@ -2187,21 +2176,21 @@ switchButton5.MouseButton1Click:Connect(function()
     end
 end)
 
--- *** NEW, IMPROVED MAIN TOGGLE LOGIC ***
+-- *** FINAL, SIMPLIFIED MAIN TOGGLE LOGIC ***
 toggleButton5.MouseButton1Click:Connect(function()
-    -- If an action is currently running, stop it and turn the toggle off.
+    -- If an action is currently running, stop it and reset the toggle state.
     if isFlyingToBest then
         completeFlyToBest()
         print("⚫ Flight stopped by user.")
-        return -- Exit the function
+        return -- Exit the function.
     end
 
-    -- If the toggle is already ON (but no action is running), turn it OFF.
+    -- If the toggle is ON, turn it OFF.
     if isToggled5 then
         isToggled5 = false
         toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
         print("⚫ Toggle manually turned off.")
-        return
+        return -- Exit the function.
     end
 
     -- If we are here, the toggle is OFF and nothing is running. Let's start an action.
