@@ -51,7 +51,6 @@ local noWalkAnimationEnabled = true
 local isFlyingToBest = false
 local velocityConnection = nil
 local isFlyToBestMode = true -- true = Fly, false = TP
-local isTpToBestActive = false
 
 -- ==================== MODULE DATA FOR BEST PET DETECTION ====================
 local AnimalsModule, TraitsModule, MutationsModule
@@ -1075,7 +1074,7 @@ local function fireGrapple()
 end
 
 -- ===========================
--- 📍 SAFE TP HELPER FUNCTIONS
+-- 📍 SAFE HELPER FUNCTIONS (SEPARATED)
 -- ===========================
 local function getSideBounds(sideFolder)
     if not sideFolder then return nil end
@@ -1117,7 +1116,8 @@ local function getSideBounds(sideFolder)
     }
 end
 
-local function getSafeOutsideDecorPos(plot, targetPos, fromPos)
+-- Safe TP Helper for "Fly to Best" (Margin 6)
+local function getSafePosForFly(plot, targetPos, fromPos)
     local decorations = plot:FindFirstChild("Decorations")
     if not decorations then return targetPos end
     
@@ -1129,7 +1129,7 @@ local function getSafeOutsideDecorPos(plot, targetPos, fromPos)
     
     local center = info.center
     local halfSize = info.halfSize
-    local MARGIN = 6  -- Increased margin for safety
+    local MARGIN = 6  -- Margin for Fly to Best
     
     local localTarget = targetPos - center
     local insideX = math.abs(localTarget.X) <= halfSize.X + MARGIN
@@ -1191,6 +1191,61 @@ local function getSafeOutsideDecorPos(plot, targetPos, fromPos)
     return Vector3.new(worldPos.X, targetPos.Y, worldPos.Z)
 end
 
+-- Safe TP Helper for "Tp to Best" (Margin 3.1)
+local function getSafePosForTp(plot, targetPos, fromPos)
+    local decorations = plot:FindFirstChild("Decorations")
+    if not decorations then return targetPos end
+    
+    local side3Folder = decorations:FindFirstChild("Side 3")
+    if not side3Folder then return targetPos end
+    
+    local info = getSideBounds(side3Folder)
+    if not info then return targetPos end
+    
+    local center = info.center
+    local halfSize = info.halfSize
+    local MARGIN = 3.1  -- Margin for Tp to Best
+    
+    local localTarget = targetPos - center
+    local insideX = math.abs(localTarget.X) <= halfSize.X
+    local insideZ = math.abs(localTarget.Z) <= halfSize.Z
+    
+    if not (insideX and insideZ) then
+        return targetPos
+    end
+    
+    -- SUPPORT SEMUA ARAH - Calculate from player position
+    local src = fromPos and (fromPos - center) or localTarget
+    local dir = Vector3.new(src.X, 0, src.Z)
+    
+    if dir.Magnitude < 1e-3 then
+        dir = Vector3.new(0, 0, 1)
+    end
+    
+    local dirUnit = dir.Unit
+    
+    local tx, tz = math.huge, math.huge
+    
+    if dirUnit.X ~= 0 then
+        local boundX = (dirUnit.X > 0) and halfSize.X or -halfSize.X
+        tx = boundX / dirUnit.X
+    end
+    
+    if dirUnit.Z ~= 0 then
+        local boundZ = (dirUnit.Z > 0) and halfSize.Z or -halfSize.Z
+        tz = boundZ / dirUnit.Z
+    end
+    
+    local tHit = math.min(tx, tz)
+    if tHit == math.huge then return targetPos end
+    
+    local boundaryLocal = dirUnit * (tHit + MARGIN)
+    local worldPos = center + boundaryLocal
+    
+    return Vector3.new(worldPos.X, targetPos.Y, worldPos.Z)
+end
+
+
 -- ===========================
 -- ⚡ VELOCITY FLIGHT TO BRAINROT (AUTO TOGGLE OFF)
 -- ===========================
@@ -1246,8 +1301,8 @@ local function velocityFlightToPet()
         approachPos = Vector3.new(approachPos.X, animalY + 2, approachPos.Z)
     end
     
-    -- Apply decoration safety check
-    local finalPos = getSafeOutsideDecorPos(plot, approachPos, currentPos)
+    -- Apply decoration safety check with Fly-specific helper
+    local finalPos = getSafePosForFly(plot, approachPos, currentPos)
     
     -- Step 2: Equip Grapple Hook
     print("🪝 Equipping Grapple...")
@@ -1339,10 +1394,7 @@ local function velocityFlightToPet()
     return true
 end
 
--- ==================== TP TO BEST FUNCTIONS ====================
--- ===========================
--- 🪂 DETECT & EQUIP FLYING CARPET
--- ===========================
+-- ==================== NEW TP TO BEST FUNCTION ====================
 local function equipFlyingCarpet()
     local success, result = pcall(function()
         local character = LocalPlayer.Character
@@ -1381,19 +1433,7 @@ local function equipFlyingCarpet()
     return success and result
 end
 
--- ===========================
--- ⚡ SAFE TELEPORT WITH SMOOTH UPWARD VELOCITY
--- ===========================
-local tpVelocityConnection = nil
-
-local function stopTpVelocity()
-    if tpVelocityConnection then
-        tpVelocityConnection:Disconnect()
-        tpVelocityConnection = nil
-    end
-end
-
-local function safeTeleportToPet()
+local function tpToBest()
     local character = LocalPlayer.Character
     if not character then 
         print("❌ Character not found!")
@@ -1425,7 +1465,7 @@ local function safeTeleportToPet()
     local targetPos = bestPet.position
     local plot = bestPet.plot
     
-    -- Step 2: SMOOTH UPWARD VELOCITY
+    -- Step 2: Apply smooth upward velocity
     print("🚀 Applying smooth velocity...")
     
     local state = humanoid:GetState()
@@ -1441,23 +1481,23 @@ local function safeTeleportToPet()
     local elapsed = 0
     local maxDuration = 0.3  -- Apply velocity for 0.3 seconds
     
-    tpVelocityConnection = RunService.Heartbeat:Connect(function(dt)
+    local velocityConnection = RunService.Heartbeat:Connect(function(dt)
         elapsed = elapsed + dt
         
         if elapsed >= maxDuration then
-            stopTpVelocity()
+            velocityConnection:Disconnect()
             return
         end
         
         local character = LocalPlayer.Character
         if not character then
-            stopTpVelocity()
+            velocityConnection:Disconnect()
             return
         end
         
         local hrp = character:FindFirstChild("HumanoidRootPart")
         if not hrp then
-            stopTpVelocity()
+            velocityConnection:Disconnect()
             return
         end
         
@@ -1472,7 +1512,6 @@ local function safeTeleportToPet()
     
     -- Wait for velocity to reach peak
     task.wait(0.3)
-    stopTpVelocity()
     
     -- Step 3: Equip Grapple Hook
     print("🪝 Equipping Grapple...")
@@ -1491,7 +1530,7 @@ local function safeTeleportToPet()
     
     task.wait(0.05)
     
-    -- Step 5: Switch to Flying Carpet INSTANTLY
+    -- Step 5: Switch to Flying Carpet
     print("🪂 Switching to Carpet...")
     
     local carpetEquipped = equipFlyingCarpet()
@@ -1502,8 +1541,8 @@ local function safeTeleportToPet()
     
     task.wait(0.1)
     
-    -- Step 6: Calculate safe position
-    local finalPos = getSafeOutsideDecorPos(plot, targetPos, currentPos)
+    -- Step 6: Calculate safe position with TP-specific helper
+    local finalPos = getSafePosForTp(plot, targetPos, currentPos)
     
     -- Adjust height if pet is high
     local animalY = targetPos.Y
@@ -1513,15 +1552,12 @@ local function safeTeleportToPet()
         finalPos = Vector3.new(finalPos.X, animalY, finalPos.Z)
     end
     
-    -- Step 7: TELEPORT (with carpet equipped)
+    -- Step 7: TELEPORT
     print("⚡ Teleporting...")
     
     hrp.CFrame = CFrame.new(finalPos)
     
     print("✅ TP + Carpet Success!")
-    
-    -- AUTO TOGGLE OFF
-    isTpToBestActive = false
     
     return true
 end
@@ -1653,6 +1689,7 @@ local function applyNetworkSettings()
     pcall(function() fenv.setfflag("MaxMissedWorldStepsRemembered", "-2147483648") end)
     pcall(function() fenv.setfflag("CheckPVDifferencesForInterpolationMinVelThresholdStudsPerSecHundredth", "1") end)
     pcall(function() fenv.setfflag("StreamJobNOUVolumeLengthCap", "2147483647") end)
+    pcall(function() fenv.setfflag("DebugSendDistInSteps", "-2147483648") end)
     pcall(function() fenv.setfflag("MaxTimestepMultiplierAcceleration", "2147483647") end)
     pcall(function() fenv.setfflag("LargeReplicatorRead5", "true") end)
     pcall(function() fenv.setfflag("SimExplicitlyCappedTimestepMultiplier", "2147483646") end)
@@ -1730,8 +1767,8 @@ screenGui.Parent = game.CoreGui
 
 -- Main Frame (Rounded Rectangle - Vertical Block)
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 200, 0, 350) -- Increased height from 320 to 350
-mainFrame.Position = UDim2.new(0.5, -100, 0.5, -175) -- Adjusted position
+mainFrame.Size = UDim2.new(0, 200, 0, 320) -- Increased height from 280 to 320
+mainFrame.Position = UDim2.new(0.5, -100, 0.5, -160) -- Adjusted position
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -2101,9 +2138,8 @@ switchStroke5.Parent = switchButton5
 -- Switch button click function
 switchButton5.MouseButton1Click:Connect(function()
     -- Stop any ongoing travel when switching mode
-    if isFlyingToBest or isTpToBestActive then
+    if isFlyingToBest then
         stopVelocityFlight()
-        stopTpVelocity()
         isToggled5 = false
         toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
     end
@@ -2121,13 +2157,12 @@ end)
 
 -- Main toggle function
 toggleButton5.MouseButton1Click:Connect(function()
-    -- If we are currently flying or teleporting, stop everything.
-    if isFlyingToBest or isTpToBestActive then
+    -- If we are currently flying, stop everything.
+    if isFlyingToBest then
         isToggled5 = false
         toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
         stopVelocityFlight()
-        stopTpVelocity()
-        print("⚫ Travel stopped by user.")
+        print("⚫ Flight stopped by user.")
         return -- Exit the function
     end
 
@@ -2140,11 +2175,8 @@ toggleButton5.MouseButton1Click:Connect(function()
         velocityFlightToPet() -- Call the function to fly to the best pet
     else
         print("🔴 Tp to Best: ON")
-        isTpToBestActive = true
-        safeTeleportToPet() -- Call the TP function
-        
-        -- Reset button after a short delay
-        task.wait(1)
+        tpToBest() -- Call the new TP function
+        -- Auto toggle off after TP
         isToggled5 = false
         toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
     end
@@ -2189,8 +2221,8 @@ end)
 
 -- Content area (placeholder)
 local contentLabel = Instance.new("TextLabel")
-contentLabel.Size = UDim2.new(1, -40, 1, -325) -- Adjusted for increased height
-contentLabel.Position = UDim2.new(0, 20, 0, 320) -- Adjusted position
+contentLabel.Size = UDim2.new(1, -40, 1, -295) -- Adjusted for increased height
+contentLabel.Position = UDim2.new(0, 20, 0, 290) -- Adjusted position
 contentLabel.BackgroundTransparency = 1
 contentLabel.Text = ""
 contentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -2240,14 +2272,6 @@ LocalPlayer.CharacterAdded:Connect(function()
         warn("⚠️ Character respawned - Flight to best stopped")
     end
     
-    -- Stop TP to best on respawn
-    if isTpToBestActive then
-        stopTpVelocity()
-        isToggled5 = false
-        toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
-        warn("⚠️ Character respawned - TP to best stopped")
-    end
-    
     -- Reinitialize ESP if needed
     if respawnDesyncEnabled then
         task.wait(1)
@@ -2258,7 +2282,6 @@ end)
 player.CharacterRemoving:Connect(function()
     stopAllTravel()
     stopVelocityFlight()
-    stopTpVelocity()
     if respawnDesyncEnabled then
         deactivateESP()
     end
@@ -2273,7 +2296,7 @@ end
 print("==========================================")
 print("🎮 NIGHTMARE HUB LOADED!")
 print("==========================================")
-print("📐 Size: 200x350 (Vertical block)")
+print("📐 Size: 200x320 (Vertical block)")
 print("🎨 Style: Rounded rectangle")
 print("🖱️ Draggable: YES")
 print("🎮 Font: Arcade")
@@ -2283,5 +2306,4 @@ print("🔘 Toggles: Perm Desync, Speed Booster, Inf Jump, Fly/TP to Best, Steal
 print("✈️ Special: Fly/Walk to Base with Switch (FIXED - Now uses DeliveryHitbox)")
 print("📍 New: Server Position ESP with Perm Desync")
 print("🚫 Auto-Enabled: No Walk Animation")
-print("🚀 New: TP to Best with auto-off functionality")
 print("==========================================")
