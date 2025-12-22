@@ -569,8 +569,8 @@ LocalPlayer.CharacterAdded:Connect(function(c)
     end
 end)
 
--- ==================== FLY / WALK TO BASE (FIXED) ====================
--- PERUBAHAN: Fungsi terbang sekarang menggunakan DeliveryHitbox, bukan CollectZone.
+-- ==================== FLY / WALK TO BASE (FIXED ORDER) ====================
+-- PERUBAHAN: Susunan fungsi telah diperbetulkan untuk mengelakkan ralat 'calling nil'.
 local isTraveling = false
 local floatConnection = nil
 local walkThread = nil
@@ -613,60 +613,7 @@ local function stopAllTravel()
     print("🛑 All travel stopped")
 end
 
--- --- FLY TO BASE FUNCTIONS (MODIFIED) ---
-local function doFlyToBase()
-    local Character = player.Character
-    if not Character then return false end
-    
-    local RootPart = Character:FindFirstChild("HumanoidRootPart")
-    if not RootPart then return false end
-    
-    -- PERUBAHAN: Guna fungsi FindDelivery() yang sama dengan fungsi jalan kaki.
-    local deliveryHitbox = FindDelivery()
-    if not deliveryHitbox then
-        warn("❌ Cannot find DeliveryHitbox!")
-        return false
-    end
-    
-    local targetPosition = deliveryHitbox.Position + Vector3.new(0, FLOAT_HEIGHT_OFFSET, 0)
-    print("🎈 Flying to DeliveryHitbox at:", targetPosition)
-    
-    floatConnection = RunService.Heartbeat:Connect(function()
-        if not isTraveling then
-            stopAllTravel()
-            return
-        end
-        
-        if not Character or not Character.Parent or not RootPart or not RootPart.Parent then
-            stopAllTravel()
-            return
-        end
-        
-        local currentPos = RootPart.Position
-        local hitboxPos = deliveryHitbox.Position
-        
-        local horizontalDistance = (Vector3.new(currentPos.X, 0, currentPos.Z) - Vector3.new(hitboxPos.X, 0, hitboxPos.Z)).Magnitude
-        
-        if horizontalDistance <= STOP_DISTANCE then
-            print("✅ Arrived at DeliveryHitbox!")
-            stopAllTravel()
-            return
-        end
-        
-        local direction = (targetPosition - currentPos).Unit
-        local horizontalDir = Vector3.new(direction.X, 0, direction.Z).Unit
-        
-        RootPart.Velocity = Vector3.new(
-            horizontalDir.X * FLOAT_SPEED,
-            FLOAT_UP_SPEED,
-            horizontalDir.Z * FLOAT_SPEED
-        )
-    end)
-    
-    return true
-end
-
---- WALK TO BASE FUNCTIONS ---
+--- WALK TO BASE FUNCTIONS (DIPINDAHKAN KE ATAS) ---
 local function FindDelivery()
     local plots = workspace:WaitForChild("Plots", 5)
     if not plots then
@@ -781,6 +728,59 @@ local function doWalkToBase()
     else
         print("⚠️ Walk to delivery failed or was cancelled")
     end
+    
+    return true
+end
+
+-- --- FLY TO BASE FUNCTIONS (DIPINDAHKAN KE BAWAH) ---
+local function doFlyToBase()
+    local Character = player.Character
+    if not Character then return false end
+    
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not RootPart then return false end
+    
+    -- PERUBAHAN: Guna fungsi FindDelivery() yang sama dengan fungsi jalan kaki.
+    local deliveryHitbox = FindDelivery()
+    if not deliveryHitbox then
+        warn("❌ Cannot find DeliveryHitbox!")
+        return false
+    end
+    
+    local targetPosition = deliveryHitbox.Position + Vector3.new(0, FLOAT_HEIGHT_OFFSET, 0)
+    print("🎈 Flying to DeliveryHitbox at:", targetPosition)
+    
+    floatConnection = RunService.Heartbeat:Connect(function()
+        if not isTraveling then
+            stopAllTravel()
+            return
+        end
+        
+        if not Character or not Character.Parent or not RootPart or not RootPart.Parent then
+            stopAllTravel()
+            return
+        end
+        
+        local currentPos = RootPart.Position
+        local hitboxPos = deliveryHitbox.Position
+        
+        local horizontalDistance = (Vector3.new(currentPos.X, 0, currentPos.Z) - Vector3.new(hitboxPos.X, 0, hitboxPos.Z)).Magnitude
+        
+        if horizontalDistance <= STOP_DISTANCE then
+            print("✅ Arrived at DeliveryHitbox!")
+            stopAllTravel()
+            return
+        end
+        
+        local direction = (targetPosition - currentPos).Unit
+        local horizontalDir = Vector3.new(direction.X, 0, direction.Z).Unit
+        
+        RootPart.Velocity = Vector3.new(
+            horizontalDir.X * FLOAT_SPEED,
+            FLOAT_UP_SPEED,
+            horizontalDir.Z * FLOAT_SPEED
+        )
+    end)
     
     return true
 end
