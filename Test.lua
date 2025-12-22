@@ -4,7 +4,7 @@
     WITH SWITCH BUTTON FOR FLY/WALK TO BASE (FIXED)
     WITH NEW RESPAWN DESYNC + SERVER POSITION ESP
     WITH AUTO-ENABLED NO WALK ANIMATION
-    WITH NEW FLY/TP TO BEST FEATURE
+    WITH NEW FLY/TP TO BEST FEATURE (FIXED)
 ]]
 
 -- ==================== SERVICES ====================
@@ -393,29 +393,29 @@ local function toggleAllFeatures(enabled)
     if allFeaturesEnabled then
         print("═══════════════════════════════")
         print("🚀 ACTIVATING ALL FEATURES...")
-        print("═══════════════════════════════")
+        print("═════════════════════════════")
         
         -- Start all features
         startFloorGrab()
         startXrayBase()
         startAutoLaser()
         
-        print("═══════════════════════════════")
+        print("═════════════════════════════")
         print("✅ ALL FEATURES ACTIVATED!")
-        print("═══════════════════════════════")
+        print("═════════════════════════════")
     else
-        print("═══════════════════════════════")
+        print("═════════════════════════════")
         print("🛑 DEACTIVATING ALL FEATURES...")
-        print("═══════════════════════════════")
+        print("═════════════════════════════")
         
         -- Stop all features
         stopFloorGrab()
         stopXrayBase()
         stopAutoLaser()
         
-        print("═══════════════════════════════")
+        print("═════════════════════════════")
         print("❌ ALL FEATURES DEACTIVATED!")
-        print("═══════════════════════════════")
+        print("═════════════════════════════")
     end
 end
 
@@ -894,15 +894,15 @@ end
 -- Format number for display
 local function formatNumber(num)
     if num >= 1e12 then
-        return string.format("$%.1fT", num / 1e12)
+        return string.format("%.1fT/s", num / 1e12)
     elseif num >= 1e9 then
-        return string.format("$%.1fB", num / 1e9)
+        return string.format("%.1fB/s", num / 1e9)
     elseif num >= 1e6 then
-        return string.format("$%.1fM", num / 1e6)
+        return string.format("%.1fM/s", num / 1e6)
     elseif num >= 1e3 then
-        return string.format("$%.1fK", num / 1e3)
+        return string.format("%.1fK/s", num / 1e3)
     else
-        return string.format("$%.0f", num)
+        return string.format("%.0f/s", num)
     end
 end
 
@@ -940,13 +940,12 @@ local function findBestPet()
                                         plot = plot,
                                         plotName = plot.Name,
                                         petName = obj.Name,
-                                        price = formatNumber(gen),
-                                        priceValue = gen,
+                                        generation = gen,
+                                        formattedValue = formatNumber(gen),
                                         model = obj,
-                                        part = root,
+                                        value = gen,
                                         position = root.Position,
-                                        cframe = root.CFrame,
-                                        value = gen
+                                        cframe = root.CFrame
                                     }
                                 end
                             end
@@ -1013,13 +1012,12 @@ local function findBestPet()
                                             plot = plot,
                                             plotName = plot.Name,
                                             petName = petName,
-                                            price = genText,
-                                            priceValue = value,
+                                            generation = value,
+                                            formattedValue = genText,
                                             model = model,
-                                            part = part,
+                                            value = value,
                                             position = part.Position,
-                                            cframe = part.CFrame,
-                                            value = value
+                                            cframe = part.CFrame
                                         }
                                     end
                                 end
@@ -1032,48 +1030,6 @@ local function findBestPet()
     end
     
     return highest.value > 0 and highest or nil
-end
-
--- ===========================
--- ⚙️ AUTO-EQUIP GRAPPLE HOOK
--- ===========================
-local function autoEquipGrapple()
-    local success, result = pcall(function()
-        local character = LocalPlayer.Character
-        if not character then return false end
-        
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if not (humanoid and humanoid.Health > 0) then return false end
-        
-        humanoid:UnequipTools()
-        
-        local backpack = LocalPlayer:WaitForChild("Backpack")
-        local grapple = backpack:FindFirstChild("Grapple Hook")
-        
-        if grapple then
-            grapple.Parent = character
-            humanoid:EquipTool(grapple)
-            return true
-        end
-        
-        return false
-    end)
-    
-    return success and result
-end
-
--- ===========================
--- 🔥 USE TOOL (FIRE GRAPPLE)
--- ===========================
-local UseItemRemote = ReplicatedStorage:WaitForChild("Packages")
-    :WaitForChild("Net")
-    :WaitForChild("RE/UseItem")
-
-local function fireGrapple()
-    pcall(function()
-        local args = {1.9832406361897787}
-        UseItemRemote:FireServer(unpack(args))
-    end)
 end
 
 -- ===========================
@@ -1131,26 +1087,45 @@ local function getSafeOutsideDecorPos(plot, targetPos, fromPos)
     
     local center = info.center
     local halfSize = info.halfSize
-    local MARGIN = 3.1
+    local MARGIN = 6  -- Increased margin for safety
     
     local localTarget = targetPos - center
-    local insideX = math.abs(localTarget.X) <= halfSize.X
-    local insideZ = math.abs(localTarget.Z) <= halfSize.Z
+    local insideX = math.abs(localTarget.X) <= halfSize.X + MARGIN
+    local insideZ = math.abs(localTarget.Z) <= halfSize.Z + MARGIN
     
+    -- If target is clearly outside safe zone, return as-is
     if not (insideX and insideZ) then
         return targetPos
     end
     
-    -- SUPPORT SEMUA ARAH - Calculate from player position
+    -- Calculate escape direction (AWAY from decorations, towards open space)
     local src = fromPos and (fromPos - center) or localTarget
     local dir = Vector3.new(src.X, 0, src.Z)
     
-    if dir.Magnitude < 1e-3 then
-        dir = Vector3.new(0, 0, 1)
+    -- If coming from inside or too close to center, push outward
+    if dir.Magnitude < halfSize.X * 0.5 then
+        -- Find which side is closest to exit
+        local distToEdges = {
+            {axis = "X", sign = 1, dist = halfSize.X - localTarget.X},
+            {axis = "X", sign = -1, dist = halfSize.X + localTarget.X},
+            {axis = "Z", sign = 1, dist = halfSize.Z - localTarget.Z},
+            {axis = "Z", sign = -1, dist = halfSize.Z + localTarget.Z}
+        }
+        
+        table.sort(distToEdges, function(a, b) return a.dist < b.dist end)
+        
+        -- Take shortest escape route
+        local nearest = distToEdges[1]
+        if nearest.axis == "X" then
+            dir = Vector3.new(nearest.sign, 0, 0)
+        else
+            dir = Vector3.new(0, 0, nearest.sign)
+        end
     end
     
     local dirUnit = dir.Unit
     
+    -- Calculate intersection with expanded bounds
     local tx, tz = math.huge, math.huge
     
     if dirUnit.X ~= 0 then
@@ -1163,9 +1138,11 @@ local function getSafeOutsideDecorPos(plot, targetPos, fromPos)
         tz = boundZ / dirUnit.Z
     end
     
+    -- Take the closest intersection
     local tHit = math.min(tx, tz)
     if tHit == math.huge then return targetPos end
     
+    -- Push further out with margin
     local boundaryLocal = dirUnit * (tHit + MARGIN)
     local worldPos = center + boundaryLocal
     
@@ -1173,29 +1150,22 @@ local function getSafeOutsideDecorPos(plot, targetPos, fromPos)
 end
 
 -- ===========================
--- ⚡ SAFE TELEPORT WITH SMOOTH UPWARD VELOCITY
+-- ⚡ NEW FLY TO BEST (SIMPLIFIED)
 -- ===========================
 local function stopVelocity()
     if velocityConnection then
         velocityConnection:Disconnect()
         velocityConnection = nil
     end
+    isFlyingToBest = false
 end
 
-local function safeTeleportToPet()
-    local character = LocalPlayer.Character
-    if not character then 
-        print("❌ Character not found!")
-        return false
-    end
+local function doFlyToBest()
+    local Character = LocalPlayer.Character
+    if not Character then return false end
     
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    local humanoid = character:FindFirstChild("Humanoid")
-    
-    if not hrp or not humanoid then 
-        print("❌ HumanoidRootPart not found!")
-        return false
-    end
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not RootPart then return false end
     
     -- Step 1: Find highest pet
     print("🔍 Scanning for best pet...")
@@ -1208,39 +1178,36 @@ local function safeTeleportToPet()
     end
     
     -- Show pet info
-    local valueText = bestPet.value >= 1e12 and string.format("$%.2fT", bestPet.value/1e12)
-        or bestPet.value >= 1e9 and string.format("$%.2fB", bestPet.value/1e9)
-        or bestPet.value >= 1e6 and string.format("$%.2fM", bestPet.value/1e6)
-        or bestPet.value >= 1e3 and string.format("$%.2fK", bestPet.value/1e3)
-        or string.format("$%.2f", bestPet.value)
+    print("🎯 " .. bestPet.petName .. " (" .. bestPet.formattedValue .. ")")
     
-    print("🎯 " .. bestPet.petName .. " (" .. valueText .. ")")
-    
-    local currentPos = hrp.Position
+    local currentPos = RootPart.Position
     local targetPos = bestPet.position
-    local plot = bestPet.plot
     
-    -- Step 2: SMOOTH UPWARD VELOCITY
-    print("🚀 Applying smooth velocity...")
+    -- Step 2: Calculate approach position (similar to original, but simpler)
+    local directionToPet = (targetPos - currentPos).Unit
+    local approachPos = targetPos - (directionToPet * 7) -- 7 studs away
     
-    local state = humanoid:GetState()
-    if state ~= Enum.HumanoidStateType.Jumping and state ~= Enum.HumanoidStateType.Freefall then
-        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        task.wait(0.05)
+    -- Adjust height if pet is high
+    local animalY = targetPos.Y
+    if animalY > 10 then
+        approachPos = Vector3.new(approachPos.X, 20, approachPos.Z)
+    else
+        approachPos = Vector3.new(approachPos.X, animalY + 2, approachPos.Z)
     end
     
-    -- SMOOTH upward velocity application
-    local targetUpwardSpeed = 120
-    local currentUpwardSpeed = 0
-    local smoothness = 0.25  -- Higher = faster acceleration
-    local elapsed = 0
-    local maxDuration = 0.3  -- Apply velocity for 0.3 seconds
+    -- Apply decoration safety check (using existing function)
+    local plot = bestPet.plot
+    local finalPos = getSafeOutsideDecorPos(plot, approachPos, currentPos)
     
-    velocityConnection = RunService.Heartbeat:Connect(function(dt)
-        elapsed = elapsed + dt
-        
-        if elapsed >= maxDuration then
-            stopVelocity()
+    print("🚀 Flying to pet at:", finalPos)
+    
+    -- Step 3: START VELOCITY FLIGHT TO TARGET (mimicking doFlyToBase)
+    isFlyingToBest = true
+    
+    -- Use a Heartbeat loop for smooth flight
+    velocityConnection = RunService.Heartbeat:Connect(function()
+        if not isFlyingToBest then
+            stopVelocity() -- Use the existing stopVelocity function
             return
         end
         
@@ -1256,117 +1223,102 @@ local function safeTeleportToPet()
             return
         end
         
-        -- SMOOTH speed increase (lerp)
-        currentUpwardSpeed = currentUpwardSpeed + (targetUpwardSpeed - currentUpwardSpeed) * smoothness
+        -- Check if reached target
+        local distanceToTarget = (finalPos - hrp.Position).Magnitude
         
-        -- Maintain horizontal velocity, smooth vertical
-        hrp.Velocity = Vector3.new(hrp.Velocity.X, currentUpwardSpeed, hrp.Velocity.Z)
-        
-        print(string.format("🚀 Velocity: %.0f", currentUpwardSpeed))
-    end)
-    
-    -- Wait for velocity to reach peak
-    task.wait(0.3)
-    stopVelocity()
-    
-    -- Step 3: Equip Grapple Hook
-    print("🪝 Equipping Grapple...")
-    
-    local grappleEquipped = autoEquipGrapple()
-    if not grappleEquipped then
-        print("⚠️ No Grapple Hook found!")
-    end
-    
-    -- Step 4: Fire Grapple
-    print("🔥 Firing Grapple...")
-    
-    if grappleEquipped then
-        fireGrapple()
-        task.wait(0.05)
-    end
-    
-    -- Step 5: Switch to Flying Carpet INSTANTLY
-    print("🪂 Switching to Carpet...")
-    
-    local carpetEquipped = false
-    local success, result = pcall(function()
-        local character = LocalPlayer.Character
-        if not character then return false end
-        
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if not (humanoid and humanoid.Health > 0) then return false end
-        
-        local backpack = LocalPlayer:WaitForChild("Backpack")
-        local carpet = backpack:FindFirstChild("Flying Carpet") or 
-                      backpack:FindFirstChild("FlyingCarpet") or
-                      backpack:FindFirstChild("flying carpet") or
-                      backpack:FindFirstChild("flyingcarpet") or
-                      backpack:FindFirstChild("Santa's Sleigh") or
-                      backpack:FindFirstChild("Santa's Sleigh") or
-                      backpack:FindFirstChild("Witch's Broom") or
-                      backpack:FindFirstChild("Witch's Broom")
-        
-        if carpet then
-            carpet.Parent = character
-            humanoid:EquipTool(carpet)
-            return true
+        if distanceToTarget <= 3 then
+            -- REACHED TARGET - AUTO TOGGLE OFF
+            stopVelocity()
+            isFlyingToBest = false
+            print("✅ Arrived at pet! Auto-OFF")
+            
+            -- Reset button state
+            isToggled5 = false
+            toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+            
+            return
         end
         
-        local equippedCarpet = character:FindFirstChild("Flying Carpet") or 
-                               character:FindFirstChild("FlyingCarpet") or
-                               character:FindFirstChild("flying carpet") or
-                               character:FindFirstChild("flyingcarpet") or
-                               character:FindFirstChild("Santa's Sleigh") or
-                               character:FindFirstChild("Santa's Sleigh") or
-                               character:FindFirstChild("Witch's Broom") or
-                               character:FindFirstChild("Witch's Broom")
-        
-        if equippedCarpet and equippedCarpet:IsA("Tool") then
-            humanoid:EquipTool(equippedCarpet)
-            return true
+        -- SLOWDOWN when approaching (within 20 studs)
+        local currentSpeed = 200 -- Base speed
+        if distanceToTarget <= 20 then
+            local slowdownFactor = distanceToTarget / 20
+            currentSpeed = math.max(50, 200 * slowdownFactor)
         end
         
-        return false
+        -- Recalculate direction each frame
+        local currentDirection = (finalPos - hrp.Position).Unit
+        local velocityVector = currentDirection * currentSpeed
+        
+        -- Apply velocity
+        hrp.Velocity = velocityVector
     end)
-    
-    carpetEquipped = success and result
-    
-    if not carpetEquipped then
-        print("⚠️ Flying item not found!")
-    end
-    
-    task.wait(0.1)
-    
-    -- Step 6: Calculate safe position (ORIGINAL METHOD - SUPPORTS ALL DIRECTIONS)
-    local finalPos = getSafeOutsideDecorPos(plot, targetPos, currentPos)
-    
-    -- Adjust height if pet is high (ORIGINAL SIMPLE METHOD)
-    local animalY = targetPos.Y
-    if animalY > 10 then
-        finalPos = Vector3.new(finalPos.X, 20, finalPos.Z)
-    else
-        finalPos = Vector3.new(finalPos.X, animalY, finalPos.Z)
-    end
-    
-    -- Step 7: TELEPORT (with carpet equipped)
-    print("⚡ Teleporting...")
-    
-    hrp.CFrame = CFrame.new(finalPos)
-    
-    print("✅ TP + Carpet Success!")
     
     return true
 end
 
--- Function to check if player has flying items
+-- ===========================
+-- ⚡ NEW TP TO BEST (SIMPLIFIED)
+-- ===========================
+local function doTpToBest()
+    local Character = LocalPlayer.Character
+    if not Character then return false end
+    
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not RootPart then return false end
+    
+    -- Step 1: Find highest pet
+    print("🔍 Scanning for best pet...")
+    
+    local bestPet = findBestPet()
+    
+    if not bestPet then
+        print("❌ No pet found!")
+        return false
+    end
+    
+    -- Show pet info
+    print("🎯 " .. bestPet.petName .. " (" .. bestPet.formattedValue .. ")")
+    
+    local currentPos = RootPart.Position
+    local targetPos = bestPet.position
+    
+    -- Step 2: Calculate approach position
+    local directionToPet = (targetPos - currentPos).Unit
+    local approachPos = targetPos - (directionToPet * 7) -- 7 studs away
+    
+    -- Adjust height if pet is high
+    local animalY = targetPos.Y
+    if animalY > 10 then
+        approachPos = Vector3.new(approachPos.X, 20, approachPos.Z)
+    else
+        approachPos = Vector3.new(approachPos.X, animalY + 2, approachPos.Z)
+    end
+    
+    -- Apply decoration safety check
+    local plot = bestPet.plot
+    local finalPos = getSafeOutsideDecorPos(plot, approachPos, currentPos)
+    
+    -- Step 3: TELEPORT
+    print("⚡ Teleporting to pet at:", finalPos)
+    RootPart.CFrame = CFrame.new(finalPos)
+    print("✅ Teleported to " .. bestPet.petName .. " (" .. bestPet.formattedValue .. ")")
+    
+    -- Reset button state immediately after TP
+    isToggled5 = false
+    toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+    
+    return true
+end
+
+-- Function to check if player has flying items (Flying Carpet only)
 local function checkForFlyingItems()
     local backpack = LocalPlayer:WaitForChild("Backpack")
     local character = LocalPlayer.Character
     
+    -- Only check for Flying Carpet variants
     local flyingItems = {
-        "Flying Carpet", "FlyingCarpet", "flying carpet", "flyingcarpet",
-        "Santa's Sleigh", "Santa's Sleigh",
-        "Witch's Broom", "Witch's Broom"
+        "Flying Carpet", "FlyingCarpet", "flying carpet", "flyingcarpet"
     }
     
     -- Check in backpack
@@ -1868,7 +1820,7 @@ toggleButton4.MouseButton1Click:Connect(function()
     local success = false
     if isFlyMode then
         print("🔴 Fly to Base: ON")
-        success = doFlyToBase() -- Call the new improved function
+        success = doFlyToBase() -- Call the new simplified function
     else
         print("🔴 Walk to Base: ON")
         walkThread = task.spawn(doWalkToBase) -- Run walk function in a new thread
@@ -1916,7 +1868,7 @@ doWalkToBase = function(...)
     return success
 end
 
--- ========== TOGGLE BUTTON 5 WITH SWITCH - Fly/TP to Best (NEW) ==========
+-- ========== TOGGLE BUTTON 5 WITH SWITCH - Fly/TP to Best (FIXED) ==========
 -- Main button (smaller width to make space for switch)
 local toggleButton5 = Instance.new("TextButton")
 toggleButton5.Size = UDim2.new(0, 125, 0, 32) -- Reduced width from 160 to 125
@@ -1963,19 +1915,6 @@ switchStroke5.Parent = switchButton5
 
 -- Switch button click function
 switchButton5.MouseButton1Click:Connect(function()
-    -- Check if player has flying items before allowing switch
-    hasFlyingItem = checkForFlyingItems()
-    
-    if not hasFlyingItem then
-        -- Show notification that they need a flying item
-        StarterGui:SetCore("SendNotification", {
-            Title = "Tp to Best";
-            Text = "You need a flying carpet!";
-            Duration = 5;
-        })
-        return
-    end
-    
     -- Stop any ongoing travel when switching mode
     if isFlyingToBest then
         stopVelocity()
@@ -1991,23 +1930,22 @@ switchButton5.MouseButton1Click:Connect(function()
     else
         toggleButton5.Text = "Tp to Best"
         print("🚀 Mode: TP TO BEST")
-        
-        -- Show notification for successful switch
-        StarterGui:SetCore("SendNotification", {
-            Title = "Switch to";
-            Text = "Tp to Best";
-            Duration = 3;
-        })
-        
-        -- Play sound when switching
-        if desyncSound.IsPlaying then
-            desyncSound:Stop()
-        end
-        desyncSound:Play()
     end
+    
+    -- Play sound and show notification on successful switch
+    if desyncSound.IsPlaying then
+        desyncSound:Stop()
+    end
+    desyncSound:Play()
+    
+    StarterGui:SetCore("SendNotification", {
+        Title = "Switch to";
+        Text = isFlyToBestMode and "Fly to Best" or "Tp to Best";
+        Duration = 3;
+    })
 end)
 
--- Main toggle function
+-- Main toggle function (FIXED)
 toggleButton5.MouseButton1Click:Connect(function()
     -- If we are currently flying, stop everything.
     if isFlyingToBest then
@@ -2018,41 +1956,16 @@ toggleButton5.MouseButton1Click:Connect(function()
         return -- Exit the function
     end
 
-    -- Check if player has flying items
-    hasFlyingItem = checkForFlyingItems()
-    
-    if not hasFlyingItem then
-        -- Show notification that they need a flying item
-        StarterGui:SetCore("SendNotification", {
-            Title = "Tp to Best";
-            Text = "You need a flying carpet!";
-            Duration = 5;
-        })
-        return
-    end
-
-    -- If we are not flying, start flying.
+    -- If we are not flying, start flying/tping.
     isToggled5 = true
     toggleButton5.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
     
     if isFlyToBestMode then
         print("🔴 Fly to Best: ON")
-        velocityFlightToPet() -- Call the function to fly to the best pet
+        doFlyToBest() -- Call the NEW simplified function
     else
         print("🔴 Tp to Best: ON")
-        -- TP function
-        local bestPet = findBestPet()
-        if bestPet then
-            local character = LocalPlayer.Character
-            if character and character:FindFirstChild("HumanoidRootPart") then
-                character:FindFirstChild("HumanoidRootPart").CFrame = bestPet.cframe
-                print("✅ Teleported to " .. bestPet.petName .. " (" .. bestPet.price .. ")")
-            end
-        else
-            print("❌ No pet found!")
-        end
-        isToggled5 = false
-        toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+        doTpToBest() -- Call the NEW simplified function
     end
 end)
 
