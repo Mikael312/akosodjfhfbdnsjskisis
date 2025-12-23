@@ -14,6 +14,7 @@
     - [ADDED] "Unwalk Anim" toggle to the Misc tab.
     - [ADDED] "God Mode" toggle to the Misc tab.
     - [ADDED] "Esp Trap" toggle to the Visual tab.
+    - [ADDED] "Auto Destroy Turret" toggle to the Main tab.
 ]]
 
 -- ==================== LOAD LIBRARY ====================
@@ -1212,7 +1213,7 @@ local function parseTimeToSeconds(timeText)
     if not timeText or timeText == "" then return nil end
     local minutes, seconds = timeText:match("(%d+):(%d+)"); if minutes and seconds then return tonumber(minutes) * 60 + tonumber(seconds) end
     local secondsOnly = timeText:match("(%d+)s"); if secondsOnly then return tonumber(secondsOnly) end
-    local minutesOnly = timeText:match("(%d+)m"); if minutesOnly then return tonumber(minutesOnly) * 60 end; return nil
+    local minutesOnly = timeText:match("(%d+)m"); if minutesOnly then return tonumber(minutes) * 60 end; return nil
 end
 
 local function playBellSound()
@@ -1415,9 +1416,8 @@ Workspace.ChildAdded:Connect(function(child)
 end)
 task.wait(1); scanForSentries()
 
--- ==================== ESP TRAP FUNCTION (NEW) ====================
+-- ==================== ESP TRAP FUNCTION ====================
 local function addTrapHighlight(object, name)
-    -- Check if already highlighted
     if object:FindFirstChild("ESP_Highlight_Trap") then return end
     
     local highlight = Instance.new("Highlight")
@@ -1426,14 +1426,12 @@ local function addTrapHighlight(object, name)
     highlight.FillTransparency = 0.5
     highlight.OutlineTransparency = 0
     
-    -- All bright red for everything
     highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Bright red
     highlight.OutlineColor = Color3.fromRGB(255, 50, 50) -- Bright red outline
     
     highlight.Parent = object
     
     table.insert(espTrapObjects, {Object = object, Highlight = highlight})
-    -- print("🎯 ESP Trap Added:", name) -- Optional log
 end
 
 local function removeTrapHighlight(object)
@@ -1444,7 +1442,6 @@ local function removeTrapHighlight(object)
 end
 
 local function findTrapTargets()
-    -- Clear old ESP objects
     for _, data in pairs(espTrapObjects) do
         if data.Highlight then
             data.Highlight:Destroy()
@@ -1452,24 +1449,19 @@ local function findTrapTargets()
     end
     espTrapObjects = {}
     
-    -- Search workspace for targets
     for _, obj in pairs(Workspace:GetDescendants()) do
         if obj:IsA("Model") or obj:IsA("Part") or obj:IsA("MeshPart") then
             local name = obj.Name:lower()
             
-            -- Check if it's a Subspace Mine or Trap
             if name:find("subspace") and name:find("mine") then
                 addTrapHighlight(obj, obj.Name)
             elseif name:find("trap") then
                 addTrapHighlight(obj, obj.Name)
             elseif name:find("mine") and not name:find("mining") then
-                -- Also catch generic "mine" objects
                 addTrapHighlight(obj, obj.Name)
             end
         end
     end
-    
-    -- print("✅ Found " .. #espTrapObjects .. " trap objects") -- Optional log
 end
 
 local function enableEspTrap()
@@ -1478,14 +1470,11 @@ local function enableEspTrap()
     
     print("🔍 ESP Trap Started - Searching...")
     
-    -- Initial scan
     findTrapTargets()
     
-    -- Continuous monitoring for new objects
     espTrapConnection = RunService.Heartbeat:Connect(function()
         if not espTrapEnabled then return end
         
-        -- Check for new objects every 2 seconds (approx 0.016s frame time)
         if tick() % 2 < 0.016 then
             for _, obj in pairs(Workspace:GetDescendants()) do
                 if obj:IsA("Model") or obj:IsA("Part") or obj:IsA("MeshPart") then
@@ -1495,7 +1484,6 @@ local function enableEspTrap()
                        name:find("trap") or 
                        (name:find("mine") and not name:find("mining")) then
                         
-                        -- Only add if not already highlighted
                         if not obj:FindFirstChild("ESP_Highlight_Trap") then
                             addTrapHighlight(obj, obj.Name)
                         end
@@ -1514,7 +1502,6 @@ local function disableEspTrap()
         espTrapConnection = nil
     end
     
-    -- Remove all highlights
     for _, data in pairs(espTrapObjects) do
         if data.Highlight then
             data.Highlight:Destroy()
@@ -1522,7 +1509,6 @@ local function disableEspTrap()
     end
     espTrapObjects = {}
     
-    -- Clean up any remaining highlights in workspace
     for _, obj in pairs(Workspace:GetDescendants()) do
         removeTrapHighlight(obj)
     end
@@ -1551,7 +1537,7 @@ local function findPlayerPlot()
                     local plotSignText = surfaceGui.Frame.TextLabel.Text
                     if plotSignText == playerBaseName then
                         print("✅ Found player's plot:", plot.Name)
-                        return plot, plotSign -- Return both plot and its sign
+                        return plot, plotSign
                     end
                 end
             end
@@ -1567,14 +1553,12 @@ local function createPlotLine()
     local RootPart = Character:FindFirstChild("HumanoidRootPart")
     if not RootPart then return false end
 
-    -- [UPDATED] Get both the plot and the sign
     local playerPlot, plotSign = findPlayerPlot()
     if not playerPlot or not plotSign then
         warn("❌ Cannot find your base or its sign!")
         return false
     end
 
-    -- [UPDATED] Get position directly from the PlotSign part
     local targetPosition = plotSign.Position
     print("📍 Creating line to PlotSign at:", targetPosition)
 
@@ -1734,7 +1718,7 @@ end
 
 player.CharacterAdded:Connect(function(newCharacter) if antiBoogieEnabled then task.wait(0.5); setupInstantAnimationBlocker(); print("🔄 Reloaded animation blocker after respawn") end end)
 
--- ==================== UNWALK ANIM FUNCTION (NEW) ====================
+-- ==================== UNWALK ANIM FUNCTION ====================
 local function setupNoWalkAnimation(character)
     character = character or player.Character
     if not character then return end
@@ -1751,22 +1735,18 @@ local function setupNoWalkAnimation(character)
         end
     end
     
-    -- Hentikan animasi semasa berlari
     humanoid.Running:Connect(function(speed)
         stopAllAnimations()
     end)
     
-    -- Hentikan animasi semasa melompat
     humanoid.Jumping:Connect(function()
         stopAllAnimations()
     end)
     
-    -- Hentikan sebarang animasi baru yang cuba dimainkan
     animator.AnimationPlayed:Connect(function(animationTrack)
         animationTrack:Stop()
     end)
     
-    -- Hentikan animasi secara berterusan pada setiap frame
     RunService.RenderStepped:Connect(function()
         stopAllAnimations()
     end)
@@ -1783,35 +1763,32 @@ local function toggleUnwalkAnimation(state)
     end
 end
 
--- Jalankan fungsi jika watak sudah ada
 if player.Character and unwalkAnimEnabled then
     setupNoWalkAnimation(player.Character)
 end
 
--- Jalankan fungsi semula setiap kali watak respawn
 player.CharacterAdded:Connect(function(character)
-    task.wait(0.5) -- Tunggu sebentar untuk watak dimuatkan sepenuhnya
+    task.wait(0.5)
     if unwalkAnimEnabled then
         setupNoWalkAnimation(character)
     end
 end)
 
--- ==================== GOD MODE FUNCTION (NEW) ====================
+-- ==================== GOD MODE FUNCTION ====================
 local function toggleGodMode(enabled)
     godModeEnabled = enabled
-    local character = player.Character -- Guna 'player' bukan 'LocalPlayer'
+    local character = player.Character
     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 
     if enabled then
         print("✅ God Mode: ON")
 
         if humanoid then
-            initialMaxHealth = humanoid.MaxHealth -- Simpan nyawa asal
+            initialMaxHealth = humanoid.MaxHealth
             humanoid.MaxHealth = math.huge
             humanoid.Health = math.huge
         end
 
-        -- Sambungan 1: Pulihkan nyawa seketika jika rosak
         if healthConnection then healthConnection:Disconnect() end
         if humanoid then
             healthConnection = humanoid.HealthChanged:Connect(function(health)
@@ -1821,7 +1798,6 @@ local function toggleGodMode(enabled)
             end)
         end
 
-        -- Sambungan 2: Halang status mati (Dead)
         if stateConnection then stateConnection:Disconnect() end
         if humanoid then
             stateConnection = humanoid.StateChanged:Connect(function(oldState, newState)
@@ -1835,7 +1811,6 @@ local function toggleGodMode(enabled)
     else
         print("❌ God Mode: OFF")
 
-        -- Disconnect semua connection
         if healthConnection then
             healthConnection:Disconnect()
             healthConnection = nil
@@ -1845,7 +1820,6 @@ local function toggleGodMode(enabled)
             stateConnection = nil
         end
 
-        -- Pulihkan nyawa asal
         if humanoid then
             humanoid.MaxHealth = initialMaxHealth
             humanoid.Health = initialMaxHealth
@@ -1853,16 +1827,358 @@ local function toggleGodMode(enabled)
     end
 end
 
--- TAMBAH INI: Untuk pastikan God Mode kekal selepas respawn
 player.CharacterAdded:Connect(function(newCharacter)
     if godModeEnabled then
-        task.wait(1) -- Tunggu sebentar untuk humanoid dimuatkan
-        toggleGodMode(true) -- Aktifkan semula
+        task.wait(1)
+        toggleGodMode(true)
         print("🔄 God Mode re-enabled after respawn")
     end
 end)
 
--- ==================== EXTERNAL SCRIPT FUNCTIONS (UPDATED) ====================
+-- ==================== SENTRY DESTROYER SECTION - START ====================
+    
+    -- Settings (prefix dengan SD_ to avoid collision)
+    local SD_sentryEnabled = false
+    local SD_sentryConn = nil
+    local SD_lightCheckConn = nil
+    local SD_activeSentries = {}
+    local SD_sentrySpawnTimes = {}
+    local SD_MAX_HITS = 150
+    local SD_NEW_SENTRY_DELAY = 4.0
+    
+    -- FPS OPTIMIZATION
+    local SD_cachedBat = nil
+    local SD_batCacheTime = 0
+    local SD_BAT_CACHE_DURATION = 0.3
+
+    -- FUNCTIONS
+    local isOwnedByPlayer, findBat, equipBat, unequipBat
+    local destroySentry, lightweightCheck, startSentryWatch, stopSentryWatch
+    
+    isOwnedByPlayer = function(sentry)
+        local sentryName = sentry.Name
+        local myUserId = tostring(player.UserId)
+        
+        if string.find(sentryName, myUserId) then
+            return true
+        end
+        
+        if string.find(sentryName:lower(), player.Name:lower()) then
+            return true
+        end
+        
+        local function searchForOwner(parent)
+            for _, child in ipairs(parent:GetDescendants()) do
+                if child.Name == "Owner" or child.Name == "Creator" or child.Name == "PlacedBy" then
+                    if child:IsA("ObjectValue") and child.Value == player then
+                        return true
+                    elseif child:IsA("StringValue") and (child.Value == player.Name or child.Value == myUserId) then
+                        return true
+                    elseif (child:IsA("IntValue") or child:IsA("NumberValue")) and child.Value == player.UserId then
+                        return true
+                    end
+                end
+            end
+            return false
+        end
+        
+        if searchForOwner(sentry) then
+            return true
+        end
+        
+        local possibleAttributes = {"PlayerUserId", "UserId", "CreatorId", "PlacedByUserId", "PlayerId", "Owner", "Creator"}
+        for _, attrName in ipairs(possibleAttributes) do
+            local attrValue = sentry:GetAttribute(attrName)
+            if attrValue then
+                if attrValue == player.UserId or attrValue == myUserId or attrValue == player.Name then
+                    return true
+                end
+            end
+        end
+        
+        return false
+    end
+    
+    findBat = function()
+        local currentTime = tick()
+        if SD_cachedBat and SD_cachedBat.Parent and (currentTime - SD_batCacheTime) < SD_BAT_CACHE_DURATION then
+            return SD_cachedBat
+        end
+        
+        local tool = nil
+        pcall(function()
+            tool = player.Backpack:FindFirstChild("Bat")
+            if not tool and player.Character then
+                tool = player.Character:FindFirstChild("Bat")
+            end
+        end)
+        
+        if tool then
+            SD_cachedBat = tool
+            SD_batCacheTime = currentTime
+        end
+        
+        return tool
+    end
+    
+    equipBat = function()
+        local bat = findBat()
+        if bat and bat.Parent == player.Backpack then
+            pcall(function()
+                player.Character.Humanoid:EquipTool(bat)
+            end)
+            return true
+        end
+        return bat and bat.Parent == player.Character
+    end
+    
+    unequipBat = function()
+        local bat = findBat()
+        if bat and bat.Parent == player.Character then
+            pcall(function()
+                player.Character.Humanoid:UnequipTools()
+            end)
+        end
+    end
+    
+    destroySentry = function(desc, isNewlyPlaced)
+        if not SD_sentryEnabled then return end
+        if SD_activeSentries[desc] then return end
+        
+        if isOwnedByPlayer(desc) then
+            return
+        end
+        
+        local char = player.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
+        SD_activeSentries[desc] = true
+
+        if not desc.Parent or not SD_sentryEnabled then 
+            SD_activeSentries[desc] = nil
+            return 
+        end
+
+        if isNewlyPlaced then
+            task.wait(SD_NEW_SENTRY_DELAY)
+            
+            if not desc.Parent or not SD_sentryEnabled then
+                SD_activeSentries[desc] = nil
+                return
+            end
+            
+            if isOwnedByPlayer(desc) then
+                SD_activeSentries[desc] = nil
+                return
+            end
+        end
+
+        local bat = findBat()
+        if not bat then
+            SD_activeSentries[desc] = nil
+            return
+        end
+
+        local hitCount = 0
+        local running = true
+        
+        task.spawn(function()
+            while running and SD_sentryEnabled and desc.Parent do
+                equipBat()
+                task.wait(0.05)
+                if not running then break end
+                unequipBat()
+                task.wait(0.05)
+            end
+        end)
+        
+        task.spawn(function()
+            task.wait(0.1)
+            
+            local spamConnection
+            local frameSkip = 0
+            
+            spamConnection = RunService.Heartbeat:Connect(function()
+                frameSkip = frameSkip + 1
+                if frameSkip % 2 == 0 then
+                    return
+                end
+                
+                if not SD_sentryEnabled or not desc.Parent or hitCount >= SD_MAX_HITS then
+                    running = false
+                    if spamConnection then
+                        spamConnection:Disconnect()
+                    end
+                    unequipBat()
+                    SD_activeSentries[desc] = nil
+                    SD_sentrySpawnTimes[desc] = nil
+                    SD_cachedBat = nil
+                    return
+                end
+                
+                local currentChar = player.Character
+                if currentChar and currentChar:FindFirstChild("HumanoidRootPart") then
+                    local currentHrp = currentChar.HumanoidRootPart
+                    local lookVector = currentHrp.CFrame.LookVector
+                    local targetPos = currentHrp.Position + lookVector * 3.5 + Vector3.new(0, 1.2, 0)
+                    
+                    pcall(function()
+                        if desc:IsA("Model") and desc.PrimaryPart then
+                            local currentCFrame = desc.PrimaryPart.CFrame
+                            local newCFrame = CFrame.new(targetPos) * (currentCFrame - currentCFrame.Position)
+                            desc:SetPrimaryPartCFrame(newCFrame)
+                        elseif desc:IsA("BasePart") then
+                            local currentCFrame = desc.CFrame
+                            desc.CFrame = CFrame.new(targetPos) * (currentCFrame - currentCFrame.Position)
+                        end
+                    end)
+                end
+                
+                local currentBat = findBat()
+                if currentBat and currentBat.Parent == player.Character then
+                    for i = 1, 12 do
+                        if currentBat.Parent == player.Character and desc.Parent then
+                            currentBat:Activate()
+                            hitCount = hitCount + 1
+                        else
+                            break
+                        end
+                    end
+                end
+            end)
+        end)
+    end
+    
+    lightweightCheck = function()
+        if not SD_sentryEnabled then return end
+        
+        for _, child in ipairs(Workspace:GetChildren()) do
+            if SD_sentryEnabled and (child:IsA("Model") or child:IsA("BasePart")) then
+                if string.find(child.Name:lower(), "sentry") and not SD_activeSentries[child] and child.Parent then
+                    if not isOwnedByPlayer(child) then
+                        task.spawn(function()
+                            destroySentry(child, false)
+                        end)
+                    end
+                end
+            end
+        end
+        
+        local folders = {"Map", "Assets", "Entities", "NPCs", "Spawns"}
+        for _, folderName in ipairs(folders) do
+            local folder = Workspace:FindFirstChild(folderName)
+            if folder then
+                for _, child in ipairs(folder:GetChildren()) do
+                    if SD_sentryEnabled and (child:IsA("Model") or child:IsA("BasePart")) then
+                        if string.find(child.Name:lower(), "sentry") and not SD_activeSentries[child] and child.Parent then
+                            if not isOwnedByPlayer(child) then
+                                task.spawn(function()
+                                    destroySentry(child, false)
+                                end)
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    startSentryWatch = function()
+        if SD_sentryConn then SD_sentryConn:Disconnect() end
+        if SD_lightCheckConn then SD_lightCheckConn:Disconnect() end
+        
+        SD_sentryConn = Workspace.DescendantAdded:Connect(function(desc)
+            if not SD_sentryEnabled then return end
+            if not desc:IsA("Model") and not desc:IsA("BasePart") then return end
+            
+            if string.find(desc.Name:lower(), "sentry") then
+                if desc.Parent and SD_sentryEnabled and not SD_activeSentries[desc] then
+                    if not isOwnedByPlayer(desc) then
+                        SD_sentrySpawnTimes[desc] = tick()
+                        
+                        task.spawn(function()
+                            destroySentry(desc, true)
+                        end)
+                    end
+                end
+            end
+        end)
+        
+        SD_lightCheckConn = RunService.Heartbeat:Connect(function()
+            if not SD_sentryEnabled then return end
+            task.wait(1.2)
+            lightweightCheck()
+        end)
+        
+        task.spawn(function()
+            lightweightCheck()
+        end)
+    end
+    
+    stopSentryWatch = function()
+        SD_sentryEnabled = false
+        
+        if SD_sentryConn then
+            SD_sentryConn:Disconnect()
+            SD_sentryConn = nil
+        end
+        
+        if SD_lightCheckConn then
+            SD_lightCheckConn:Disconnect()
+            SD_lightCheckConn = nil
+        end
+        
+        SD_activeSentries = {}
+        SD_sentrySpawnTimes = {}
+        SD_cachedBat = nil
+        unequipBat()
+    end
+    
+    -- GLOBAL FUNCTIONS EXPORT
+    _G.SentryDestroyer_Start = function()
+        SD_sentryEnabled = true
+        startSentryWatch()
+        print("[✅] Sentry Destroyer Started!")
+    end
+    
+    _G.SentryDestroyer_Stop = function()
+        stopSentryWatch()
+        print("[❌] Sentry Destroyer Stopped!")
+    end
+    
+    _G.SentryDestroyer_Toggle = function()
+        if SD_sentryEnabled then
+            _G.SentryDestroyer_Stop()
+        else
+            _G.SentryDestroyer_Start()
+        end
+        return SD_sentryEnabled
+    end
+    
+    print("[✅] Sentry Destroyer Functions Loaded!")
+end
+
+-- Toggle function for UI
+local function toggleAutoDestroyTurret(state)
+    if _G.SentryDestroyer_Toggle then
+        -- Sync internal state if needed, or just call the global toggle
+        -- The global toggle handles state checking internally, but we can just call it blindly
+        -- based on the 'state' passed from the UI.
+        
+        -- Check current internal state
+        local isRunning = false -- We don't have direct access to SD_sentryEnabled here easily without reading _G or making it global.
+        -- But we can just call Start/Stop based on the requested 'state'.
+        
+        if state then
+             _G.SentryDestroyer_Start()
+        else
+             _G.SentryDestroyer_Stop()
+        end
+    end
+end
+
+-- ==================== EXTERNAL SCRIPT FUNCTIONS ====================
 local function toggleUseCloner(state)
     if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Cloner.lua"))() end); print("✅ Use Cloner: Triggered") else print("❌ Use Cloner: OFF") end
 end
@@ -1879,7 +2195,6 @@ local function toggleWebslingControl(state)
     if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/WebslingControl.lua"))() end); print("✅ Websling Control: ON") else print("❌ Websling Control: OFF") end
 end
 
--- ==================== UNLOCK FLOOR FUNCTION (NEW) ====================
 local function toggleUnlockFloor(state)
     if state then
         pcall(function()
@@ -1891,7 +2206,6 @@ local function toggleUnlockFloor(state)
     end
 end
 
--- ==================== SILENT HIT FUNCTION (NEW) ====================
 local function toggleSilentHit(state)
     if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Silenthit.lua"))() end); print("✅ Silent Hit: ON") else print("❌ Silent Hit: OFF") end
 end
@@ -1905,32 +2219,32 @@ NightmareHub:AddMainToggle("Aimbot", function(state) toggleAutoLaser(state) end)
 NightmareHub:AddMainToggle("Xray Base", function(state) toggleXrayBase(state) end)
 NightmareHub:AddMainToggle("Semi Invisible", function(state) toggleInvisibleV1(state) end)
 NightmareHub:AddMainToggle("Auto Kick After Steal", function(state) toggleAutoKickAfterSteal(state) end)
-NightmareHub:AddMainToggle("Use Cloner", function(state) toggleUseCloner(state) end) -- CHANGED
-NightmareHub:AddMainToggle("Unlock Floor", function(state) toggleUnlockFloor(state) end) -- NEW
+NightmareHub:AddMainToggle("Use Cloner", function(state) toggleUseCloner(state) end)
+NightmareHub:AddMainToggle("Unlock Floor", function(state) toggleUnlockFloor(state) end)
 NightmareHub:AddMainToggle("Websling Kill", function(state) toggleWebslingKill(state) end)
 NightmareHub:AddMainToggle("Baselock Reminder", function(state) toggleBaselockReminder(state) end)
 NightmareHub:AddMainToggle("Websling Control", function(state) toggleWebslingControl(state) end)
-NightmareHub:AddMainToggle("Admin Panel Spammer", function(state) toggleAdminPanelSpammer(state) end) -- CHANGED
-NightmareHub:AddMainToggle("Instant Grab", function(state) toggleInstantGrab(state) end) -- Nama toggle tidak berubah
+NightmareHub:AddMainToggle("Admin Panel Spammer", function(state) toggleAdminPanelSpammer(state) end)
+NightmareHub:AddMainToggle("Instant Grab", function(state) toggleInstantGrab(state) end)
+NightmareHub:AddMainToggle("Auto Destroy Turret", function(state) toggleAutoDestroyTurret(state) end) -- NEW
 
 -- VISUAL TAB
 NightmareHub:AddVisualToggle("Esp Players", function(state) toggleESPPlayers(state) end)
-NightmareHub:AddVisualToggle("Esp Best", function(state) toggleEspBest(state) end) -- CHANGED from "Esp Best"
+NightmareHub:AddVisualToggle("Esp Best", function(state) toggleEspBest(state) end)
 NightmareHub:AddVisualToggle("Esp Base Timer", function(state) toggleEspBaseTimer(state) end)
 NightmareHub:AddVisualToggle("Base Line", function(state) toggleBaseLine(state) end)
 NightmareHub:AddVisualToggle("Esp Turret", function(state) toggleSentryESP(state) end)
-NightmareHub:AddVisualToggle("Esp Trap", function(state) toggleEspTrap(state) end) -- NEW
+NightmareHub:AddVisualToggle("Esp Trap", function(state) toggleEspTrap(state) end)
 
 -- MISC TAB
 NightmareHub:AddMiscToggle("Anti Debuff", function(state) toggleAntiDebuff(state) end)
 NightmareHub:AddMiscToggle("Grapple Speed", function(state) toggleGrappleSpeed(state) end)
 NightmareHub:AddMiscToggle("Anti Knockback", function(state) toggleAntiKnockback(state) end)
 NightmareHub:AddMiscToggle("Anti Ragdoll", function(state) toggleAntiRagdoll(state) end)
--- Anti Trap toggle and function have been removed.
 NightmareHub:AddMiscToggle("Touch Fling V2", function(state) toggleTouchFling(state) end)
 NightmareHub:AddMiscToggle("Allow Friends", function(state) toggleAllowFriends(state) end)
-NightmareHub:AddMiscToggle("Silent Hit", function(state) toggleSilentHit(state) end) -- NEW
-NightmareHub:AddMiscToggle("Unwalk Anim", function(state) toggleUnwalkAnimation(state) end) -- NEW
-NightmareHub:AddMiscToggle("God Mode", function(state) toggleGodMode(state) end) -- NEW
+NightmareHub:AddMiscToggle("Silent Hit", function(state) toggleSilentHit(state) end)
+NightmareHub:AddMiscToggle("Unwalk Anim", function(state) toggleUnwalkAnimation(state) end)
+NightmareHub:AddMiscToggle("God Mode", function(state) toggleGodMode(state) end)
 
 print("🎮 NightmareHub Loaded Successfully!")
