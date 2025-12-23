@@ -14,6 +14,7 @@
     - [ADDED] "Unwalk Anim" toggle to the Misc tab.
     - [ADDED] "God Mode" toggle to the Misc tab.
     - [ADDED] "Esp Trap" toggle to the Visual tab.
+    - [ADDED] "Auto Destroy Turret" toggle to the Main tab.
 ]]
 
 -- ==================== LOAD LIBRARY ====================
@@ -154,8 +155,8 @@ local healthConnection = nil
 local stateConnection = nil
 local initialMaxHealth = 100
 
--- Auto Destroy Turret Variables
-local autoDestroyTurretEnabled = false
+-- Auto Destroy Turret Variables --[ADDED]
+local autoDestroyTurretEnabled = false --[ADDED]
 
 -- ==================== PLATFORM FUNCTION ====================
 local function createPlatform()
@@ -1899,18 +1900,18 @@ local function toggleSilentHit(state)
     if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Silenthit.lua"))() end); print("✅ Silent Hit: ON") else print("❌ Silent Hit: OFF") end
 end
 
--- ==================== AUTO DESTROY TURRET FUNCTION ====================
-local function toggleAutoDestroyTurret(state)
-    autoDestroyTurretEnabled = state
-    if state then
-        pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/DestroyTurret.lua"))()
-        end)
-        print("✅ Auto Destroy Turret: ON")
-    else
-        print("❌ Auto Destroy Turret: OFF")
-    end
-end
+-- ==================== AUTO DESTROY TURRET FUNCTION (NEW) ==================== --[ADDED]
+local function toggleAutoDestroyTurret(state) --[ADDED]
+    autoDestroyTurretEnabled = state --[ADDED]
+    if state then --[ADDED]
+        pcall(function() --[ADDED]
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/DestroyTurret.lua"))() --[ADDED]
+        end) --[ADDED]
+        print("✅ Auto Destroy Turret: ON") --[ADDED]
+    else --[ADDED]
+        print("❌ Auto Destroy Turret: OFF") --[ADDED]
+    end --[ADDED]
+end --[ADDED]
 
 -- ==================== CREATE UI AND ADD TOGGLES ====================
 NightmareHub:CreateUI()
@@ -1928,7 +1929,7 @@ NightmareHub:AddMainToggle("Baselock Reminder", function(state) toggleBaselockRe
 NightmareHub:AddMainToggle("Websling Control", function(state) toggleWebslingControl(state) end)
 NightmareHub:AddMainToggle("Admin Panel Spammer", function(state) toggleAdminPanelSpammer(state) end) -- CHANGED
 NightmareHub:AddMainToggle("Instant Grab", function(state) toggleInstantGrab(state) end) -- Nama toggle tidak berubah
-NightmareHub:AddMainToggle("Auto Destroy Turret", function(state) toggleAutoDestroyTurret(state) end)
+NightmareHub:AddMainToggle("Auto Destroy Turret", function(state) toggleAutoDestroyTurret(state) end) --[ADDED]
 
 -- VISUAL TAB
 NightmareHub:AddVisualToggle("Esp Players", function(state) toggleESPPlayers(state) end)
