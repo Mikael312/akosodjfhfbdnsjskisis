@@ -2018,9 +2018,10 @@ player.CharacterAdded:Connect(function()
     if autoDestroyTurretEnabled then
         stopSentryWatch()
         autoDestroyTurretEnabled = false
-        -- If you want it to re-enable on respawn, uncomment the next two lines
-        -- task.wait(1)
-        -- toggleAutoDestroyTurret(true)
+        
+        -- Dua baris ini sekarang AKTIF
+        task.wait(1) 
+        toggleAutoDestroyTurret(true) 
     end
 end)
 
