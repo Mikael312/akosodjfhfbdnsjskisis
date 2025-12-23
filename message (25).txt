@@ -2200,11 +2200,6 @@ local function nukeVisualEffects()
                     obj.Enabled = false
                     obj:Destroy()
                     
-                -- Destroy beams
-                elseif obj:IsA("Beam") then
-                    obj.Enabled = false
-                    obj:Destroy()
-                    
                 -- Destroy all lights
                 elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
                     obj.Enabled = false
@@ -2289,32 +2284,7 @@ function OPTIMIZER.Enable()
                 end)
             end
         end
-        
-        -- Remove atmosphere
-        local atmo = S.Lighting:FindFirstChildOfClass("Atmosphere")
-        if atmo then atmo:Destroy() end
-        
-        -- Remove bloom
-        local bloom = S.Lighting:FindFirstChildOfClass("BloomEffect")
-        if bloom then bloom:Destroy() end
-        
-        -- Remove blur
-        local blur = S.Lighting:FindFirstChildOfClass("BlurEffect")
-        if blur then blur:Destroy() end
-        
-        -- Remove color correction
-        local cc = S.Lighting:FindFirstChildOfClass("ColorCorrectionEffect")
-        if cc then cc:Destroy() end
-        
-        -- Remove sun rays
-        local sunrays = S.Lighting:FindFirstChildOfClass("SunRaysEffect")
-        if sunrays then sunrays:Destroy() end
-        
-        -- Remove depth of field
-        local dof = S.Lighting:FindFirstChildOfClass("DepthOfFieldEffect")
-        if dof then dof:Destroy() end
-    end)
-    
+
     -- 3. ULTRA POTATO Physics
     pcall(function()
         local physics = settings().Physics
@@ -2353,80 +2323,7 @@ function OPTIMIZER.Enable()
             end
         end)
     end))
-    
-    -- 7. Character optimizer (event-based, ULTRA POTATO)
-    local function optimizeCharacter(char)
-        if not char then return end
         
-        task.spawn(function()
-            task.wait(0.5)
-            
-            pcall(function()
-                for _, part in ipairs(char:GetDescendants()) do
-                    pcall(function()
-                        if part:IsA("BasePart") then
-                            part.CastShadow = false
-                            part.Material = Enum.Material.Plastic
-                            part.Reflectance = 0
-                            
-                        elseif part:IsA("ParticleEmitter") or part:IsA("Trail") or part:IsA("Beam") then
-                            part:Destroy()
-                            
-                        elseif part:IsA("PointLight") or part:IsA("SpotLight") or part:IsA("SurfaceLight") then
-                            part:Destroy()
-                            
-                        elseif part:IsA("Fire") or part:IsA("Smoke") or part:IsA("Sparkles") then
-                            part:Destroy()
-                        end
-                    end)
-                end
-            end)
-        end)
-    end
-    
-    -- Optimize current characters
-    for _, player in ipairs(S.Players:GetPlayers()) do
-        if player.Character then
-            optimizeCharacter(player.Character)
-        end
-        
-        addConnection(player.CharacterAdded:Connect(function(char)
-            if getgenv().OPTIMIZER_ACTIVE then
-                optimizeCharacter(char)
-            end
-        end))
-    end
-    
-    addConnection(S.Players.PlayerAdded:Connect(function(player)
-        addConnection(player.CharacterAdded:Connect(function(char)
-            if getgenv().OPTIMIZER_ACTIVE then
-                optimizeCharacter(char)
-            end
-        end))
-    end))
-    
-    -- 8. Memory cleanup (less aggressive - every 15 seconds)
-    addThread(function()
-        while getgenv().OPTIMIZER_ACTIVE do
-            task.wait(15)
-            
-            pcall(function()
-                collectgarbage("collect")
-            end)
-        end
-    end)
-    
-    -- 9. FPS Unlocker
-    pcall(function()
-        setfpscap(999)
-    end)
-    
-    -- 10. Disable camera shake/effects
-    pcall(function()
-        local cam = workspace.CurrentCamera
-        cam.FieldOfView = 70
-    end)
-    
     showNotification("ULTRA POTATO Optimizer Enabled", COLORS.Success)
 end
 
@@ -6364,4 +6261,5 @@ if CONFIG.AUTO_HIDE_ENABLED then
             toggleGui()
         end
     end)
+
 end
