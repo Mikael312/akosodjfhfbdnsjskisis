@@ -155,6 +155,21 @@ local healthConnection = nil
 local stateConnection = nil
 local initialMaxHealth = 100
 
+-- Settings (prefix dengan SD_ to avoid collision)
+local SD_sentryEnabled = false
+local SD_sentryConn = nil
+local SD_lightCheckConn = nil
+local SD_activeSentries = {}
+local SD_sentrySpawnTimes = {}
+local SD_MAX_HITS = 150
+    
+local SD_NEW_SENTRY_DELAY = 4.0
+    
+-- FPS OPTIMIZATION
+local SD_cachedBat = nil
+local SD_batCacheTime = 0
+local SD_BAT_CACHE_DURATION = 0.3
+
 -- ==================== PLATFORM FUNCTION ====================
 local function createPlatform()
     if platformPart then return end
@@ -1837,21 +1852,6 @@ end)
 
 -- ==================== SENTRY DESTROYER SECTION - START ====================
     
-    -- Settings (prefix dengan SD_ to avoid collision)
-    local SD_sentryEnabled = false
-    local SD_sentryConn = nil
-    local SD_lightCheckConn = nil
-    local SD_activeSentries = {}
-    local SD_sentrySpawnTimes = {}
-    local SD_MAX_HITS = 150
-    local SD_NEW_SENTRY_DELAY = 4.0
-    
-    -- FPS OPTIMIZATION
-    local SD_cachedBat = nil
-    local SD_batCacheTime = 0
-    local SD_BAT_CACHE_DURATION = 0.3
-
-    -- FUNCTIONS
     local isOwnedByPlayer, findBat, equipBat, unequipBat
     local destroySentry, lightweightCheck, startSentryWatch, stopSentryWatch
     
