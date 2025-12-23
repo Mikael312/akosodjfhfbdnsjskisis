@@ -1898,17 +1898,9 @@ local function toggleSilentHit(state)
 end
 
 -- ==================== AUTO DESTROY TURRET FUNCTION (NEW) ==================== --[ADDED]
-local function toggleAutoDestroyTurret(state) --[ADDED]
-    autoDestroyTurretEnabled = state --[ADDED]
-    if state then --[ADDED]
-        pcall(function() --[ADDED]
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/DestroyTurret.lua"))() --[ADDED]
-        end) --[ADDED]
-        print("✅ Auto Destroy Turret: ON") --[ADDED]
-    else --[ADDED]
-        print("❌ Auto Destroy Turret: OFF") --[ADDED]
-    end --[ADDED]
-end --[ADDED]
+local function toggleSilentHit(state)
+    if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/DestroyTurret.lua"))() end); print("✅ Auto Destroy Turret: ON") else print("❌ Auto Destroy Turret: OFF") end
+end
 
 -- ==================== CREATE UI AND ADD TOGGLES ====================
 NightmareHub:CreateUI()
