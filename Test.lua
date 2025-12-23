@@ -10,8 +10,7 @@
     - Added "Unlock Floor" to Main tab.
     - [FIXED] ESP Base Timer flickering issue.
     - [FIXED] Instant Grab performance drop (FPS).
-    - [IMPROVED] Base Line function to target a specific plot.
-    - [ADDED] "Unwalk Animation" to Misc tab.
+    - [UPDATED] Base Line now targets the "Laser" part in the player's plot.
 ]]
 
 -- ==================== LOAD LIBRARY ====================
@@ -137,10 +136,6 @@ local originalConnections = {}
 local heartbeatConnection = nil
 local animationPlayedConnection = nil
 local BOOGIE_ANIMATION_ID = "109061983885712"
-
--- Unwalk Animation Variables
-local unwalkAnimationEnabled = false
-local unwalkConnections = {}
 
 
 -- ==================== ALL FEATURE FUNCTIONS ====================
@@ -1350,7 +1345,7 @@ end
 local function findNearestAllowed()
     if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return nil end
     local myPos = player.Character.HumanoidRootPart.Position; local nearest = nil; local nearestDist = math.huge
-    for _, pl in ipairs(Players:GetPlayers()) do if isValidTarget(pl) then local targetHRP = pl.Character:FindFirstChild("HumanoidRootPart"); if targetHRP then local d = (Vector3.new(targetHRP.Position.X, 0, targetHRP.Position.Z) - Vector3.new(myPos.X, 0, myPos.Z)).Magnitude; if d < nearestDist then nearestDist = d; nearest = pl end end end
+    for _, pl in ipairs(Players:GetPlayers()) do if isValidTarget(pl) then local targetHRP = pl.Character:FindFirstChild("HumanoidRootPart"); if targetHRP then local d = (Vector3.new(targetHRP.Position.X, 0, targetHRP.Position.Z) - Vector3.new(myPos.X, 0, myPos.Z)).Magnitude; if d < nearestDist then nearestDist = d; nearest = pl end end end end
     return nearest
 end
 
@@ -1410,31 +1405,47 @@ Workspace.ChildAdded:Connect(function(child)
 end)
 task.wait(1); scanForSentries()
 
--- ==================== BASE LINE FUNCTION (IMPROVED) ====================
+-- ==================== BASE LINE FUNCTION (UPDATED - TARGETS LASER) ====================
 local function findPlayerPlot()
-    -- Directly access the specific plot by its unique ID
-    local playerPlot = workspace.Plots:FindFirstChild("2e76ad42-fabb-4c10-8618-43234d4183de")
-    if playerPlot then
-        print("✅ Found player's plot by ID")
-        return playerPlot
-    else
-        warn("❌ Could not find the specific player plot by ID!")
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then
+        warn("❌ Plots folder not found!")
         return nil
     end
+    local playerBaseName = player.DisplayName .. "'s Base"
+    for _, plot in pairs(plots:GetChildren()) do
+        if plot:IsA("Model") or plot:IsA("Folder") then
+            local plotSign = plot:FindFirstChild("PlotSign")
+            if plotSign and plotSign:FindFirstChild("SurfaceGui") then
+                local surfaceGui = plotSign.SurfaceGui
+                if surfaceGui:FindFirstChild("Frame") and surfaceGui.Frame:FindFirstChild("TextLabel") then
+                    local plotSignText = surfaceGui.Frame.TextLabel.Text
+                    if plotSignText == playerBaseName then
+                        print("✅ Found player's plot:", plot.Name)
+                        return plot
+                    end
+                end
+            end
+        end
+    end
+    warn("❌ Player's base not found!")
+    return nil
 end
 
-local function findCollectZone(plot)
-    -- Find the "Laser" part within the specific plot
+-- [NEW] Function to find the Laser part
+local function findLaserPart(plot)
     if not plot then return nil end
     
-    local laserPart = plot:FindFirstChild("Laser")
-    if laserPart then
-        print("✅ Found Laser part in player's plot")
-        return laserPart
-    else
-        warn("❌ Could not find the 'Laser' part in the player's plot!")
-        return nil
+    -- Look for a child named "Laser" directly inside the plot model
+    local laser = plot:FindFirstChild("Laser")
+    
+    if laser and laser:IsA("BasePart") then
+        print("✅ Found Laser part:", laser.Name)
+        return laser
     end
+    
+    warn("❌ Laser part not found in plot!")
+    return nil
 end
 
 local function createPlotLine()
@@ -1442,22 +1453,24 @@ local function createPlotLine()
     if not Character then return false end
     local RootPart = Character:FindFirstChild("HumanoidRootPart")
     if not RootPart then return false end
-    
+
     local playerPlot = findPlayerPlot()
     if not playerPlot then
         warn("❌ Cannot find your base!")
         return false
     end
-    
-    local laserPart = findCollectZone(playerPlot)
+
+    -- [UPDATED] Use the new function to find the Laser part
+    local laserPart = findLaserPart(playerPlot)
     if not laserPart then
-        warn("❌ Cannot find the Laser part!")
+        warn("❌ Cannot find Laser part in your base!")
         return false
     end
-    
+
+    -- [UPDATED] Get position directly from the Laser part
     local targetPosition = laserPart.Position
-    print("📍 Creating line to Laser part at:", targetPosition)
-    
+    print("📍 Creating line to Laser at:", targetPosition)
+
     baseTargetPart = Instance.new("Part")
     baseTargetPart.Name = "PlotLineTarget"
     baseTargetPart.Size = Vector3.new(0.1, 0.1, 0.1)
@@ -1466,22 +1479,22 @@ local function createPlotLine()
     baseTargetPart.CanCollide = false
     baseTargetPart.Transparency = 1
     baseTargetPart.Parent = workspace
-    
+
     baseBeamPart = Instance.new("Part")
     baseBeamPart.Name = "PlotLineBeam"
     baseBeamPart.Size = Vector3.new(0.1, 0.1, 0.1)
     baseBeamPart.Transparency = 1
     baseBeamPart.CanCollide = false
     baseBeamPart.Parent = workspace
-    
+
     local att0 = Instance.new("Attachment")
     att0.Name = "Att0"
     att0.Parent = baseBeamPart
-    
+
     local att1 = Instance.new("Attachment")
     att1.Name = "Att1"
     att1.Parent = baseTargetPart
-    
+
     baseBeam = Instance.new("Beam")
     baseBeam.Name = "PlotLineBeam"
     baseBeam.Attachment0 = att0
@@ -1493,7 +1506,7 @@ local function createPlotLine()
     baseBeam.Transparency = NumberSequence.new(0)
     baseBeam.LightEmission = 0.5
     baseBeam.Parent = baseBeamPart
-    
+
     local pulseTime = 0
     local animateConnection
     animateConnection = RunService.Heartbeat:Connect(function(dt)
@@ -1508,7 +1521,7 @@ local function createPlotLine()
             end
         end
     end)
-    
+
     baseLineConnection = RunService.Heartbeat:Connect(function()
         local char = player.Character
         if not char or not char.Parent then
@@ -1520,16 +1533,28 @@ local function createPlotLine()
             baseBeamPart.CFrame = root.CFrame
         end
     end)
-    
-    print("✅ Base line created!")
+
+    print("✅ Base line to Laser created!")
     return true
 end
 
 local function stopPlotLine()
-    if baseLineConnection then baseLineConnection:Disconnect(); baseLineConnection = nil end
-    if baseBeamPart then baseBeamPart:Destroy(); baseBeamPart = nil end
-    if baseTargetPart then baseTargetPart:Destroy(); baseTargetPart = nil end
-    if baseBeam then baseBeam:Destroy(); baseBeam = nil end
+    if baseLineConnection then
+        baseLineConnection:Disconnect()
+        baseLineConnection = nil
+    end
+    if baseBeamPart then
+        baseBeamPart:Destroy()
+        baseBeamPart = nil
+    end
+    if baseTargetPart then
+        baseTargetPart:Destroy()
+        baseTargetPart = nil
+    end
+    if baseBeam then
+        baseBeam:Destroy()
+        baseBeam = nil
+    end
     print("🛑 Base line removed")
 end
 
@@ -1557,310 +1582,66 @@ end)
 
 -- ==================== UNIFIED ANTI DEBUFF SYSTEM ====================
 local function updateUseItemEventHandler()
-    local success, Event = pcall(function()
-        return require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net")):RemoteEvent("UseItem")
-    end)
-    if not success or not Event then
-        warn("Could not find UseItem event. Anti-Debuff feature will not work.")
-        return
-    end
-    
+    local success, Event = pcall(function() return require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net")):RemoteEvent("UseItem") end)
+    if not success or not Event then warn("Could not find UseItem event. Anti-Debuff feature will not work."); return end
     if not antiBeeEnabled and not antiBoogieEnabled then
-        if isEventHandlerActive then
-            print("Disabling unified event handler...")
-            if unifiedConnection then
-                unifiedConnection:Disconnect()
-                unifiedConnection = nil
-            end
-            for _, conn in pairs(originalConnections) do
-                pcall(function()
-                    conn:Enable()
-                end)
-            end
-            originalConnections = {}
-            isEventHandlerActive = false
-        end
-        return
+        if isEventHandlerActive then print("Disabling unified event handler..."); if unifiedConnection then unifiedConnection:Disconnect(); unifiedConnection = nil end; for _, conn in pairs(originalConnections) do pcall(function() conn:Enable() end) end; originalConnections = {}; isEventHandlerActive = false end; return
     end
-    
     if (antiBeeEnabled or antiBoogieEnabled) and not isEventHandlerActive then
-        print("Enabling unified event handler...")
-        for i, v in pairs(getconnections(Event.OnClientEvent)) do
-            table.insert(originalConnections, v)
-            pcall(function()
-                v:Disable()
-            end)
-        end
-        unifiedConnection = Event.OnClientEvent:Connect(function(Action, ...)
-            if antiBeeEnabled and Action == "Bee Attack" then
-                print("🐝 Blocked Bee Attack!")
-                return
-            end
-            if antiBoogieEnabled and Action == "Boogie" then
-                print("🕺 Blocked Boogie Bomb!")
-                return
-            end
-        end)
+        print("Enabling unified event handler..."); for i, v in pairs(getconnections(Event.OnClientEvent)) do table.insert(originalConnections, v); pcall(function() v:Disable() end) end
+        unifiedConnection = Event.OnClientEvent:Connect(function(Action, ...) if antiBeeEnabled and Action == "Bee Attack" then print("🐝 Blocked Bee Attack!"); return end; if antiBoogieEnabled and Action == "Boogie" then print("🕺 Blocked Boogie Bomb!"); return end end)
         isEventHandlerActive = true
     end
 end
 
 local function setupInstantAnimationBlocker()
-    local character = player.Character
-    if not character then return end
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid then return end
-    local animator = humanoid:FindFirstChildOfClass("Animator")
-    if not animator then return end
-    
-    if animationPlayedConnection then
-        animationPlayedConnection:Disconnect()
-    end
-    
-    animationPlayedConnection = animator.AnimationPlayed:Connect(function(track)
-        if track and track.Animation then
-            if tostring(track.Animation.AnimationId):gsub("%D", "") == BOOGIE_ANIMATION_ID then
-                track:Stop(0)
-                track:Destroy()
-                print("⚡ INSTANT BLOCK: Boogie animation destroyed!")
-            end
-        end
-    end)
+    local character = player.Character; if not character then return end; local humanoid = character:FindFirstChild("Humanoid"); if not humanoid then return end; local animator = humanoid:FindFirstChildOfClass("Animator"); if not animator then return end
+    if animationPlayedConnection then animationPlayedConnection:Disconnect() end
+    animationPlayedConnection = animator.AnimationPlayed:Connect(function(track) if track and track.Animation then if tostring(track.Animation.AnimationId):gsub("%D", "") == BOOGIE_ANIMATION_ID then track:Stop(0); track:Destroy(); print("⚡ INSTANT BLOCK: Boogie animation destroyed!") end end end)
 end
 
 local function enableContinuousMonitoring()
-    if heartbeatConnection then
-        heartbeatConnection:Disconnect()
-    end
-    local lastCheck = 0
-    
+    if heartbeatConnection then heartbeatConnection:Disconnect() end; local lastCheck = 0
     heartbeatConnection = RunService.Heartbeat:Connect(function()
-        local now = tick()
-        if now - lastCheck < 0.03 then
-            return
-        end
-        lastCheck = now
-        
+        local now = tick(); if now - lastCheck < 0.03 then return end; lastCheck = now
         pcall(function()
-            if Lighting:FindFirstChild("DiscoEffect") then
-                Lighting.DiscoEffect:Destroy()
-            end
-            for _, v in pairs(Lighting:GetChildren()) do
-                if v:IsA("BlurEffect") then
-                    v:Destroy()
-                end
-            end
-            
-            local camera = workspace.CurrentCamera
-            if camera and camera.FieldOfView > 70 and camera.FieldOfView <= 80 then
-                camera.FieldOfView = 70
-            end
-            
-            local boogieScript = player.PlayerScripts:FindFirstChild("Boogie", true)
-            if boogieScript then
-                local boom = boogieScript:FindFirstChild("BOOM")
-                if boom and boom:IsA("Sound") and boom.Playing then
-                    boom:Stop()
-                end
-            end
+            if Lighting:FindFirstChild("DiscoEffect") then Lighting.DiscoEffect:Destroy() end; for _, v in pairs(Lighting:GetChildren()) do if v:IsA("BlurEffect") then v:Destroy() end end
+            local camera = workspace.CurrentCamera; if camera and camera.FieldOfView > 70 and camera.FieldOfView <= 80 then camera.FieldOfView = 70 end
+            local boogieScript = player.PlayerScripts:FindFirstChild("Boogie", true); if boogieScript then local boom = boogieScript:FindFirstChild("BOOM"); if boom and boom:IsA("Sound") and boom.Playing then boom:Stop() end end
         end)
     end)
 end
 
 local function toggleAntiBee(state)
-    antiBeeEnabled = state
-    updateUseItemEventHandler()
-    
-    if antiBeeEnabled then
-        print("✅ Anti Bee Enabled")
-    else
-        print("❌ Anti Bee Disabled")
-    end
+    antiBeeEnabled = state; updateUseItemEventHandler(); if antiBeeEnabled then print("✅ Anti Bee Enabled") else print("❌ Anti Bee Disabled") end
 end
 
 local function toggleAntiBoogie(state)
-    antiBoogieEnabled = state
-    
-    if antiBoogieEnabled then
-        setupInstantAnimationBlocker()
-        enableContinuousMonitoring()
-        print("✅ Anti Boogie Bomb: ENABLED (3-Layer Defense)")
-    else
-        if animationPlayedConnection then
-            animationPlayedConnection:Disconnect()
-            animationPlayedConnection = nil
-        end
-        if heartbeatConnection then
-            heartbeatConnection:Disconnect()
-            heartbeatConnection = nil
-        end
-        print("❌ Anti Boogie Bomb: DISABLED")
-    end
-    
-    updateUseItemEventHandler()
+    antiBoogieEnabled = state; if antiBoogieEnabled then setupInstantAnimationBlocker(); enableContinuousMonitoring(); print("✅ Anti Boogie Bomb: ENABLED (3-Layer Defense)")
+    else if animationPlayedConnection then animationPlayedConnection:Disconnect(); animationPlayedConnection = nil end; if heartbeatConnection then heartbeatConnection:Disconnect(); heartbeatConnection = nil end; print("❌ Anti Boogie Bomb: DISABLED") end; updateUseItemEventHandler()
 end
 
 local function toggleAntiDebuff(state)
-    toggleAntiBee(state)
-    toggleAntiBoogie(state)
+    toggleAntiBee(state); toggleAntiBoogie(state)
 end
 
-player.CharacterAdded:Connect(function(newCharacter)
-    if antiBoogieEnabled then
-        task.wait(0.5)
-        setupInstantAnimationBlocker()
-        print("🔄 Reloaded animation blocker after respawn")
-    end
-end)
-
--- ==================== UNWALK ANIMATION FUNCTION (NEW) ====================
-local function setupNoWalkAnimation(character)
-    local humanoid = character:WaitForChild("Humanoid")
-    local animator = humanoid:WaitForChild("Animator")
-    
-    local function stopAllAnimations()
-        local tracks = animator:GetPlayingAnimationTracks()
-        for _, track in pairs(tracks) do
-            if track.IsPlaying then
-                track:Stop()
-            end
-        end
-    end
-    
-    -- Initial stop
-    stopAllAnimations()
-    
-    -- Stop animations when running
-    local runningConn = humanoid.Running:Connect(function(speed)
-        stopAllAnimations()
-    end)
-    
-    -- Stop animations when jumping
-    local jumpingConn = humanoid.Jumping:Connect(function()
-        stopAllAnimations()
-    end)
-    
-    -- Stop any new animations that try to play
-    local animPlayedConn = animator.AnimationPlayed:Connect(function(animationTrack)
-        animationTrack:Stop()
-    end)
-    
-    -- Continuous stop on RenderStepped
-    local renderConn = RunService.RenderStepped:Connect(function()
-        stopAllAnimations()
-    end)
-    
-    print("🚫 No Walk Animation: ACTIVE")
-    
-    -- Return connections for cleanup
-    return {
-        running = runningConn,
-        jumping = jumpingConn,
-        animPlayed = animPlayedConn,
-        render = renderConn
-    }
-end
-
-local function toggleUnwalkAnimation(state)
-    unwalkAnimationEnabled = state
-    
-    if unwalkAnimationEnabled then
-        print("✅ Unwalk Animation: ON")
-        
-        -- Setup for current character if it exists
-        if player.Character then
-            -- Disconnect any existing connections first
-            for _, conn in pairs(unwalkConnections) do
-                if conn then
-                    conn:Disconnect()
-                end
-            end
-            unwalkConnections = {}
-            
-            -- Setup new connections
-            local connections = setupNoWalkAnimation(player.Character)
-            for _, conn in pairs(connections) do
-                table.insert(unwalkConnections, conn)
-            end
-        end
-        
-        -- Setup for future characters (respawn)
-        if not characterConnection then
-            characterConnection = player.CharacterAdded:Connect(function(newCharacter)
-                if unwalkAnimationEnabled then
-                    task.wait(0.5)
-                    -- Disconnect any existing connections first
-                    for _, conn in pairs(unwalkConnections) do
-                        if conn then
-                            conn:Disconnect()
-                        end
-                    end
-                    unwalkConnections = {}
-                    
-                    -- Setup new connections
-                    local connections = setupNoWalkAnimation(newCharacter)
-                    for _, conn in pairs(connections) do
-                        table.insert(unwalkConnections, conn)
-                    end
-                end
-            end)
-        end
-    else
-        print("❌ Unwalk Animation: OFF")
-        
-        -- Disconnect all connections
-        for _, conn in pairs(unwalkConnections) do
-            if conn then
-                conn:Disconnect()
-            end
-        end
-        unwalkConnections = {}
-    end
-end
+player.CharacterAdded:Connect(function(newCharacter) if antiBoogieEnabled then task.wait(0.5); setupInstantAnimationBlocker(); print("🔄 Reloaded animation blocker after respawn") end end)
 
 -- ==================== EXTERNAL SCRIPT FUNCTIONS (UPDATED) ====================
 local function toggleUseCloner(state)
-    if state then
-        pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Cloner.lua"))()
-        end)
-        print("✅ Use Cloner: Triggered")
-    else
-        print("❌ Use Cloner: OFF")
-    end
+    if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Cloner.lua"))() end); print("✅ Use Cloner: Triggered") else print("❌ Use Cloner: OFF") end
 end
 
 local function toggleAdminPanelSpammer(state)
-    if state then
-        pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Spammer.lua"))()
-        end)
-        print("✅ Admin Panel Spammer: ON")
-    else
-        print("❌ Admin Panel Spammer: OFF")
-    end
+    if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Spammer.lua"))() end); print("✅ Admin Panel Spammer: ON") else print("❌ Admin Panel Spammer: OFF") end
 end
 
 local function toggleWebslingKill(state)
-    if state then
-        pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Webslingkill.lua"))()
-        end)
-        print("✅ Websling Kill: ON")
-    else
-        print("❌ Websling Kill: OFF")
-    end
+    if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Webslingkill.lua"))() end); print("✅ Websling Kill: ON") else print("❌ Websling Kill: OFF") end
 end
 
 local function toggleWebslingControl(state)
-    if state then
-        pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/WebslingControl.lua"))()
-        end)
-        print("✅ Websling Control: ON")
-    else
-        print("❌ Websling Control: OFF")
-    end
+    if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/WebslingControl.lua"))() end); print("✅ Websling Control: ON") else print("❌ Websling Control: OFF") end
 end
 
 -- ==================== UNLOCK FLOOR FUNCTION (NEW) ====================
@@ -1877,14 +1658,7 @@ end
 
 -- ==================== SILENT HIT FUNCTION (NEW) ====================
 local function toggleSilentHit(state)
-    if state then
-        pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Silenthit.lua"))()
-        end)
-        print("✅ Silent Hit: ON")
-    else
-        print("❌ Silent Hit: OFF")
-    end
+    if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Silenthit.lua"))() end); print("✅ Silent Hit: ON") else print("❌ Silent Hit: OFF") end
 end
 
 -- ==================== CREATE UI AND ADD TOGGLES ====================
@@ -1920,6 +1694,5 @@ NightmareHub:AddMiscToggle("Anti Ragdoll", function(state) toggleAntiRagdoll(sta
 NightmareHub:AddMiscToggle("Touch Fling V2", function(state) toggleTouchFling(state) end)
 NightmareHub:AddMiscToggle("Allow Friends", function(state) toggleAllowFriends(state) end)
 NightmareHub:AddMiscToggle("Silent Hit", function(state) toggleSilentHit(state) end) -- NEW
-NightmareHub:AddMiscToggle("Unwalk Animation", function(state) toggleUnwalkAnimation(state) end) -- NEW
 
 print("🎮 NightmareHub Loaded Successfully!")
