@@ -10,7 +10,8 @@
     - Added "Unlock Floor" to Main tab.
     - [FIXED] ESP Base Timer flickering issue.
     - [FIXED] Instant Grab performance drop (FPS).
-    - [UPDATED] Base Line now targets the "Laser" part in the player's plot.
+    - [UPDATED] Base Line now targets the "PlotSign" in the player's plot.
+    - [ADDED] "Unwalk Anim" toggle to the Misc tab.
 ]]
 
 -- ==================== LOAD LIBRARY ====================
@@ -136,6 +137,10 @@ local originalConnections = {}
 local heartbeatConnection = nil
 local animationPlayedConnection = nil
 local BOOGIE_ANIMATION_ID = "109061983885712"
+
+-- Unwalk Anim Variables (NEW)
+local unwalkAnimEnabled = false
+local unwalkAnimConnections = {}
 
 
 -- ==================== ALL FEATURE FUNCTIONS ====================
@@ -1438,7 +1443,7 @@ local function createPlotLine()
     local RootPart = Character:FindFirstChild("HumanoidRootPart")
     if not RootPart then return false end
 
-    -- [UPDATED] Get both the plot and the sign
+    -- [UPDATED] Get both the plot and sign
     local playerPlot, plotSign = findPlayerPlot()
     if not playerPlot or not plotSign then
         warn("❌ Cannot find your base or its sign!")
@@ -1605,6 +1610,79 @@ end
 
 player.CharacterAdded:Connect(function(newCharacter) if antiBoogieEnabled then task.wait(0.5); setupInstantAnimationBlocker(); print("🔄 Reloaded animation blocker after respawn") end end)
 
+-- ==================== UNWALK ANIM FUNCTION (NEW) ====================
+local function startUnwalkAnimation(character)
+    character = character or player.Character
+    if not character then return end
+
+    -- Disconnect any existing connections first
+    stopUnwalkAnimation()
+
+    local humanoid = character:WaitForChild("Humanoid")
+    local animator = humanoid:WaitForChild("Animator")
+    
+    local function stopAllAnimations()
+        local tracks = animator:GetPlayingAnimationTracks()
+        for _, track in pairs(tracks) do
+            if track.IsPlaying then
+                track:Stop()
+            end
+        end
+    end
+    
+    -- Initial stop
+    stopAllAnimations()
+    
+    -- Stop animations when running
+    local runningConn = humanoid.Running:Connect(stopAllAnimations)
+    table.insert(unwalkAnimConnections, runningConn)
+
+    -- Stop animations when jumping
+    local jumpingConn = humanoid.Jumping:Connect(stopAllAnimations)
+    table.insert(unwalkAnimConnections, jumpingConn)
+    
+    -- Stop any new animations that try to play
+    local animPlayedConn = animator.AnimationPlayed:Connect(function(animationTrack)
+        animationTrack:Stop()
+    end)
+    table.insert(unwalkAnimConnections, animPlayedConn)
+    
+    -- Continuous stop on RenderStepped (can be performance heavy)
+    local renderSteppedConn = RunService.RenderStepped:Connect(stopAllAnimations)
+    table.insert(unwalkAnimConnections, renderSteppedConn)
+    
+    print("🚫 Unwalk Animation: ACTIVE")
+end
+
+local function stopUnwalkAnimation()
+    for _, connection in pairs(unwalkAnimConnections) do
+        if connection then
+            connection:Disconnect()
+        end
+    end
+    unwalkAnimConnections = {}
+    print("🚫 Unwalk Animation: INACTIVE")
+end
+
+local function toggleUnwalkAnimation(state)
+    unwalkAnimEnabled = state
+    if unwalkAnimEnabled then
+        if player.Character then
+            startUnwalkAnimation(player.Character)
+        end
+    else
+        stopUnwalkAnimation()
+    end
+end
+
+player.CharacterAdded:Connect(function(newCharacter)
+    if unwalkAnimEnabled then
+        task.wait(1) -- Wait for character to load
+        startUnwalkAnimation(newCharacter)
+        print("🔄 Reloaded Unwalk Animation after respawn")
+    end
+end)
+
 -- ==================== EXTERNAL SCRIPT FUNCTIONS (UPDATED) ====================
 local function toggleUseCloner(state)
     if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Cloner.lua"))() end); print("✅ Use Cloner: Triggered") else print("❌ Use Cloner: OFF") end
@@ -1672,5 +1750,6 @@ NightmareHub:AddMiscToggle("Anti Ragdoll", function(state) toggleAntiRagdoll(sta
 NightmareHub:AddMiscToggle("Touch Fling V2", function(state) toggleTouchFling(state) end)
 NightmareHub:AddMiscToggle("Allow Friends", function(state) toggleAllowFriends(state) end)
 NightmareHub:AddMiscToggle("Silent Hit", function(state) toggleSilentHit(state) end) -- NEW
+NightmareHub:AddMiscToggle("Unwalk Anim", function(state) toggleUnwalkAnimation(state) end) -- NEW
 
 print("🎮 NightmareHub Loaded Successfully!")
