@@ -1631,10 +1631,24 @@ end
 
 player.CharacterAdded:Connect(function(newCharacter) if antiBoogieEnabled then task.wait(0.5); setupInstantAnimationBlocker(); print("🔄 Reloaded animation blocker after respawn") end end)
 
--- ==================== UNWALK ANIM FUNCTION (NEW) ====================
+-- ==================== UNWALK ANIM FUNCTION (NEW - FIXED) ====================
+local function stopUnwalkAnimation()
+    -- Putuskan semua sambungan yang aktif
+    for _, connection in pairs(unwalkAnimConnections) do
+        if connection then
+            connection:Disconnect()
+        end
+    end
+    unwalkAnimConnections = {} -- Kosongkan table
+    print("🚫 Unwalk Animation: INACTIVE")
+end
+
 local function setupNoWalkAnimation(character)
     character = character or player.Character
     if not character then return end
+
+    -- Putuskan sambungan lama terlebih dahulu untuk elakkan leak
+    stopUnwalkAnimation()
 
     local humanoid = character:WaitForChild("Humanoid")
     local animator = humanoid:WaitForChild("Animator")
@@ -1649,24 +1663,22 @@ local function setupNoWalkAnimation(character)
     end
     
     -- Hentikan animasi semasa berlari
-    humanoid.Running:Connect(function(speed)
-        stopAllAnimations()
-    end)
-    
+    local runningConn = humanoid.Running:Connect(stopAllAnimations)
+    table.insert(unwalkAnimConnections, runningConn)
+
     -- Hentikan animasi semasa melompat
-    humanoid.Jumping:Connect(function()
-        stopAllAnimations()
-    end)
+    local jumpingConn = humanoid.Jumping:Connect(stopAllAnimations)
+    table.insert(unwalkAnimConnections, jumpingConn)
     
     -- Hentikan sebarang animasi baru yang cuba dimainkan
-    animator.AnimationPlayed:Connect(function(animationTrack)
+    local animPlayedConn = animator.AnimationPlayed:Connect(function(animationTrack)
         animationTrack:Stop()
     end)
+    table.insert(unwalkAnimConnections, animPlayedConn)
     
     -- Hentikan animasi secara berterusan pada setiap frame
-    RunService.RenderStepped:Connect(function()
-        stopAllAnimations()
-    end)
+    local renderSteppedConn = RunService.RenderStepped:Connect(stopAllAnimations)
+    table.insert(unwalkAnimConnections, renderSteppedConn)
     
     print("✅ No Walk Animation: AKTIF")
 end
@@ -1677,6 +1689,8 @@ local function toggleUnwalkAnimation(state)
         if player.Character then
             setupNoWalkAnimation(player.Character)
         end
+    else
+        stopUnwalkAnimation()
     end
 end
 
