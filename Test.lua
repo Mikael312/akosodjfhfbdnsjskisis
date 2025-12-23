@@ -12,6 +12,8 @@
     - [FIXED] Instant Grab performance drop (FPS).
     - [UPDATED] Base Line now targets the "PlotSign" in the player's plot.
     - [ADDED] "Unwalk Anim" toggle to the Misc tab.
+    - [ADDED] "God Mode" toggle to the Misc tab.
+    - [ADDED] "Auto Destroy Turret" toggle to the Main tab.
 ]]
 
 -- ==================== LOAD LIBRARY ====================
@@ -140,13 +142,27 @@ local BOOGIE_ANIMATION_ID = "109061983885712"
 
 -- Unwalk Anim Variables (NEW)
 local unwalkAnimEnabled = false
-local unwalkAnimConnections = {}
 
 -- God Mode Variables (NEW)
 local godModeEnabled = false
 local healthConnection = nil
 local stateConnection = nil
 local initialMaxHealth = 100
+
+-- Auto Destroy Turret Variables (NEW)
+local autoDestroyTurretEnabled = false
+local sentryConn = nil
+local lightCheckConn = nil
+local activeSentries = {}
+local sentrySpawnTimes = {} -- Track when sentries were added
+local MAX_HITS = 150
+local NEW_SENTRY_DELAY = 4.0 -- Wait time for newly placed sentries
+
+-- FPS OPTIMIZATION: Cache frequently accessed objects
+local cachedBat = nil
+local batCacheTime = 0
+local BAT_CACHE_DURATION = 0.3
+
 
 -- ==================== ALL FEATURE FUNCTIONS ====================
 -- (Pasted from previous response for brevity)
@@ -1448,7 +1464,7 @@ local function createPlotLine()
     local RootPart = Character:FindFirstChild("HumanoidRootPart")
     if not RootPart then return false end
 
-    -- [UPDATED] Get both the plot and sign
+    -- [UPDATED] Get both the plot and the sign
     local playerPlot, plotSign = findPlayerPlot()
     if not playerPlot or not plotSign then
         warn("❌ Cannot find your base or its sign!")
@@ -1743,6 +1759,274 @@ player.CharacterAdded:Connect(function(newCharacter)
     end
 end)
 
+-- ==================== AUTO DESTROY TURRET FUNCTION ====================
+-- === HELPER FUNCTIONS ===
+local function isOwnedByPlayer(sentry)
+    -- PRIMARY METHOD: Check if UserId is in sentry name
+    local sentryName = sentry.Name
+    local myUserId = tostring(player.UserId)
+    
+    if string.find(sentryName, myUserId) then
+        return true
+    end
+    
+    -- BACKUP METHOD: Check if player name is in sentry name
+    if string.find(sentryName:lower(), player.Name:lower()) then
+        return true
+    end
+    
+    -- No match found - it's an enemy sentry
+    return false
+end
+
+local function findBat()
+    -- FPS BOOST: Use cached bat if still valid
+    local currentTime = tick()
+    if cachedBat and cachedBat.Parent and (currentTime - batCacheTime) < BAT_CACHE_DURATION then
+        return cachedBat
+    end
+    
+    local tool = nil
+    pcall(function()
+        tool = player.Backpack:FindFirstChild("Bat")
+        if not tool and player.Character then
+            tool = player.Character:FindFirstChild("Bat")
+        end
+    end)
+    
+    if tool then
+        cachedBat = tool
+        batCacheTime = currentTime
+    end
+    
+    return tool
+end
+
+local function equipBat()
+    local bat = findBat()
+    if bat and bat.Parent == player.Backpack then
+        pcall(function()
+            player.Character.Humanoid:EquipTool(bat)
+        end)
+        return true
+    end
+    return bat and bat.Parent == player.Character
+end
+
+local function unequipBat()
+    local bat = findBat()
+    if bat and bat.Parent == player.Character then
+        pcall(function()
+            player.Character.Humanoid:UnequipTools()
+        end)
+    end
+end
+
+-- === MAIN DESTROY LOGIC ===
+local function destroySentry(desc, isNewlyPlaced)
+    if not autoDestroyTurretEnabled then return end
+    if activeSentries[desc] then return end
+    
+    -- CHECK IF IT'S OUR OWN SENTRY - SKIP IT!
+    if isOwnedByPlayer(desc) then
+        return
+    end
+    
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+
+    activeSentries[desc] = true
+
+    if not desc.Parent or not autoDestroyTurretEnabled then 
+        activeSentries[desc] = nil
+        return 
+    end
+
+    -- If newly placed, wait before attacking
+    if isNewlyPlaced then
+        task.wait(NEW_SENTRY_DELAY)
+        
+        if not desc.Parent or not autoDestroyTurretEnabled then
+            activeSentries[desc] = nil
+            return
+        end
+        
+        if isOwnedByPlayer(desc) then
+            activeSentries[desc] = nil
+            return
+        end
+    end
+
+    local bat = findBat()
+    if not bat then
+        activeSentries[desc] = nil
+        return
+    end
+
+    local hitCount = 0
+    local running = true
+    
+    -- THREAD 1: Equip/Unequip Cycle
+    task.spawn(function()
+        while running and autoDestroyTurretEnabled and desc.Parent do
+            equipBat()
+            task.wait(0.05)
+            if not running then break end
+            unequipBat()
+            task.wait(0.05)
+        end
+    end)
+    
+    -- THREAD 2: Position + Spam Attack Loop
+    task.spawn(function()
+        task.wait(0.1)
+        
+        local spamConnection
+        
+        spamConnection = RunService.Heartbeat:Connect(function()
+            if not autoDestroyTurretEnabled or not desc.Parent or hitCount >= MAX_HITS then
+                running = false
+                if spamConnection then spamConnection:Disconnect() end
+                unequipBat()
+                activeSentries[desc] = nil
+                sentrySpawnTimes[desc] = nil
+                cachedBat = nil
+                return
+            end
+            
+            -- CONTINUOUSLY reposition sentry in front of player
+            local currentChar = player.Character
+            if currentChar and currentChar:FindFirstChild("HumanoidRootPart") then
+                local currentHrp = currentChar.HumanoidRootPart
+                local lookVector = currentHrp.CFrame.LookVector
+                local targetPos = currentHrp.Position + lookVector * 3.5 + Vector3.new(0, 1.2, 0)
+                
+                pcall(function()
+                    if desc:IsA("Model") and desc.PrimaryPart then
+                        local currentCFrame = desc.PrimaryPart.CFrame
+                        local newCFrame = CFrame.new(targetPos) * (currentCFrame - currentCFrame.Position)
+                        desc:SetPrimaryPartCFrame(newCFrame)
+                    elseif desc:IsA("BasePart") then
+                        local currentCFrame = desc.CFrame
+                        desc.CFrame = CFrame.new(targetPos) * (currentCFrame - currentCFrame.Position)
+                    end
+                end)
+            end
+            
+            -- SPAM ATTACK
+            local currentBat = findBat()
+            if currentBat and currentBat.Parent == player.Character then
+                for i = 1, 12 do
+                    if currentBat.Parent == player.Character and desc.Parent then
+                        currentBat:Activate()
+                        hitCount = hitCount + 1
+                    else
+                        break
+                    end
+                end
+            end
+        end)
+    end)
+end
+
+-- === DETECTION LOGIC ===
+local function lightweightCheck()
+    if not autoDestroyTurretEnabled then return end
+    
+    for _, child in ipairs(workspace:GetChildren()) do
+        if autoDestroyTurretEnabled and (child:IsA("Model") or child:IsA("BasePart")) then
+            if string.find(child.Name:lower(), "sentry") and not activeSentries[child] and child.Parent then
+                if not isOwnedByPlayer(child) then
+                    task.spawn(function()
+                        destroySentry(child, false)
+                    end)
+                end
+            end
+        end
+    end
+end
+
+local function startSentryWatch()
+    if sentryConn then sentryConn:Disconnect() end
+    if lightCheckConn then lightCheckConn:Disconnect() end
+    
+    -- METHOD 1: Instant event detection
+    sentryConn = workspace.DescendantAdded:Connect(function(desc)
+        if not autoDestroyTurretEnabled then return end
+        if not desc:IsA("Model") and not desc:IsA("BasePart") then return end
+        
+        if string.find(desc.Name:lower(), "sentry") then
+            if desc.Parent and autoDestroyTurretEnabled and not activeSentries[desc] then
+                if not isOwnedByPlayer(desc) then
+                    sentrySpawnTimes[desc] = tick()
+                    task.spawn(function()
+                        destroySentry(desc, true)
+                    end)
+                end
+            end
+        end
+    end)
+    
+    -- METHOD 2: Lightweight periodic check
+    lightCheckConn = RunService.Heartbeat:Connect(function()
+        if not autoDestroyTurretEnabled then return end
+        task.wait(1.2)
+        lightweightCheck()
+    end)
+    
+    -- Initial sweep
+    task.spawn(function()
+        lightweightCheck()
+    end)
+end
+
+local function stopSentryWatch()
+    autoDestroyTurretEnabled = false
+    
+    if sentryConn then
+        sentryConn:Disconnect()
+        sentryConn = nil
+    end
+    
+    if lightCheckConn then
+        lightCheckConn:Disconnect()
+        lightCheckConn = nil
+    end
+    
+    activeSentries = {}
+    sentrySpawnTimes = {}
+    cachedBat = nil
+    unequipBat()
+end
+
+-- === MAIN TOGGLE FUNCTION ===
+local function toggleAutoDestroyTurret(enabled)
+    autoDestroyTurretEnabled = enabled
+    
+    if enabled then
+        print("✅ Auto Destroy Turret: ON")
+        startSentryWatch()
+    else
+        print("❌ Auto Destroy Turret: OFF")
+        stopSentryWatch()
+    end
+end
+
+-- Respawn handler
+player.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    cachedBat = nil
+    if autoDestroyTurretEnabled then
+        stopSentryWatch()
+        autoDestroyTurretEnabled = false
+        
+        -- Dua baris ini sekarang AKTIF untuk auto-re-enable
+        task.wait(1)
+        toggleAutoDestroyTurret(true)
+    end
+end)
+
 -- ==================== EXTERNAL SCRIPT FUNCTIONS (UPDATED) ====================
 local function toggleUseCloner(state)
     if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Cloner.lua"))() end); print("✅ Use Cloner: Triggered") else print("❌ Use Cloner: OFF") end
@@ -1793,6 +2077,7 @@ NightmareHub:AddMainToggle("Baselock Reminder", function(state) toggleBaselockRe
 NightmareHub:AddMainToggle("Websling Control", function(state) toggleWebslingControl(state) end)
 NightmareHub:AddMainToggle("Admin Panel Spammer", function(state) toggleAdminPanelSpammer(state) end) -- CHANGED
 NightmareHub:AddMainToggle("Instant Grab", function(state) toggleInstantGrab(state) end) -- Nama toggle tidak berubah
+NightmareHub:AddMainToggle("Auto Destroy Turret", function(state) toggleAutoDestroyTurret(state) end) -- NEW
 
 -- VISUAL TAB
 NightmareHub:AddVisualToggle("Esp Players", function(state) toggleESPPlayers(state) end)
@@ -1811,6 +2096,6 @@ NightmareHub:AddMiscToggle("Touch Fling V2", function(state) toggleTouchFling(st
 NightmareHub:AddMiscToggle("Allow Friends", function(state) toggleAllowFriends(state) end)
 NightmareHub:AddMiscToggle("Silent Hit", function(state) toggleSilentHit(state) end) -- NEW
 NightmareHub:AddMiscToggle("Unwalk Anim", function(state) toggleUnwalkAnimation(state) end) -- NEW
-NightmareHub:AddMiscToggle("God Mode", function(state) toggleGodMode(state) end)
+NightmareHub:AddMiscToggle("God Mode", function(state) toggleGodMode(state) end) -- NEW
 
 print("🎮 NightmareHub Loaded Successfully!")
