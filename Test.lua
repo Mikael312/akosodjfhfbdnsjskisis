@@ -162,7 +162,7 @@ local NEW_SENTRY_DELAY = 4.0 -- Wait time for newly placed sentries
 local cachedBat = nil
 local batCacheTime = 0
 local BAT_CACHE_DURATION = 0.3
-
+local sentryCheckThread = nil -- TAMBAHKAN BARIS INI
 
 -- ==================== ALL FEATURE FUNCTIONS ====================
 -- (Pasted from previous response for brevity)
@@ -1631,24 +1631,10 @@ end
 
 player.CharacterAdded:Connect(function(newCharacter) if antiBoogieEnabled then task.wait(0.5); setupInstantAnimationBlocker(); print("🔄 Reloaded animation blocker after respawn") end end)
 
--- ==================== UNWALK ANIM FUNCTION (NEW - FIXED) ====================
-local function stopUnwalkAnimation()
-    -- Putuskan semua sambungan yang aktif
-    for _, connection in pairs(unwalkAnimConnections) do
-        if connection then
-            connection:Disconnect()
-        end
-    end
-    unwalkAnimConnections = {} -- Kosongkan table
-    print("🚫 Unwalk Animation: INACTIVE")
-end
-
+-- ==================== UNWALK ANIM FUNCTION (NEW) ====================
 local function setupNoWalkAnimation(character)
     character = character or player.Character
     if not character then return end
-
-    -- Putuskan sambungan lama terlebih dahulu untuk elakkan leak
-    stopUnwalkAnimation()
 
     local humanoid = character:WaitForChild("Humanoid")
     local animator = humanoid:WaitForChild("Animator")
@@ -1663,22 +1649,24 @@ local function setupNoWalkAnimation(character)
     end
     
     -- Hentikan animasi semasa berlari
-    local runningConn = humanoid.Running:Connect(stopAllAnimations)
-    table.insert(unwalkAnimConnections, runningConn)
-
+    humanoid.Running:Connect(function(speed)
+        stopAllAnimations()
+    end)
+    
     -- Hentikan animasi semasa melompat
-    local jumpingConn = humanoid.Jumping:Connect(stopAllAnimations)
-    table.insert(unwalkAnimConnections, jumpingConn)
+    humanoid.Jumping:Connect(function()
+        stopAllAnimations()
+    end)
     
     -- Hentikan sebarang animasi baru yang cuba dimainkan
-    local animPlayedConn = animator.AnimationPlayed:Connect(function(animationTrack)
+    animator.AnimationPlayed:Connect(function(animationTrack)
         animationTrack:Stop()
     end)
-    table.insert(unwalkAnimConnections, animPlayedConn)
     
     -- Hentikan animasi secara berterusan pada setiap frame
-    local renderSteppedConn = RunService.RenderStepped:Connect(stopAllAnimations)
-    table.insert(unwalkAnimConnections, renderSteppedConn)
+    RunService.RenderStepped:Connect(function()
+        stopAllAnimations()
+    end)
     
     print("✅ No Walk Animation: AKTIF")
 end
@@ -1689,8 +1677,6 @@ local function toggleUnwalkAnimation(state)
         if player.Character then
             setupNoWalkAnimation(player.Character)
         end
-    else
-        stopUnwalkAnimation()
     end
 end
 
@@ -1964,6 +1950,7 @@ end
 local function startSentryWatch()
     if sentryConn then sentryConn:Disconnect() end
     if lightCheckConn then lightCheckConn:Disconnect() end
+    if sentryCheckThread then task.cancel(sentryCheckThread) end -- Hentikan thread lama jika ada
     
     -- METHOD 1: Instant event detection
     sentryConn = workspace.DescendantAdded:Connect(function(desc)
@@ -1982,11 +1969,14 @@ local function startSentryWatch()
         end
     end)
     
-    -- METHOD 2: Lightweight periodic check
-    lightCheckConn = RunService.Heartbeat:Connect(function()
-        if not autoDestroyTurretEnabled then return end
-        task.wait(1.2)
-        lightweightCheck()
+    -- METHOD 2: Lightweight periodic check (SUDAH DIBAIKI)
+    sentryCheckThread = task.spawn(function()
+        while autoDestroyTurretEnabled do
+            task.wait(1.2) -- Selamat di sini
+            if autoDestroyTurretEnabled then -- Semak semula
+                lightweightCheck()
+            end
+        end
     end)
     
     -- Initial sweep
@@ -2006,6 +1996,11 @@ local function stopSentryWatch()
     if lightCheckConn then
         lightCheckConn:Disconnect()
         lightCheckConn = nil
+    end
+
+    if sentryCheckThread then -- Hentikan thread semasa
+        task.cancel(sentryCheckThread)
+        sentryCheckThread = nil
     end
     
     activeSentries = {}
