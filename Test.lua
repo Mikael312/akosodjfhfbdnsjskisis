@@ -2271,7 +2271,7 @@ local function enableFpsBoost()
     end)
     
     addConnection(workspace.DescendantAdded:Connect(function(obj)
-        if not fpsBoostEnabled then return end
+        if not getgenv().OPTIMIZER_ACTIVE then return end
         
         pcall(function()
             if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or
@@ -2291,7 +2291,7 @@ local function enableFpsBoost()
         end
         
         addConnection(p.CharacterAdded:Connect(function(char)
-            if fpsBoostEnabled then
+            if getgenv().OPTIMIZER_ACTIVE then
                 optimizeCharacter(char)
             end
         end))
@@ -2299,7 +2299,7 @@ local function enableFpsBoost()
     
     addConnection(Players.PlayerAdded:Connect(function(p)
         addConnection(p.CharacterAdded:Connect(function(char)
-            if fpsBoostEnabled then
+            if getgenv().OPTIMIZER_ACTIVE then
                 optimizeCharacter(char)
             end
         end))
@@ -2424,10 +2424,6 @@ local function toggleAutoSteal(state)
     else
         disableAutoSteal()
     end
-end
-
-local function toggleAntiDebuff(state)
-    toggleAntiDebuff(state)
 end
 
 local function toggleAntiKb(state)
