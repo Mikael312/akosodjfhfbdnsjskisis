@@ -14,6 +14,7 @@
     - [ADDED] "Unwalk Anim" toggle to the Misc tab.
     - [ADDED] "God Mode" toggle to the Misc tab.
     - [REMOVED] "Esp Turret" and "Auto Destroy Sentry".
+    - [ADDED] "Esp Trap" to Visual Toggle.
 ]]
 
 -- ==================== LOAD LIBRARY ====================
@@ -113,6 +114,12 @@ local BELL_SOUND_ID = "rbxassetid://3302969109"
 local espPlayersEnabled = false
 local espObjects = {}
 local updateConnection = nil
+
+-- ESP Trap Variables (NEW)
+local espTrapEnabled = false
+local espTrapObjects = {}
+local espTrapConnection = nil
+local espTrapLastScanTime = 0
 
 -- Laser Cape (Aimbot) Variables
 local autoLaserEnabled = false
@@ -780,6 +787,138 @@ local function toggleEspBaseTimer(state)
             if purchases then for _, child in pairs(purchases:GetChildren()) do local main = child:FindFirstChild('Main'); if main then local gui = main:FindFirstChild('GlobalTimerGui'); if gui then gui:Destroy() end end end end
         end
         print("❌ ESP Base Timer: OFF")
+    end
+end
+
+-- ==================== ESP TRAP FUNCTION (NEW) ====================
+-- Optimized with 6 second scan interval to prevent FPS drops
+
+local function addTrapHighlight(object, name)
+    -- Check if already highlighted
+    if object:FindFirstChild("ESP_Trap_Highlight") then return end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "ESP_Trap_Highlight"
+    highlight.Adornee = object
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    
+    -- Bright red color
+    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 50, 50)
+    
+    highlight.Parent = object
+    
+    table.insert(espTrapObjects, {Object = object, Highlight = highlight})
+    print("🎯 ESP Trap Added:", name)
+end
+
+local function removeTrapHighlight(object)
+    local highlight = object:FindFirstChild("ESP_Trap_Highlight")
+    if highlight then
+        highlight:Destroy()
+    end
+end
+
+-- Find and highlight all targets
+local function findTrapTargets()
+    -- Clear old ESP objects
+    for _, data in pairs(espTrapObjects) do
+        if data.Highlight then
+            data.Highlight:Destroy()
+        end
+    end
+    espTrapObjects = {}
+    
+    -- Search workspace for targets
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("Part") or obj:IsA("MeshPart") then
+            local name = obj.Name:lower()
+            
+            -- Check if it's a Subspace Mine or Trap
+            if name:find("subspace") and name:find("mine") then
+                addTrapHighlight(obj, obj.Name)
+            elseif name:find("trap") then
+                addTrapHighlight(obj, obj.Name)
+            elseif name:find("mine") and not name:find("mining") then
+                addTrapHighlight(obj, obj.Name)
+            end
+        end
+    end
+    
+    print("✅ Found " .. #espTrapObjects .. " traps")
+end
+
+-- Start ESP with optimized 6 second scan
+local function startEspTrap()
+    if espTrapEnabled then return end
+    espTrapEnabled = true
+    
+    print("🔍 ESP Trap Started - Scanning every 6 seconds...")
+    
+    -- Initial scan
+    findTrapTargets()
+    espTrapLastScanTime = tick()
+    
+    -- Optimized continuous monitoring (6 second interval)
+    espTrapConnection = RunService.Heartbeat:Connect(function()
+        if not espTrapEnabled then return end
+        
+        local currentTime = tick()
+        
+        -- Check for new objects every 6 seconds (performance optimized)
+        if currentTime - espTrapLastScanTime >= 6 then
+            espTrapLastScanTime = currentTime
+            
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if obj:IsA("Model") or obj:IsA("Part") or obj:IsA("MeshPart") then
+                    local name = obj.Name:lower()
+                    
+                    if (name:find("subspace") and name:find("mine")) or 
+                       name:find("trap") or 
+                       (name:find("mine") and not name:find("mining")) then
+                        
+                        -- Only add if not already highlighted
+                        if not obj:FindFirstChild("ESP_Trap_Highlight") then
+                            addTrapHighlight(obj, obj.Name)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- Stop ESP and clean up
+local function stopEspTrap()
+    espTrapEnabled = false
+    
+    if espTrapConnection then
+        espTrapConnection:Disconnect()
+        espTrapConnection = nil
+    end
+    
+    -- Remove all highlights
+    for _, data in pairs(espTrapObjects) do
+        if data.Highlight then
+            data.Highlight:Destroy()
+        end
+    end
+    espTrapObjects = {}
+    
+    -- Clean up any remaining highlights in workspace
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        removeTrapHighlight(obj)
+    end
+    
+    print("🛑 ESP Trap Stopped")
+end
+
+local function toggleEspTrap(state)
+    if state then
+        startEspTrap()
+    else
+        stopEspTrap()
     end
 end
 
@@ -1752,6 +1891,7 @@ NightmareHub:AddVisualToggle("Esp Players", function(state) toggleESPPlayers(sta
 NightmareHub:AddVisualToggle("Esp Best", function(state) toggleEspBest(state) end) -- CHANGED from "Esp Best"
 NightmareHub:AddVisualToggle("Esp Base Timer", function(state) toggleEspBaseTimer(state) end)
 NightmareHub:AddVisualToggle("Base Line", function(state) toggleBaseLine(state) end)
+NightmareHub:AddVisualToggle("Esp Trap", function(state) toggleEspTrap(state) end) -- NEW (Esp Trap)
 -- Esp Turret removed here
 
 -- MISC TAB
