@@ -1,6 +1,7 @@
 --[[
     NIGHTMARE HUB 🎮 (Library Version - Updated)
-    - [UPDATED] Added "Auto Destroy Turret" to Main Tab (Based on Auto Destroy Sentries V3).
+    - [UPDATED] "Auto Destroy Turret" now loads external script via Loadstring.
+    - Removed local functions/variables for Turret (Switched to external loader).
     - "Respawn Desync" changed to "Use Cloner"
     - "Unwalk Animation" changed to "Admin Panel Spammer"
     - Added "Silent Hit" to Misc tab
@@ -13,7 +14,7 @@
     - [UPDATED] Base Line now targets the "PlotSign" in the player's plot.
     - [ADDED] "Unwalk Anim" toggle to the Misc tab.
     - [ADDED] "God Mode" toggle to the Misc tab.
-    - [REMOVED] "Esp Turret" and "Auto Destroy Sentry" (Old version).
+    - [REMOVED] "Esp Turret" and local "Auto Destroy Sentry" logic.
     - [ADDED] "Esp Trap" to Visual Toggle.
 ]]
 
@@ -150,14 +151,6 @@ local godModeEnabled = false
 local healthConnection = nil
 local stateConnection = nil
 local initialMaxHealth = 100
-
--- Auto Destroy Sentry/Turret V3 Variables (NEW)
-local sentryEnabled = false
-local sentryConn = nil
-local scanConn = nil
-local activeSentries = {}
-local processedSentries = {}
-local myUserId = tostring(player.UserId)
 
 -- ==================== ALL FEATURE FUNCTIONS ====================
 
@@ -1803,339 +1796,6 @@ player.CharacterAdded:Connect(function(newCharacter)
     end
 end)
 
--- ==================== AUTO DESTROY SENTRY V3 FUNCTION (NEW) ====================
--- Helper functions
-local function isSentryPlaced(desc)
-    if not desc or not desc.Parent then return false end
-    
-    local inWorkspace = desc:IsDescendantOf(Workspace)
-    if not inWorkspace then return false end
-    
-    for _, playerObj in pairs(Players:GetPlayers()) do
-        if playerObj.Character and desc:IsDescendantOf(playerObj.Character) then
-            return false
-        end
-        if playerObj.Backpack and desc:IsDescendantOf(playerObj.Backpack) then
-            return false
-        end
-    end
-    
-    local isAnchored = false
-    pcall(function()
-        if desc:IsA("Model") and desc.PrimaryPart then
-            isAnchored = desc.PrimaryPart.Anchored
-        elseif desc:IsA("BasePart") then
-            isAnchored = desc.Anchored
-        end
-    end)
-    
-    return isAnchored
-end
-
-local function isMySentry(sentryName)
-    return string.find(sentryName, myUserId) ~= nil
-end
-
-local function isOwnedByPlayer(desc)
-    if isMySentry(desc.Name) then return true end
-    return false
-end
-
-local function findBat()
-    local tool = nil
-    pcall(function()
-        tool = player.Backpack:FindFirstChild("Bat")
-        if not tool and player.Character then
-            tool = player.Character:FindFirstChild("Bat")
-        end
-    end)
-    return tool
-end
-
-local function equipBat()
-    local bat = findBat()
-    if bat and bat.Parent == player.Backpack then
-        pcall(function()
-            player.Character.Humanoid:EquipTool(bat)
-        end)
-        return true
-    end
-    return bat and bat.Parent == player.Character
-end
-
-local function unequipBat()
-    local bat = findBat()
-    if bat and bat.Parent == player.Character then
-        pcall(function()
-            player.Character.Humanoid:UnequipTools()
-        end)
-    end
-end
-
-local function sentryExists(desc)
-    if not desc then return false end
-    if not desc.Parent then return false end
-    
-    local stillExists = false
-    pcall(function()
-        stillExists = desc.Parent ~= nil and desc:IsDescendantOf(Workspace)
-    end)
-    
-    return stillExists
-end
-
-local function destroySentry(desc)
-    if not sentryEnabled then return end
-    if activeSentries[desc] then return end
-    if processedSentries[desc] then return end
-    
-    if isOwnedByPlayer(desc) then
-        print("[🛡️] Skipping own sentry: " .. desc.Name)
-        processedSentries[desc] = true
-        return
-    end
-    
-    if not isSentryPlaced(desc) then
-        print("[⏳] Sentry not placed yet, skipping: " .. desc.Name)
-        return
-    end
-    
-    local char = player.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-
-    activeSentries[desc] = true
-    processedSentries[desc] = true
-
-    local bat = findBat()
-    if not bat then
-        warn("[⚠️] Bat not found!")
-        activeSentries[desc] = nil
-        return
-    end
-
-    print("[🎯] Attacking enemy sentry: " .. desc.Name)
-
-    local hitCount = 0
-    local running = true
-    
-    local destroyConnection
-    destroyConnection = desc.AncestryChanged:Connect(function()
-        if not sentryExists(desc) then
-            running = false
-            print("[💥] Sentry destroyed! Stopping attack...")
-            if destroyConnection then destroyConnection:Disconnect() end
-        end
-    end)
-    
-    task.spawn(function()
-        while running and sentryEnabled and sentryExists(desc) do
-            equipBat()
-            task.wait(0.05)
-            if not running or not sentryExists(desc) then break end
-            unequipBat()
-            task.wait(0.05)
-        end
-    end)
-    
-    task.spawn(function()
-        task.wait(0.1)
-        
-        local spamConnection
-        spamConnection = RunService.Heartbeat:Connect(function()
-            if not sentryEnabled or not sentryExists(desc) then
-                running = false
-                
-                if spamConnection then spamConnection:Disconnect() end
-                if destroyConnection then destroyConnection:Disconnect() end
-                
-                unequipBat()
-                activeSentries[desc] = nil
-                
-                if not sentryExists(desc) then
-                    print("[✅] Enemy sentry DESTROYED! Total hits: " .. hitCount)
-                else
-                    print("[⏹️] Attack stopped. Hits: " .. hitCount)
-                end
-                return
-            end
-            
-            local currentBat = findBat()
-            if currentBat and currentBat.Parent == player.Character then
-                for i = 1, 12 do
-                    if currentBat.Parent == player.Character and sentryExists(desc) then
-                        currentBat:Activate()
-                        hitCount = hitCount + 1
-                    else
-                        break
-                    end
-                end
-            end
-        end)
-    end)
-end
-
-local function scanExistingSentries()
-    if not sentryEnabled then return end
-    
-    local char = player.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    
-    local foundCount = 0
-    
-    pcall(function()
-        for _, desc in pairs(Workspace:GetDescendants()) do
-            if sentryEnabled and (desc:IsA("Model") or desc:IsA("BasePart")) then
-                if string.find(desc.Name:lower(), "sentry") then
-                    if isSentryPlaced(desc) and not processedSentries[desc] and not isOwnedByPlayer(desc) then
-                        foundCount = foundCount + 1
-                        
-                        local hrp = char.HumanoidRootPart
-                        local lookDir = hrp.CFrame.LookVector
-                        local spawnOffset = lookDir * 3.5 + Vector3.new(0, 1.2, 0)
-                        
-                        pcall(function()
-                            if desc:IsA("Model") and desc.PrimaryPart then
-                                desc:SetPrimaryPartCFrame(hrp.CFrame + spawnOffset)
-                            elseif desc:IsA("BasePart") then
-                                desc.CFrame = hrp.CFrame + spawnOffset
-                            end
-                        end)
-                        
-                        destroySentry(desc)
-                        task.wait(0.1)
-                    end
-                end
-            end
-        end
-    end)
-    
-    if foundCount > 0 then
-        print("[🔍] Scan found " .. foundCount .. " placed enemy sentries to attack")
-    end
-end
-
-local function startSentryWatch()
-    if sentryConn then sentryConn:Disconnect() end
-    if scanConn then task.cancel(scanConn) end
-    
-    sentryConn = Workspace.DescendantAdded:Connect(function(desc)
-        if not sentryEnabled then return end
-        if not desc:IsA("Model") and not desc:IsA("BasePart") then return end
-        if not string.find(desc.Name:lower(), "sentry") then return end
-        
-        local char = player.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-        
-        if isOwnedByPlayer(desc) then
-            print("[🛡️] Detected own sentry (UserId: " .. myUserId .. "): " .. desc.Name)
-            processedSentries[desc] = true
-            return
-        end
-        
-        task.wait(0.5)
-        
-        if not isSentryPlaced(desc) then
-            print("[⏳] Waiting for sentry to be placed: " .. desc.Name)
-            
-            local checkThread = task.spawn(function()
-                local waitTime = 0
-                while waitTime < 10 and not isSentryPlaced(desc) and sentryExists(desc) and sentryEnabled do
-                    task.wait(0.5)
-                    waitTime = waitTime + 0.5
-                end
-                
-                if isSentryPlaced(desc) and sentryExists(desc) and sentryEnabled then
-                    print("[✅] Sentry placed, attacking: " .. desc.Name)
-                    
-                    local hrp = char.HumanoidRootPart
-                    local lookDir = hrp.CFrame.LookVector
-                    local spawnOffset = lookDir * 3.5 + Vector3.new(0, 1.2, 0)
-                    
-                    pcall(function()
-                        if desc:IsA("Model") and desc.PrimaryPart then
-                            desc:SetPrimaryPartCFrame(hrp.CFrame + spawnOffset)
-                        elseif desc:IsA("BasePart") then
-                            desc.CFrame = hrp.CFrame + spawnOffset
-                        end
-                    end)
-                    
-                    destroySentry(desc)
-                end
-            end)
-            
-            return
-        end
-        
-        task.wait(4.1)
-        
-        if not sentryExists(desc) or not sentryEnabled then return end
-        
-        local hrp = char.HumanoidRootPart
-        local lookDir = hrp.CFrame.LookVector
-        local spawnOffset = lookDir * 3.5 + Vector3.new(0, 1.2, 0)
-        
-        pcall(function()
-            if desc:IsA("Model") and desc.PrimaryPart then
-                desc:SetPrimaryPartCFrame(hrp.CFrame + spawnOffset)
-            elseif desc:IsA("BasePart") then
-                desc.CFrame = hrp.CFrame + spawnOffset
-            end
-        end)
-        
-        destroySentry(desc)
-    end)
-    
-    scanConn = task.spawn(function()
-        while sentryEnabled do
-            scanExistingSentries()
-            task.wait(5)
-        end
-    end)
-    
-    print("✅ Sentry Watch V3: Started (UserId: " .. myUserId .. ")")
-    print("[🔍] Only attacks PLACED sentries")
-end
-
-local function stopSentryWatch()
-    sentryEnabled = false
-    
-    if sentryConn then
-        sentryConn:Disconnect()
-        sentryConn = nil
-    end
-    
-    if scanConn then
-        task.cancel(scanConn)
-        scanConn = nil
-    end
-    
-    activeSentries = {}
-    processedSentries = {}
-    
-    print("❌ Sentry Watch V3: Stopped")
-end
-
-local function toggleAutoDestroyTurret(state)
-    sentryEnabled = state
-    if sentryEnabled then
-        startSentryWatch()
-        print("🟢 Auto Destroy Turret: ON")
-    else
-        stopSentryWatch()
-        print("🔴 Auto Destroy Turret: OFF")
-    end
-end
-
--- Sentry Respawn Handler
-player.CharacterAdded:Connect(function()
-    task.wait(0.5)
-    if sentryEnabled then
-        stopSentryWatch()
-        sentryEnabled = false
-        print("🔄 Sentry Watch turned off after respawn (Safety)")
-    end
-end)
-
 -- ==================== EXTERNAL SCRIPT FUNCTIONS (UPDATED) ====================
 local function toggleUseCloner(state)
     if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Cloner.lua"))() end); print("✅ Use Cloner: Triggered") else print("❌ Use Cloner: OFF") end
@@ -2170,6 +1830,18 @@ local function toggleSilentHit(state)
     if state then pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Silenthit.lua"))() end); print("✅ Silent Hit: ON") else print("❌ Silent Hit: OFF") end
 end
 
+-- ==================== AUTO DESTROY TURRET FUNCTION (EXTERNAL) ====================
+local function toggleAutoDestroyTurret(state)
+    if state then
+        pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/DestroyTurret.lua"))()
+        end)
+        print("✅ Auto Destroy Turret: Triggered")
+    else
+        print("❌ Auto Destroy Turret: OFF")
+    end
+end
+
 -- ==================== CREATE UI AND ADD TOGGLES ====================
 NightmareHub:CreateUI()
 
@@ -2186,7 +1858,7 @@ NightmareHub:AddMainToggle("Baselock Reminder", function(state) toggleBaselockRe
 NightmareHub:AddMainToggle("Websling Control", function(state) toggleWebslingControl(state) end)
 NightmareHub:AddMainToggle("Admin Panel Spammer", function(state) toggleAdminPanelSpammer(state) end)
 NightmareHub:AddMainToggle("Instant Grab", function(state) toggleInstantGrab(state) end)
-NightmareHub:AddMainToggle("Auto Destroy Turret", function(state) toggleAutoDestroyTurret(state) end) -- NEW
+NightmareHub:AddMainToggle("Auto Destroy Turret", function(state) toggleAutoDestroyTurret(state) end)
 
 -- VISUAL TAB
 NightmareHub:AddVisualToggle("Esp Players", function(state) toggleESPPlayers(state) end)
