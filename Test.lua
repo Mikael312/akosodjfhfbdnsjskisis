@@ -1,5 +1,5 @@
 --[[
-    ARCADE UI - INTEGRASI ESP PLAYERS, ESP BEST, BASE LINE, ANTI TURRET, AIMBOT, KICK STEAL, UNWALK ANIM, AUTO STEAL, ANTI DEBUFF, ANTI KB & FPS BOOST
+    ARCADE UI - INTEGRASI ESP PLAYERS, ESP BEST, BASE LINE, ANTI TURRET, AIMBOT, KICK STEAL, UNWALK ANIM, AUTO STEAL, ANTI DEBUFF, ANTI KB, XRAY BASE & FPS BOOST
 ]]
 
 -- ==================== LOAD LIBRARY ====================
@@ -95,6 +95,12 @@ local antiKnockbackConn = nil
 local lastSafeVelocity = Vector3.new(0, 0, 0)
 local VELOCITY_THRESHOLD = 35
 local UPDATE_INTERVAL = 0.016
+
+-- ==================== XRAY BASE VARIABLES ====================
+local xrayBaseEnabled = false
+local invisibleWallsLoaded = false
+local originalTransparency = {}
+local xrayBaseConnection = nil
 
 -- ==================== FPS BOOST VARIABLES ====================
 local fpsBoostEnabled = false
@@ -1979,6 +1985,75 @@ local function toggleAntiKnockback(state)
     end
 end
 
+-- ==================== XRAY BASE FUNCTIONS ====================
+local function isBaseWall(obj)
+    if not obj:IsA("BasePart") then return false end
+    local n = obj.Name:lower()
+    local parent = obj.Parent and obj.Parent.Name:lower() or ""
+    return n:find("base") or parent:find("base")
+end
+
+local function tryApplyInvisibleWalls()
+    if not xrayBaseEnabled then return end
+    
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return end
+    if #plots:GetChildren() == 0 then return end
+    
+    if invisibleWallsLoaded then return end
+    invisibleWallsLoaded = true
+    
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Anchored and obj.CanCollide and isBaseWall(obj) then
+            originalTransparency[obj] = obj.LocalTransparencyModifier
+            obj.LocalTransparencyModifier = 0.85
+        end
+    end
+    
+    if xrayBaseConnection then xrayBaseConnection:Disconnect() end
+    xrayBaseConnection = workspace.DescendantAdded:Connect(function(obj)
+        if xrayBaseEnabled and isBaseWall(obj) then
+            originalTransparency[obj] = obj.LocalTransparencyModifier
+            obj.LocalTransparencyModifier = 0.85
+        end
+    end)
+end
+
+local function enableXrayBase()
+    if xrayBaseEnabled then return end
+    xrayBaseEnabled = true
+    
+    task.spawn(function()
+        for _ = 1, 20 do
+            tryApplyInvisibleWalls()
+            if invisibleWallsLoaded then return end
+            task.wait(0.5)
+        end
+    end)
+    
+    print("✅ Xray Base Enabled")
+end
+
+local function disableXrayBase()
+    if not xrayBaseEnabled then return end
+    xrayBaseEnabled = false
+    invisibleWallsLoaded = false
+    
+    if xrayBaseConnection then
+        xrayBaseConnection:Disconnect()
+        xrayBaseConnection = nil
+    end
+    
+    for part, value in pairs(originalTransparency) do
+        if part then
+            part.LocalTransparencyModifier = value
+        end
+    end
+    originalTransparency = {}
+    
+    print("❌ Xray Base Disabled")
+end
+
 -- ==================== FPS BOOST FUNCTIONS ====================
 local function addThread(func)
     local t = task.spawn(func)
@@ -2355,6 +2430,14 @@ local function toggleAntiKb(state)
     toggleAntiKnockback(state)
 end
 
+local function toggleXrayBase(state)
+    if state then
+        enableXrayBase()
+    else
+        disableXrayBase()
+    end
+end
+
 local function toggleFpsBoost(state)
     if state then
         enableFpsBoost()
@@ -2435,6 +2518,11 @@ player.CharacterAdded:Connect(function(newCharacter)
         print("🔄 Reloaded anti-knockback after respawn")
     end
     
+    if xrayBaseEnabled then
+        invisibleWallsLoaded = false
+        tryApplyInvisibleWalls()
+    end
+    
     if fpsBoostEnabled then
         for _, p in ipairs(Players:GetPlayers()) do
             if p.Character then
@@ -2464,6 +2552,6 @@ ArcadeUILib:AddToggleRow("Base Line", toggleBaseLine, "Anti Turret", toggleAntiT
 ArcadeUILib:AddToggleRow("Aimbot", toggleAimbot, "Kick Steal", toggleKickSteal)
 ArcadeUILib:AddToggleRow("Unwalk Anim", toggleUnwalkAnim, "Auto Steal", toggleAutoSteal)
 ArcadeUILib:AddToggleRow("Anti Debuff", toggleAntiDebuff, "Anti Kb", toggleAntiKb)
-ArcadeUILib:AddToggleRow("Fps Boost", toggleFpsBoost)
+ArcadeUILib:AddToggleRow("Xray Base", toggleXrayBase, "Fps Boost", toggleFpsBoost)
 
-print("🎮 Arcade UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff, Anti Kb & Fps Boost Loaded Successfully!")
+print("🎮 Arcade UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff, Anti Kb, Xray Base & Fps Boost Loaded Successfully!")
