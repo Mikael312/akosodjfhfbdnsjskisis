@@ -1,5 +1,5 @@
 --[[
-    ARCADE UI - INTEGRASI ESP PLAYERS, ESP BEST, BASE LINE, ANTI TURRET, AIMBOT, KICK STEAL, UNWALK ANIM, AUTO STEAL, ANTI DEBUFF & ANTI KB
+    ARCADE UI - INTEGRASI ESP PLAYERS, ESP BEST, BASE LINE, ANTI TURRET, AIMBOT, KICK STEAL, UNWALK ANIM, AUTO STEAL, ANTI DEBUFF, ANTI KB & FPS BOOST
 ]]
 
 -- ==================== LOAD LIBRARY ====================
@@ -95,6 +95,12 @@ local antiKnockbackConn = nil
 local lastSafeVelocity = Vector3.new(0, 0, 0)
 local VELOCITY_THRESHOLD = 35
 local UPDATE_INTERVAL = 0.016
+
+-- ==================== FPS BOOST VARIABLES ====================
+local fpsBoostEnabled = false
+local optimizerThreads = {}
+local optimizerConnections = {}
+local originalSettings = {}
 
 -- ==================== MODULES FOR ESP BEST ====================
 local AnimalsModule, TraitsModule, MutationsModule
@@ -1973,6 +1979,313 @@ local function toggleAntiKnockback(state)
     end
 end
 
+-- ==================== FPS BOOST FUNCTIONS ====================
+local function addThread(func)
+    local t = task.spawn(func)
+    table.insert(optimizerThreads, t)
+    return t
+end
+
+local function addConnection(conn)
+    table.insert(optimizerConnections, conn)
+    return conn
+end
+
+local function storeOriginalSettings()
+    pcall(function()
+        originalSettings = {
+            streamingEnabled = workspace.StreamingEnabled,
+            streamingMinRadius = workspace.StreamingMinRadius,
+            streamingTargetRadius = workspace.StreamingTargetRadius,
+            qualityLevel = settings().Rendering.QualityLevel,
+            meshPartDetailLevel = settings().Rendering.MeshPartDetailLevel,
+            globalShadows = game.Lighting.GlobalShadows,
+            brightness = game.Lighting.Brightness,
+            fogEnd = game.Lighting.FogEnd,
+            technology = game.Lighting.Technology,
+            environmentDiffuseScale = game.Lighting.EnvironmentDiffuseScale,
+            environmentSpecularScale = game.Lighting.EnvironmentSpecularScale,
+            decoration = workspace.Terrain.Decoration,
+            waterWaveSize = workspace.Terrain.WaterWaveSize,
+            waterWaveSpeed = workspace.Terrain.WaterWaveSpeed,
+            waterReflectance = workspace.Terrain.WaterReflectance,
+            waterTransparency = workspace.Terrain.WaterTransparency,
+        }
+    end)
+end
+
+local PERFORMANCE_FFLAGS = {
+    ["DFIntTaskSchedulerTargetFps"] = 999,
+    ["FFlagDebugGraphicsPreferVulkan"] = true,
+    ["FFlagDebugGraphicsDisableDirect3D11"] = true,
+    ["FFlagDebugGraphicsPreferD3D11FL10"] = false,
+    ["DFFlagDebugRenderForceTechnologyVoxel"] = true,
+    ["FFlagDisablePostFx"] = true,
+    ["FIntRenderShadowIntensity"] = 0,
+    ["FIntRenderLocalLightUpdatesMax"] = 0,
+    ["FIntRenderLocalLightUpdatesMin"] = 0,
+    ["DFIntTextureCompositorActiveJobs"] = 1,
+    ["DFIntDebugFRMQualityLevelOverride"] = 1,
+    ["FFlagFixPlayerCollisionWhenSwimming"] = false,
+    ["DFIntMaxInterpolationSubsteps"] = 0,
+    ["DFIntS2PhysicsSenderRate"] = 15,
+    ["DFIntConnectionMTUSize"] = 1492,
+    ["DFIntHttpCurlConnectionCacheSize"] = 134217728,
+    ["DFIntCSGLevelOfDetailSwitchingDistance"] = 0,
+    ["DFIntCSGLevelOfDetailSwitchingDistanceL12"] = 0,
+    ["DFIntCSGLevelOfDetailSwitchingDistanceL23"] = 0,
+    ["DFIntCSGLevelOfDetailSwitchingDistanceL34"] = 0,
+    ["FFlagEnableInGameMenuChromeABTest3"] = false,
+    ["FFlagEnableInGameMenuModernization"] = false,
+    ["FFlagEnableReportAbuseMenuRoactABTest2"] = false,
+    ["FFlagDisableNewIGMinDUA"] = true,
+    ["FFlagEnableAccessoryValidation"] = false,
+    ["FFlagEnableV3MenuABTest3"] = false,
+    ["FIntRobloxGuiBlurIntensity"] = 0,
+    ["DFIntTimestepArbiterThresholdCFLThou"] = 10,
+    ["DFIntTextureQualityOverride"] = 1,
+    ["DFIntPerformanceControlTextureQualityBestUtility"] = 1,
+    ["DFIntTexturePoolSizeMB"] = 64,
+    ["DFIntMaxFrameBufferSize"] = 1,
+    ["FFlagDebugDisableParticleRendering"] = false,
+    ["DFIntParticleMaxCount"] = 100,
+    ["FFlagEnableWaterReflections"] = false,
+    ["DFIntWaterReflectionQuality"] = 0,
+}
+
+local function applyFFlags()
+    local success = 0
+    local failed = 0
+    
+    for flag, value in pairs(PERFORMANCE_FFLAGS) do
+        local ok = pcall(function()
+            setfflag(flag, tostring(value))
+        end)
+        
+        if ok then
+            success = success + 1
+        else
+            failed = failed + 1
+        end
+    end
+    
+    print(string.format("Applied %d/%d FFlags", success, success + failed))
+end
+
+local function nukeVisualEffects()
+    pcall(function()
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            pcall(function()
+                if obj:IsA("ParticleEmitter") then
+                    obj.Enabled = false
+                    obj.Rate = 0
+                    obj:Destroy()
+                elseif obj:IsA("Trail") then
+                    obj.Enabled = false
+                    obj:Destroy()
+                elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+                    obj.Enabled = false
+                    obj.Brightness = 0
+                    obj:Destroy()
+                elseif obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+                    obj.Enabled = false
+                    obj:Destroy()
+                elseif obj:IsA("Explosion") then
+                    obj:Destroy()
+                elseif obj:IsA("SpecialMesh") then
+                    obj.TextureId = ""
+                elseif obj:IsA("Decal") or obj:IsA("Texture") then
+                    if not (obj.Name == "face" and obj.Parent and obj.Parent.Name == "Head") then
+                        obj.Transparency = 1
+                    end
+                elseif obj:IsA("BasePart") then
+                    obj.CastShadow = false
+                    obj.Material = Enum.Material.Plastic
+                    if obj.Material == Enum.Material.Glass then
+                        obj.Reflectance = 0
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+local function optimizeCharacter(char)
+    if not char then return end
+    
+    task.spawn(function()
+        task.wait(0.5)
+        
+        pcall(function()
+            for _, part in ipairs(char:GetDescendants()) do
+                pcall(function()
+                    if part:IsA("BasePart") then
+                        part.CastShadow = false
+                        part.Material = Enum.Material.Plastic
+                        part.Reflectance = 0
+                    elseif part:IsA("ParticleEmitter") or part:IsA("Trail") then
+                        part:Destroy()
+                    elseif part:IsA("PointLight") or part:IsA("SpotLight") or part:IsA("SurfaceLight") then
+                        part:Destroy()
+                    elseif part:IsA("Fire") or part:IsA("Smoke") or part:IsA("Sparkles") then
+                        part:Destroy()
+                    end
+                end)
+            end
+        end)
+    end)
+end
+
+local function enableFpsBoost()
+    if fpsBoostEnabled then return end
+    fpsBoostEnabled = true
+    
+    getgenv().OPTIMIZER_ACTIVE = true
+    storeOriginalSettings()
+    
+    pcall(applyFFlags)
+    
+    pcall(function()
+        workspace.StreamingEnabled = true
+        workspace.StreamingMinRadius = 64
+        workspace.StreamingTargetRadius = 256
+        workspace.StreamingIntegrityMode = Enum.StreamingIntegrityMode.MinimumRadiusPause
+    end)
+    
+    pcall(function()
+        local renderSettings = settings().Rendering
+        renderSettings.QualityLevel = Enum.QualityLevel.Level01
+        renderSettings.MeshPartDetailLevel = Enum.MeshPartDetailLevel.Level01
+        renderSettings.EditQualityLevel = Enum.QualityLevel.Level01
+        
+        game.Lighting.GlobalShadows = false
+        game.Lighting.Brightness = 3
+        game.Lighting.FogEnd = 9e9
+        game.Lighting.Technology = Enum.Technology.Legacy
+        game.Lighting.EnvironmentDiffuseScale = 0
+        game.Lighting.EnvironmentSpecularScale = 0
+        
+        for _, effect in ipairs(game.Lighting:GetChildren()) do
+            if effect:IsA("PostEffect") then
+                pcall(function() 
+                    effect.Enabled = false 
+                    effect:Destroy()
+                end)
+            end
+        end
+    end)
+    
+    pcall(function()
+        local physics = settings().Physics
+        physics.AllowSleep = true
+        physics.PhysicsEnvironmentalThrottle = Enum.EnviromentalPhysicsThrottle.Skip
+        physics.ThrottleAdjustTime = 0
+    end)
+    
+    pcall(function()
+        workspace.Terrain.WaterWaveSize = 0
+        workspace.Terrain.WaterWaveSpeed = 0
+        workspace.Terrain.WaterReflectance = 0
+        workspace.Terrain.WaterTransparency = 1
+        workspace.Terrain.Decoration = false
+    end)
+    
+    addThread(function()
+        task.wait(1)
+        nukeVisualEffects()
+    end)
+    
+    addConnection(workspace.DescendantAdded:Connect(function(obj)
+        if not getgenv().OPTIMIZER_ACTIVE then return end
+        
+        pcall(function()
+            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or
+               obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") or
+               obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Explosion") then
+                obj:Destroy()
+            elseif obj:IsA("BasePart") then
+                obj.CastShadow = false
+                obj.Material = Enum.Material.Plastic
+            end
+        end)
+    end))
+    
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character then
+            optimizeCharacter(p.Character)
+        end
+        
+        addConnection(p.CharacterAdded:Connect(function(char)
+            if getgenv().OPTIMIZER_ACTIVE then
+                optimizeCharacter(char)
+            end
+        end))
+    end
+    
+    addConnection(Players.PlayerAdded:Connect(function(p)
+        addConnection(p.CharacterAdded:Connect(function(char)
+            if getgenv().OPTIMIZER_ACTIVE then
+                optimizeCharacter(char)
+            end
+        end))
+    end))
+    
+    pcall(function()
+        setfpscap(999)
+    end)
+    
+    pcall(function()
+        local cam = workspace.CurrentCamera
+        cam.FieldOfView = 70
+    end)
+    
+    print("✅ Fps Boost Enabled")
+end
+
+local function disableFpsBoost()
+    if not fpsBoostEnabled then return end
+    fpsBoostEnabled = false
+    getgenv().OPTIMIZER_ACTIVE = false
+    
+    for _, thread in ipairs(optimizerThreads) do
+        pcall(function()
+            task.cancel(thread)
+        end)
+    end
+    optimizerThreads = {}
+    
+    for _, conn in ipairs(optimizerConnections) do
+        pcall(function()
+            conn:Disconnect()
+        end)
+    end
+    optimizerConnections = {}
+    
+    pcall(function()
+        workspace.StreamingEnabled = originalSettings.streamingEnabled or true
+        workspace.StreamingMinRadius = originalSettings.streamingMinRadius or 64
+        workspace.StreamingTargetRadius = originalSettings.streamingTargetRadius or 1024
+        
+        settings().Rendering.QualityLevel = originalSettings.qualityLevel or Enum.QualityLevel.Automatic
+        settings().Rendering.MeshPartDetailLevel = originalSettings.meshPartDetailLevel or Enum.MeshPartDetailLevel.DistanceBased
+        
+        game.Lighting.GlobalShadows = originalSettings.globalShadows ~= false
+        game.Lighting.Brightness = originalSettings.brightness or 1
+        game.Lighting.FogEnd = originalSettings.fogEnd or 100000
+        game.Lighting.Technology = originalSettings.technology or Enum.Technology.ShadowMap
+        game.Lighting.EnvironmentDiffuseScale = originalSettings.environmentDiffuseScale or 1
+        game.Lighting.EnvironmentSpecularScale = originalSettings.environmentSpecularScale or 1
+        
+        workspace.Terrain.WaterWaveSize = originalSettings.waterWaveSize or 0.15
+        workspace.Terrain.WaterWaveSpeed = originalSettings.waterWaveSpeed or 10
+        workspace.Terrain.WaterReflectance = originalSettings.waterReflectance or 1
+        workspace.Terrain.WaterTransparency = originalSettings.waterTransparency or 0.3
+        workspace.Terrain.Decoration = originalSettings.decoration ~= false
+    end)
+    
+    print("❌ Fps Boost Disabled")
+end
+
 -- ==================== TOGGLE FUNCTIONS FOR UI ====================
 local function toggleEspPlayers(state)
     if state then
@@ -2035,6 +2348,18 @@ local function toggleAutoSteal(state)
         enableAutoSteal()
     else
         disableAutoSteal()
+    end
+end
+
+local function toggleAntiKb(state)
+    toggleAntiKnockback(state)
+end
+
+local function toggleFpsBoost(state)
+    if state then
+        enableFpsBoost()
+    else
+        disableFpsBoost()
     end
 end
 
@@ -2109,6 +2434,14 @@ player.CharacterAdded:Connect(function(newCharacter)
         startNoKnockback()
         print("🔄 Reloaded anti-knockback after respawn")
     end
+    
+    if fpsBoostEnabled then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Character then
+                optimizeCharacter(p.Character)
+            end
+        end
+    end
 end)
 
 player.CharacterRemoving:Connect(function()
@@ -2130,6 +2463,7 @@ ArcadeUILib:AddToggleRow("Esp Players", toggleEspPlayers, "Esp Best", toggleEspB
 ArcadeUILib:AddToggleRow("Base Line", toggleBaseLine, "Anti Turret", toggleAntiTurret)
 ArcadeUILib:AddToggleRow("Aimbot", toggleAimbot, "Kick Steal", toggleKickSteal)
 ArcadeUILib:AddToggleRow("Unwalk Anim", toggleUnwalkAnim, "Auto Steal", toggleAutoSteal)
-ArcadeUILib:AddToggleRow("Anti Debuff", toggleAntiDebuff, "Anti Kb", toggleAntiKnockback)
+ArcadeUILib:AddToggleRow("Anti Debuff", toggleAntiDebuff, "Anti Kb", toggleAntiKb)
+ArcadeUILib:AddToggleRow("Fps Boost", toggleFpsBoost)
 
-print("🎮 Arcade UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff & Anti Kb Loaded Successfully!")
+print("🎮 Arcade UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff, Anti Kb & Fps Boost Loaded Successfully!")
