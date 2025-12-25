@@ -1,5 +1,5 @@
 --[[
-    ARCADE UI - INTEGRASI ESP PLAYERS, ESP BEST, BASE LINE, ANTI TURRET, AIMBOT, KICK STEAL, UNWALK ANIM, AUTO STEAL, ANTI DEBUFF, ANTI KB, XRAY BASE & FPS BOOST
+    ARCADE UI - INTEGRASI ESP PLAYERS, ESP BEST, BASE LINE, ANTI TURRET, AIMBOT, KICK STEAL, UNWALK ANIM, AUTO STEAL, HIGHEST, ANTI DEBUFF, ANTI KB, XRAY BASE & FPS BOOST
 ]]
 
 -- ==================== LOAD LIBRARY ====================
@@ -79,6 +79,13 @@ local PromptMemoryCache = {}
 local InternalStealCache = {}
 local stealConnection = nil
 local autoStealRadius = 20
+
+-- ==================== HIGHEST STEAL VARIABLES ====================
+local highestStealEnabled = false
+local highestStealConnection = nil
+local highestStealRadius = 200 -- Radius yang lebih besar untuk mencari haiwan paling bernilai
+local lastHighestStealTime = 0
+local highestStealCooldown = 5 -- Cooldown dalam saat untuk mengelakkan spam
 
 -- ==================== ANTI DEBUFF VARIABLES ====================
 local antiBeeEnabled = false
@@ -1766,6 +1773,94 @@ local function disableAutoSteal()
     print("❌ Auto Steal Disabled")
 end
 
+-- ==================== HIGHEST STEAL FUNCTIONS ====================
+local function getHighestValueAnimal()
+    if not allAnimalsCache or #allAnimalsCache == 0 then
+        scanAllPlots()
+    end
+    
+    if not allAnimalsCache or #allAnimalsCache == 0 then
+        return nil
+    end
+    
+    -- Cari haiwan paling bernilai yang bukan milik pemain
+    for _, animalData in ipairs(allAnimalsCache) do
+        if not isMyBaseAnimal(animalData) then
+            return animalData
+        end
+    end
+    
+    return nil
+end
+
+local function startHighestSteal()
+    if highestStealConnection then return end
+    
+    highestStealConnection = RunService.Heartbeat:Connect(function()
+        if not highestStealEnabled then return end
+        
+        -- Semak cooldown untuk mengelakkan spam
+        local currentTime = tick()
+        if currentTime - lastHighestStealTime < highestStealCooldown then
+            return
+        end
+        
+        local targetAnimal = getHighestValueAnimal()
+        if not targetAnimal then return end
+        
+        local character = player.Character
+        if not character then return end
+        
+        local hrp = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("UpperTorso")
+        if not hrp then return end
+        
+        local animalPos = getAnimalPosition(targetAnimal)
+        if not animalPos then return end
+        
+        local dist = (hrp.Position - animalPos).Magnitude
+        if dist > highestStealRadius then return end
+        
+        local prompt = PromptMemoryCache[targetAnimal.uid]
+        if not prompt or not prompt.Parent then
+            prompt = findProximityPromptForAnimal(targetAnimal)
+        end
+        
+        if prompt then
+            local success = attemptSteal(prompt)
+            if success then
+                lastHighestStealTime = currentTime
+                print("🏆 Attempting to steal highest value animal:", targetAnimal.name, "with value:", targetAnimal.genValue)
+                
+                -- Notifikasi
+                ArcadeUILib:Notify("Stealing " .. targetAnimal.name .. " (" .. formatNumber(targetAnimal.genValue) .. ")")
+            end
+        end
+    end)
+end
+
+local function stopHighestSteal()
+    if not highestStealConnection then return end
+    
+    highestStealConnection:Disconnect()
+    highestStealConnection = nil
+end
+
+local function enableHighestSteal()
+    if highestStealEnabled then return end
+    highestStealEnabled = true
+    
+    startHighestSteal()
+    print("✅ Highest Steal Enabled")
+end
+
+local function disableHighestSteal()
+    if not highestStealEnabled then return end
+    highestStealEnabled = false
+    
+    stopHighestSteal()
+    print("❌ Highest Steal Disabled")
+end
+
 -- ==================== ANTI DEBUFF FUNCTIONS ====================
 local function updateUseItemEventHandler()
     local success, Event = pcall(function()
@@ -2519,6 +2614,14 @@ local function toggleAutoSteal(state)
     end
 end
 
+local function toggleHighestSteal(state)
+    if state then
+        enableHighestSteal()
+    else
+        disableHighestSteal()
+    end
+end
+
 local function toggleAntiKb(state)
     toggleAntiKnockback(state)
 end
@@ -2627,6 +2730,14 @@ player.CharacterAdded:Connect(function(newCharacter)
             end
         end
     end
+    
+    if highestStealEnabled then
+        stopHighestSteal()
+        highestStealEnabled = false
+        task.wait(0.5)
+        highestStealEnabled = true
+        startHighestSteal()
+    end
 end)
 
 player.CharacterRemoving:Connect(function()
@@ -2651,8 +2762,8 @@ ArcadeUILib:AddToggleRow("Esp Players", toggleEspPlayers, "Esp Best", toggleEspB
 ArcadeUILib:AddToggleRow("Base Line", toggleBaseLine, "Anti Turret", toggleAntiTurret)
 ArcadeUILib:AddToggleRow("Aimbot", toggleAimbot, "Kick Steal", toggleKickSteal)
 ArcadeUILib:AddToggleRow("Unwalk Anim", toggleUnwalkAnim, "Auto Steal", toggleAutoSteal)
-ArcadeUILib:AddToggleRow("Anti Debuff", toggleAntiDebuff, "Anti Kb", toggleAntiKb)
-ArcadeUILib:AddToggleRow("Xray Base", toggleXrayBase, "Fps Boost", toggleFpsBoost)
+ArcadeUILib:AddToggleRow("Highest", toggleHighestSteal, "Anti Debuff", toggleAntiDebuff)
+ArcadeUILib:AddToggleRow("Anti Kb", toggleAntiKb, "Xray Base", toggleXrayBase)
+ArcadeUILib:AddToggleRow("Fps Boost", toggleFpsBoost, "", nil)
 
-print("🎮 Arcade UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff, Anti Kb, Xray Base & Fps Boost Loaded Successfully!")
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Sabstealtoolsv1.lua"))()
+print("🎮 Arcade UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Highest, Anti Debuff, Anti Kb, Xray Base & Fps Boost Loaded Successfully!")
