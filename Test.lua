@@ -2617,7 +2617,7 @@ end)
 ArcadeUILib:CreateUI()
 
 -- Notifikasi apabila UI dimuatkan
-ArcadeUILib:Notify("Arcade UI Berjaya Dimuatkan!")
+ArcadeUILib:Notify("Nightmare Hub")
 
 -- Tambah toggle dalam baris yang sama
 ArcadeUILib:AddToggleRow("Esp Players", toggleEspPlayers, "Esp Best", toggleEspBest)
