@@ -36,6 +36,7 @@ local tracerAttachment0 = nil
 local tracerAttachment1 = nil
 local tracerBeam = nil
 local tracerConnection = nil
+local lastNotifiedPet = nil -- Untuk mengelakkan notifikasi berulang
 
 -- ==================== BASE LINE VARIABLES ====================
 local baseLineEnabled = false
@@ -502,6 +503,18 @@ local function createHighestValueESP(brainrotData)
         
         highestValueESP = espContainer
         highestValueData = brainrotData
+        
+        -- TAMBAH: Notifikasi untuk ESP Best
+        if espBestEnabled then
+            local petName = brainrotData.petName or "Unknown"
+            local genValue = brainrotData.formattedValue or formatNumber(brainrotData.generation or 0)
+            
+            -- Hanya beri notifikasi jika ini adalah haiwan yang berbeza dari yang terakhir diberitahu
+            if not lastNotifiedPet or lastNotifiedPet ~= petName .. genValue then
+                lastNotifiedPet = petName .. genValue
+                ArcadeUILib:Notify(petName .. " " .. genValue)
+            end
+        end
     end)
 end
 
@@ -604,6 +617,7 @@ local function updateHighestValueESP()
         highestValueESP = nil
         highestValueData = nil
         removeTracerLine()
+        lastNotifiedPet = nil -- Reset notifikasi apabila haiwan hilang
     end
     
     local newHighest = findHighestBrainrot()
@@ -636,6 +650,7 @@ local function removeHighestValueESP()
     end
     
     removeTracerLine()
+    lastNotifiedPet = nil -- Reset notifikasi apabila ESP dimatikan
 end
 
 local function enableESPBest()
@@ -2170,7 +2185,6 @@ local PERFORMANCE_FFLAGS = {
     ["FFlagEnableInGameMenuModernization"] = false,
     ["FFlagEnableReportAbuseMenuRoactABTest2"] = false,
     ["FFlagDisableNewIGMinDUA"] = true,
-    ["FFlagEnableAccessoryValidation"] = false,
     ["FFlagEnableV3MenuABTest3"] = false,
     ["FIntRobloxGuiBlurIntensity"] = 0,
     ["DFIntTimestepArbiterThresholdCFLThou"] = 10,
@@ -2601,6 +2615,9 @@ end)
 
 -- ==================== CREATE UI AND ADD TOGGLES ====================
 ArcadeUILib:CreateUI()
+
+-- Notifikasi apabila UI dimuatkan
+ArcadeUILib:Notify("Arcade UI Berjaya Dimuatkan!")
 
 -- Tambah toggle dalam baris yang sama
 ArcadeUILib:AddToggleRow("Esp Players", toggleEspPlayers, "Esp Best", toggleEspBest)
