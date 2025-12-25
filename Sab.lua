@@ -134,7 +134,7 @@ pcall(function()
     NumberUtils = require(Utils:WaitForChild("NumberUtils"))
 end)
 
--- ==================== ESP PLAYERS FUNCTIONS (NEW) ====================
+-- ==================== ESP PLAYERS FUNCTIONS (FIXED) ====================
 -- Fungsi untuk mendapatkan nama item yang dipegang oleh pemain
 local function getEquippedItem(character)
     -- Semak jika ada tool di tangan
@@ -157,11 +157,11 @@ local function getEquippedItem(character)
 end
 
 -- Fungsi untuk mencipta ESP untuk seorang pemain
-local function createESP(player)
+local function createESP(targetPlayer)
     -- Jangan buat ESP untuk diri sendiri
-    if player == player then return end
+    if targetPlayer == player then return end
     
-    local character = player.Character
+    local character = targetPlayer.Character
     if not character then return end
     
     local rootPart = character:FindFirstChild("HumanoidRootPart")
@@ -191,7 +191,7 @@ local function createESP(player)
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Size = UDim2.new(1, 0, 0, 20)
     nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = player.Name
+    nameLabel.Text = targetPlayer.Name
     nameLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
     nameLabel.TextStrokeTransparency = 0.5
     nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
@@ -213,7 +213,7 @@ local function createESP(player)
     itemLabel.Parent = billboard
     
     -- Simpan semua objek ESP dalam jadual
-    espObjects[player] = {
+    espObjects[targetPlayer] = {
         highlight = highlight,
         billboard = billboard,
         itemLabel = itemLabel,
@@ -222,15 +222,15 @@ local function createESP(player)
 end
 
 -- Fungsi untuk membuang ESP untuk seorang pemain
-local function removeESP(player)
-    if espObjects[player] then
-        if espObjects[player].highlight then
-            espObjects[player].highlight:Destroy()
+local function removeESP(targetPlayer)
+    if espObjects[targetPlayer] then
+        if espObjects[targetPlayer].highlight then
+            espObjects[targetPlayer].highlight:Destroy()
         end
-        if espObjects[player].billboard then
-            espObjects[player].billboard:Destroy()
+        if espObjects[targetPlayer].billboard then
+            espObjects[targetPlayer].billboard:Destroy()
         end
-        espObjects[player] = nil
+        espObjects[targetPlayer] = nil
     end
 end
 
@@ -238,9 +238,9 @@ end
 local function updateESP()
     if not espPlayersEnabled then return end
     
-    for player, espData in pairs(espObjects) do
+    for targetPlayer, espData in pairs(espObjects) do
         -- Semak jika pemain dan watak masih wujud
-        if player and player.Parent and espData.character and espData.character.Parent then
+        if targetPlayer and targetPlayer.Parent and espData.character and espData.character.Parent then
             local character = espData.character
             local rootPart = character:FindFirstChild("HumanoidRootPart")
             
@@ -257,11 +257,11 @@ local function updateESP()
                 end
             else
                 -- Jika tiada rootPart, buang ESP
-                removeESP(player)
+                removeESP(targetPlayer)
             end
         else
             -- Jika pemain telah keluar, buang ESP
-            removeESP(player)
+            removeESP(targetPlayer)
         end
     end
 end
@@ -272,9 +272,9 @@ local function enableESPPlayers()
     espPlayersEnabled = true
     
     -- Cipta ESP untuk semua pemain yang sedia ada
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= player and player.Character then
-            createESP(player)
+    for _, targetPlayer in pairs(Players:GetPlayers()) do
+        if targetPlayer ~= player and targetPlayer.Character then
+            createESP(targetPlayer)
         end
     end
     
@@ -290,8 +290,8 @@ local function disableESPPlayers()
     espPlayersEnabled = false
     
     -- Buang semua ESP
-    for player, _ in pairs(espObjects) do
-        removeESP(player)
+    for targetPlayer, _ in pairs(espObjects) do
+        removeESP(targetPlayer)
     end
     
     -- Hentikan gelung kemas kini
@@ -2578,27 +2578,27 @@ end
 
 -- ==================== PLAYER EVENT HANDLERS ====================
 -- Apabila pemain baru masuk
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(character)
+Players.PlayerAdded:Connect(function(targetPlayer)
+    targetPlayer.CharacterAdded:Connect(function(character)
         task.wait(1) -- Tunggu sebentar untuk watak dimuatkan sepenuhnya
-        if espPlayersEnabled and player ~= player then
-            createESP(player)
+        if espPlayersEnabled and targetPlayer ~= player then
+            createESP(targetPlayer)
         end
     end)
 end)
 
 -- Apabila pemain keluar
-Players.PlayerRemoving:Connect(function(player)
-    removeESP(player)
+Players.PlayerRemoving:Connect(function(targetPlayer)
+    removeESP(targetPlayer)
 end)
 
 -- Semak pemain yang sedia ada dalam server
-for _, player in pairs(Players:GetPlayers()) do
-    if player ~= player then
-        player.CharacterAdded:Connect(function(character)
+for _, targetPlayer in pairs(Players:GetPlayers()) do
+    if targetPlayer ~= player then
+        targetPlayer.CharacterAdded:Connect(function(character)
             task.wait(1)
             if espPlayersEnabled then
-                createESP(player)
+                createESP(targetPlayer)
             end
         end)
     end
@@ -2696,8 +2696,8 @@ ArcadeUILib:AddToggleRow("Esp Players", toggleEspPlayers, "Esp Best", toggleEspB
 ArcadeUILib:AddToggleRow("Base Line", toggleBaseLine, "Anti Turret", toggleAntiTurret)
 ArcadeUILib:AddToggleRow("Aimbot", toggleAimbot, "Kick Steal", toggleKickSteal)
 ArcadeUILib:AddToggleRow("Unwalk Anim", toggleUnwalkAnim, "Auto Steal", toggleAutoSteal)
-ArcadeUILib:AddToggleRow("Anti Debuff", toggleAntiDebuff, "Anti Kb", toggleAntiKb)
+ArcadeUILib:AddToggleRow("Anti Debuff", toggleAntiDebuff, "Anti Rdoll", toggleAntiKb)
 ArcadeUILib:AddToggleRow("Xray Base", toggleXrayBase, "Fps Boost", toggleFpsBoost)
 
-print("🎮 Arcade UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff, Anti Kb, Xray Base & Fps Boost Loaded Successfully!")
+print("🎮 Arcade UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff, Anti Rdoll, Xray Base & Fps Boost Loaded Successfully!")
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Sabstealtoolsv1.lua"))()
