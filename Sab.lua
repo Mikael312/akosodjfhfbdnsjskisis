@@ -1,6 +1,7 @@
 --[[
     ARCADE UI - INTEGRASI ESP PLAYERS, ESP BEST, BASE LINE, ANTI TURRET, AIMBOT, KICK STEAL, UNWALK ANIM, AUTO STEAL, ANTI DEBUFF, ANTI RDOLL, XRAY BASE, FPS BOOST & ESP TIMER
-    REFACTORED TO G. (Global) & S. (Specific) PATTERN
+    STRUCTURE: G. (Global/Shared) & S. (Specific/Modules)
+    FIXED: Full logic restored, Toggles visible, Loadstring protected.
 ]]
 
 -- ==================== ROOT ENVIRONMENT ====================
@@ -19,6 +20,9 @@ if not Script.G.Success then
     return
 end
 
+-- Assign global for compatibility if library needs it
+ArcadeUILib = Script.G.ArcadeUILib
+
 -- ==================== G. SERVICES & VARIABLES ====================
 Script.G.Services = {
     Players = game:GetService("Players"),
@@ -32,11 +36,11 @@ Script.G.Services = {
 }
 
 Script.G.Player = Script.G.Services.Players.LocalPlayer
-Script.G.Pcall = pcall -- Helper
 
 -- ==================== G. MODULES (Shared Data) ====================
 Script.G.Modules = {}
-Script.G.Pcall(function()
+
+pcall(function()
     Script.G.Modules.Animals = require(Script.G.Services.ReplicatedStorage:WaitForChild("Datas"):WaitForChild("Animals"))
     Script.G.Modules.Traits = require(Script.G.Services.ReplicatedStorage:WaitForChild("Datas"):WaitForChild("Traits"))
     Script.G.Modules.Mutations = require(Script.G.Services.ReplicatedStorage:WaitForChild("Datas"):WaitForChild("Mutations"))
@@ -44,6 +48,7 @@ Script.G.Pcall(function()
     Script.G.Modules.Shared = require(Script.G.Services.ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Animals"))
     Script.G.Modules.Utils = require(Script.G.Services.ReplicatedStorage:WaitForChild("Utils"):WaitForChild("NumberUtils"))
     Script.G.Modules.Synchronizer = require(Script.G.Services.ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Synchronizer"))
+    Script.G.Modules.Net = require(Script.G.Services.ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net"))
 end)
 
 -- ==================== G. HELPER FUNCTIONS ====================
@@ -178,7 +183,7 @@ Script.S.EspBest = {
         if not module then return 0 end
         local traitJson = model:GetAttribute("Traits")
         if not traitJson or traitJson == "" then return 0 end
-        local traits = typeof(Script.G.Pcall(function() return Script.G.Services.HttpService:JSONDecode(traitJson) end)) == "table" and Script.G.Services.HttpService:JSONDecode(traitJson) or {}
+        local traits = typeof(pcall(function() return Script.G.Services.HttpService:JSONDecode(traitJson) end)) == "table" and Script.G.Services.HttpService:JSONDecode(traitJson) or {}
         local mult = 0
         for _, entry in pairs(traits) do
             local name = typeof(entry) == "table" and entry.Name or tostring(entry)
@@ -212,7 +217,7 @@ Script.S.EspBest = {
             if plotSign and plotSign:FindFirstChild("YourBase") and not plotSign.YourBase.Enabled then -- Not my base
                 for _, obj in pairs(plot:GetDescendants()) do
                     if obj:IsA("Model") and Script.G.Modules.Animals and Script.G.Modules.Animals[obj.Name] then
-                        Script.G.Pcall(function()
+                        pcall(function()
                             local gen = Script.S.EspBest.GetFinalGeneration(obj)
                             if gen > 0 and gen > highest.value then
                                 local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
@@ -233,7 +238,7 @@ Script.S.EspBest = {
         local part = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA('BasePart')
         if not part then return end
 
-        Script.G.Pcall(function()
+        pcall(function()
             -- Cleanup old
             if Script.S.EspBest.Objects.highlight then Script.S.EspBest.Objects.highlight:Destroy() end
             if Script.S.EspBest.Objects.nameLabel then Script.S.EspBest.Objects.nameLabel:Destroy() end
@@ -323,7 +328,7 @@ Script.S.EspBest = {
         
         if not root or not targetPart then return end
 
-        Script.G.Pcall(function()
+        pcall(function()
             local att0 = Instance.new("Attachment", root)
             local att1 = Instance.new("Attachment", targetPart)
             local beam = Instance.new("Beam")
@@ -499,12 +504,12 @@ Script.S.BaseLine = {
         if state then
             if Script.S.BaseLine.Enabled then return end
             Script.S.BaseLine.Enabled = true
-            Script.G.Pcall(Script.S.BaseLine.CreateLine)
+            pcall(Script.S.BaseLine.CreateLine)
             print("✅ Base Line ON")
         else
             if not Script.S.BaseLine.Enabled then return end
             Script.S.BaseLine.Enabled = false
-            Script.G.Pcall(Script.S.BaseLine.StopLine)
+            pcall(Script.S.BaseLine.StopLine)
             print("❌ Base Line OFF")
         end
     end
@@ -527,7 +532,7 @@ Script.S.AntiTurret = {
             if p.Character and desc:IsDescendantOf(p.Character) then return false end
         end
         local isAnchored = false
-        Script.G.Pcall(function()
+        pcall(function()
             if desc:IsA("Model") and desc.PrimaryPart then isAnchored = desc.PrimaryPart.Anchored
             elseif desc:IsA("BasePart") then isAnchored = desc.Anchored end
         end)
@@ -545,7 +550,7 @@ Script.S.AntiTurret = {
         if not char or not char:FindFirstChild("HumanoidRootPart") then return end
         local hrp = char.HumanoidRootPart
         local spawnOffset = hrp.CFrame.LookVector * 3.5 + Vector3.new(0, 1.2, 0)
-        Script.G.Pcall(function()
+        pcall(function()
             if desc:IsA("Model") and desc.PrimaryPart then desc:SetPrimaryPartCFrame(hrp.CFrame + spawnOffset)
             elseif desc:IsA("BasePart") then desc.CFrame = hrp.CFrame + spawnOffset end
             for _, part in pairs(desc:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
@@ -561,7 +566,6 @@ Script.S.AntiTurret = {
         Script.S.AntiTurret.Processed[desc] = true
 
         local running = true
-        local hitCount = 0
         local followConn
 
         local function stopAttack()
@@ -586,7 +590,7 @@ Script.S.AntiTurret = {
                 local bat = Script.S.AntiTurret.FindBat()
                 if bat then
                     if bat.Parent ~= Script.G.Player.Character then Script.G.Player.Character.Humanoid:EquipTool(bat) end
-                    for i=1, 12 do if desc.Parent and bat.Parent == Script.G.Player.Character then bat:Activate() hitCount += 1 else break end end
+                    for i=1, 12 do if desc.Parent and bat.Parent == Script.G.Player.Character then bat:Activate() else break end end
                 end
                 task.wait(0.05)
             end
@@ -702,7 +706,7 @@ Script.S.KickSteal = {
     LastCount = 0,
 
     GetCount = function()
-        local res = Script.G.Pcall(function()
+        local res = pcall(function()
             local ls = Script.G.Player:FindFirstChild("leaderstats")
             local s = ls and ls:FindFirstChild("Steals")
             return s and (typeof(s.Value) == "number" and s.Value or tonumber(s.Value)) or 0
@@ -939,7 +943,7 @@ Script.S.AntiDebuff = {
     BoogieID = "109061983885712",
 
     UpdateHandler = function()
-        local remote = Script.G.Pcall(function() return require(Script.G.Services.ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net")):RemoteEvent("UseItem") end)
+        local remote = pcall(function() return Script.G.Modules.Net:RemoteEvent("UseItem") end)
         if not remote then return end
 
         if not Script.S.AntiDebuff.Bee and not Script.S.AntiDebuff.Boogie then
@@ -974,7 +978,7 @@ Script.S.AntiDebuff = {
             Script.S.AntiDebuff.Bee = true
             Script.S.AntiDebuff.Boogie = true
             
-            if Script.S.AntiDeffic.HbConn then Script.S.AntiDebuff.HbConn:Disconnect() end
+            if Script.S.AntiDebuff.HbConn then Script.S.AntiDebuff.HbConn:Disconnect() end
             Script.S.AntiDebuff.HbConn = task.spawn(Script.S.AntiDebuff.Monitor)
 
             local anim = Script.G.Player.Character and Script.G.Player.Character:FindFirstChildOfClass("Humanoid"):FindFirstChildOfClass("Animator")
@@ -1142,21 +1146,77 @@ Script.S.XrayBase = {
     end
 }
 
--- ==================== S. FPS BOOST ====================
+-- ==================== S. FPS BOOST (FULL LOGIC) ====================
 Script.S.FpsBoost = {
     Enabled = false,
     Threads = {},
     Conns = {},
     Original = {},
 
-    Store = function()
+    PERFORMANCE_FFLAGS = {
+        ["DFIntTaskSchedulerTargetFps"] = 999,
+        ["FFlagDebugGraphicsPreferVulkan"] = true,
+        ["FFlagDebugGraphicsDisableDirect3D11"] = true,
+        ["FFlagDebugGraphicsPreferD3D11FL10"] = false,
+        ["DFFlagDebugRenderForceTechnologyVoxel"] = true,
+        ["FFlagDisablePostFx"] = true,
+        ["FIntRenderShadowIntensity"] = 0,
+        ["FIntRenderLocalLightUpdatesMax"] = 0,
+        ["FIntRenderLocalLightUpdatesMin"] = 0,
+        ["DFIntTextureCompositorActiveJobs"] = 1,
+        ["DFIntDebugFRMQualityLevelOverride"] = 1,
+        ["FFlagFixPlayerCollisionWhenSwimming"] = false,
+        ["DFIntMaxInterpolationSubsteps"] = 0,
+        ["DFIntS2PhysicsSenderRate"] = 15,
+        ["DFIntConnectionMTUSize"] = 1492,
+        ["DFIntHttpCurlConnectionCacheSize"] = 134217728,
+        ["DFIntCSGLevelOfDetailSwitchingDistance"] = 0,
+        ["DFIntCSGLevelOfDetailSwitchingDistanceL12"] = 0,
+        ["DFIntCSGLevelOfDetailSwitchingDistanceL23"] = 0,
+        ["DFIntCSGLevelOfDetailSwitchingDistanceL34"] = 0,
+        ["FFlagEnableInGameMenuChromeABTest3"] = false,
+        ["FFlagEnableInGameMenuModernization"] = false,
+        ["FFlagEnableReportAbuseMenuRoactABTest2"] = false,
+        ["FFlagDisableNewIGMinDUA"] = true,
+        ["FFlagEnableV3MenuABTest3"] = false,
+        ["FIntRobloxGuiBlurIntensity"] = 0,
+        ["DFIntTimestepArbiterThresholdCFLThou"] = 10,
+        ["DFIntTextureQualityOverride"] = 1,
+        ["DFIntPerformanceControlTextureQualityBestUtility"] = 1,
+        ["DFIntTexturePoolSizeMB"] = 64,
+        ["DFIntMaxFrameBufferSize"] = 1,
+        ["FFlagDebugDisableParticleRendering"] = false,
+        ["DFIntParticleMaxCount"] = 100,
+        ["FFlagEnableWaterReflections"] = false,
+        ["DFIntWaterReflectionQuality"] = 0,
+    },
+
+    NukeVisuals = function()
         pcall(function()
-            Script.S.FpsBoost.Original = {
-                streamingEnabled = Script.G.Services.Workspace.StreamingEnabled,
-                qualityLevel = settings().Rendering.QualityLevel,
-                shadows = Script.G.Services.Lighting.GlobalShadows,
-                tech = Script.G.Services.Lighting.Technology
-            }
+            for _, obj in ipairs(Script.G.Services.Workspace:GetDescendants()) do
+                pcall(function()
+                    if obj:IsA("ParticleEmitter") then obj.Rate = 0 obj:Destroy()
+                    elseif obj:IsA("Trail") then obj:Destroy()
+                    elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then obj:Destroy()
+                    elseif obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("Explosion") then obj:Destroy()
+                    elseif obj:IsA("Decal") or obj:IsA("Texture") then
+                        if not (obj.Name == "face" and obj.Parent and obj.Parent.Name == "Head") then obj.Transparency = 1 end
+                    elseif obj:IsA("BasePart") then obj.CastShadow = false obj.Material = Enum.Material.Plastic end
+                end)
+            end
+        end)
+    end,
+
+    OptimizeChar = function(char)
+        if not char then return end
+        task.spawn(function()
+            task.wait(0.5)
+            pcall(function()
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then part.CastShadow = false part.Material = Enum.Material.Plastic
+                    elseif part:IsA("ParticleEmitter") or part:IsA("Trail") or part:IsA("PointLight") or part:IsA("Fire") then part:Destroy() end
+                end
+            end)
         end)
     end,
 
@@ -1164,23 +1224,74 @@ Script.S.FpsBoost = {
         if state then
             if Script.S.FpsBoost.Enabled then return end
             Script.S.FpsBoost.Enabled = true
-            Script.S.FpsBoost.Store()
+            getgenv().OPTIMIZER_ACTIVE = true
+            
+            -- Store Settings
             pcall(function()
-                setfflag("DFIntTaskSchedulerTargetFps", 999)
+                Script.S.FpsBoost.Original = {
+                    streamingEnabled = Script.G.Services.Workspace.StreamingEnabled,
+                    qualityLevel = settings().Rendering.QualityLevel,
+                    shadows = Script.G.Services.Lighting.GlobalShadows,
+                    tech = Script.G.Services.Lighting.Technology,
+                    brightness = Script.G.Services.Lighting.Brightness,
+                    waterWave = Script.G.Services.Workspace.Terrain.WaterWaveSize,
+                    decoration = Script.G.Services.Workspace.Terrain.Decoration
+                }
+            end)
+
+            -- Apply FFlags
+            for flag, val in pairs(Script.S.FpsBoost.PERFORMANCE_FFLAGS) do pcall(function() setfflag(flag, tostring(val)) end) end
+
+            -- Apply Settings
+            pcall(function()
                 Script.G.Services.Workspace.StreamingEnabled = true
+                Script.G.Services.Workspace.StreamingMinRadius = 64
+                Script.G.Services.Workspace.StreamingTargetRadius = 256
                 settings().Rendering.QualityLevel = 1
                 Script.G.Services.Lighting.GlobalShadows = false
                 Script.G.Services.Lighting.Technology = Enum.Technology.Legacy
+                Script.G.Services.Lighting.Brightness = 3
+                Script.G.Services.Lighting.FogEnd = 9e9
+                Script.G.Services.Workspace.Terrain.WaterWaveSize = 0
+                Script.G.Services.Workspace.Terrain.Decoration = false
+                setfpscap(999)
             end)
+
+            -- Threads
+            table.insert(Script.S.FpsBoost.Threads, task.spawn(Script.S.FpsBoost.NukeVisuals))
+            table.insert(Script.S.FpsBoost.Conns, Script.G.Services.Workspace.DescendantAdded:Connect(function(obj)
+                if not getgenv().OPTIMIZER_ACTIVE then return end
+                pcall(function()
+                    if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Explosion") then obj:Destroy()
+                    elseif obj:IsA("BasePart") then obj.CastShadow = false end
+                end)
+            end))
+            
+            for _, p in ipairs(Script.G.Services.Players:GetPlayers()) do
+                if p.Character then Script.S.FpsBoost.OptimizeChar(p.Character) end
+                table.insert(Script.S.FpsBoost.Conns, p.CharacterAdded:Connect(function(c) Script.S.FpsBoost.OptimizeChar(c) end))
+            end
+            table.insert(Script.S.FpsBoost.Conns, Script.G.Services.Players.PlayerAdded:Connect(function(p)
+                table.insert(Script.S.FpsBoost.Conns, p.CharacterAdded:Connect(function(c) Script.S.FpsBoost.OptimizeChar(c) end))
+            end))
+
             print("✅ Fps Boost ON")
         else
             if not Script.S.FpsBoost.Enabled then return end
             Script.S.FpsBoost.Enabled = false
+            getgenv().OPTIMIZER_ACTIVE = false
+            
+            for _, t in ipairs(Script.S.FpsBoost.Threads) do pcall(function() task.cancel(t) end) end
+            for _, c in ipairs(Script.S.FpsBoost.Conns) do pcall(function() c:Disconnect() end) end
+            
             pcall(function()
                 Script.G.Services.Workspace.StreamingEnabled = Script.S.FpsBoost.Original.streamingEnabled
                 settings().Rendering.QualityLevel = Script.S.FpsBoost.Original.qualityLevel
                 Script.G.Services.Lighting.GlobalShadows = Script.S.FpsBoost.Original.shadows
                 Script.G.Services.Lighting.Technology = Script.S.FpsBoost.Original.tech
+                Script.G.Services.Lighting.Brightness = Script.S.FpsBoost.Original.brightness
+                Script.G.Services.Workspace.Terrain.WaterWaveSize = Script.S.FpsBoost.Original.waterWave
+                Script.G.Services.Workspace.Terrain.Decoration = Script.S.FpsBoost.Original.decoration
             end)
             print("❌ Fps Boost OFF")
         end
@@ -1289,15 +1400,12 @@ end)
 
 Script.G.Player.CharacterAdded:Connect(function(c)
     task.wait(1)
-    -- Refresh ESP
     if Script.S.EspPlayers.Enabled then for _, p in pairs(Script.G.Services.Players:GetPlayers()) do if p ~= Script.G.Player then Script.S.EspPlayers.Create(p) end end end
-    if Script.S.BaseLine.Enabled then Script.G.Pcall(function() Script.S.BaseLine.StopLine() Script.S.BaseLine.CreateLine() end) end
-    if Script.S.AntiTurret.Enabled then -- Auto restart handled by logic or toggle
-        Script.S.AntiTurret.Toggle(false) task.wait(0.5) Script.S.AntiTurret.Toggle(true)
-    end
+    if Script.S.BaseLine.Enabled then pcall(function() Script.S.BaseLine.StopLine() Script.S.BaseLine.CreateLine() end) end
+    if Script.S.AntiTurret.Enabled then Script.S.AntiTurret.Toggle(false) task.wait(0.5) Script.S.AntiTurret.Toggle(true) end
     if Script.S.Aimbot.Enabled then Script.S.Aimbot.Toggle(false) task.wait(0.5) Script.S.Aimbot.Toggle(true) end
     if Script.S.UnwalkAnim.Enabled then Script.S.UnwalkAnim.Setup(c) end
-    if Script.S.AntiDebuff.Boogie then -- Re-bind animation
+    if Script.S.AntiDebuff.Boogie then
         local anim = c:WaitForChild("Humanoid"):WaitForChild("Animator")
         Script.S.AntiDebuff.AnimConn = anim.AnimationPlayed:Connect(function(t)
             if tostring(t.Animation.AnimationId):gsub("%D","") == Script.S.AntiDebuff.BoogieID then t:Stop() t:Destroy() end
@@ -1305,13 +1413,15 @@ Script.G.Player.CharacterAdded:Connect(function(c)
     end
     if Script.S.AntiRagdoll.Enabled then Script.S.AntiRagdoll.CacheChar() end
     if Script.S.XrayBase.Enabled then Script.S.XrayBase.Apply() end
+    if Script.S.FpsBoost.Enabled then
+        for _, p in ipairs(Script.G.Services.Players:GetPlayers()) do if p.Character then Script.S.FpsBoost.OptimizeChar(p.Character) end end
+    end
 end)
 
 Script.G.Player.CharacterRemoving:Connect(function()
     if Script.S.BaseLine.Enabled then Script.S.BaseLine.StopLine() end
 end)
 
--- Auto scan plots for Auto Steal
 task.spawn(function()
     while task.wait(5) do Script.S.AutoSteal.ScanPlots() end
 end)
@@ -1328,7 +1438,9 @@ Script.G.ArcadeUILib:AddToggleRow("Anti Debuff", function(s) Script.S.AntiDebuff
 Script.G.ArcadeUILib:AddToggleRow("Xray Base", function(s) Script.S.XrayBase.Toggle(s) end, "Fps Boost", function(s) Script.S.FpsBoost.Toggle(s) end)
 Script.G.ArcadeUILib:AddToggleRow("Esp Timer", function(s) Script.S.EspTimer.Toggle(s) end, "", nil)
 
-print("🎮 Full Modular Code Loaded (G. & S. Pattern)")
+print("🎮 Full Modular Code Loaded (G. & S. Pattern) - FIXED")
 
--- External Loader
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Sabstealtoolsv1.lua"))()
+-- ==================== EXTERNAL LOADER (PROTECTED) ====================
+pcall(function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Sabstealtoolsv1.lua"))()
+end)
