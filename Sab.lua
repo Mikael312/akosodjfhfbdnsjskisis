@@ -1,5 +1,5 @@
 --[[
-    ARCADE UI - INTEGRASI ESP PLAYERS, ESP BEST, BASE LINE, ANTI TURRET, AIMBOT, KICK STEAL, UNWALK ANIM, AUTO STEAL, ANTI DEBUFF, ANTI RDOLL, XRAY BASE, FPS BOOST, ESP TIMER & SPEED REDUCE
+    ARCADE UI - INTEGRASI ESP PLAYERS, ESP BEST, BASE LINE, ANTI TURRET, AIMBOT, KICK STEAL, UNWALK ANIM, AUTO STEAL, ANTI DEBUFF, ANTI RDOLL, XRAY BASE, FPS BOOST & ESP TIMER
 ]]
 
 -- ==================== LOAD LIBRARY ====================
@@ -111,11 +111,6 @@ local originalSettings = {}
 -- ==================== ESP TIMER VARIABLES ====================
 local timerEspEnabled = false
 local timerEspConnections = {}
-
--- ==================== SPEED REDUCE VARIABLES ====================
-local FIXED_SPEED = 22 -- Speed yang fixed
-local speedReduceConnection = nil
-local speedReduceEnabled = false
 
 -- ==================== MODULES FOR ESP BEST ====================
 local AnimalsModule, TraitsModule, MutationsModule
@@ -2764,45 +2759,6 @@ local function disableTimerESP()
     print("❌ Timer ESP disabled")
 end
 
--- ==================== SPEED REDUCE FUNCTIONS ====================
-local function enableSpeedReduce()
-    if speedReduceEnabled then return false end
-    speedReduceEnabled = true
-    
-    local character = player.Character or player.CharacterAdded:Wait()
-
-    speedReduceConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        local currentCharacter = player.Character
-        if currentCharacter then
-            local rootPart = currentCharacter:FindFirstChild("HumanoidRootPart")
-            local humanoid = currentCharacter:FindFirstChildOfClass("Humanoid")
-            
-            if rootPart and humanoid then
-                local moveDirection = humanoid.MoveDirection
-                local targetVelocity = Vector3.new(moveDirection.X, 0, moveDirection.Z) * FIXED_SPEED
-                local currentVelocity = rootPart.Velocity
-                rootPart.Velocity = currentVelocity:Lerp(Vector3.new(targetVelocity.X, currentVelocity.Y, targetVelocity.Z), 0.45)
-            end
-        end
-    end)
-    
-    print("✅ Speed Reduce Enabled")
-    return true
-end
-
-local function disableSpeedReduce()
-    if not speedReduceEnabled then return false end
-    speedReduceEnabled = false
-    
-    if speedReduceConnection then
-        speedReduceConnection:Disconnect()
-        speedReduceConnection = nil
-    end
-    
-    print("❌ Speed Reduce Disabled")
-    return true
-end
-
 -- ==================== TOGGLE FUNCTIONS FOR UI ====================
 local function toggleEspPlayers(state)
     if state then
@@ -2900,14 +2856,6 @@ local function toggleEspTimer(state)
     end
 end
 
-local function toggleSpeedReduce(state)
-    if state then
-        enableSpeedReduce()
-    else
-        disableSpeedReduce()
-    end
-end
-
 -- ==================== PLAYER EVENT HANDLERS ====================
 -- Apabila pemain baru masuk
 Players.PlayerAdded:Connect(function(targetPlayer)
@@ -3000,24 +2948,6 @@ player.CharacterAdded:Connect(function(newCharacter)
             end
         end
     end
-    
-    if speedReduceEnabled then
-        if speedReduceConnection then
-            speedReduceConnection:Disconnect()
-        end
-        
-        speedReduceConnection = game:GetService("RunService").Heartbeat:Connect(function()
-            local rootPart = newCharacter:FindFirstChild("HumanoidRootPart")
-            local humanoid = newCharacter:FindFirstChildOfClass("Humanoid")
-            
-            if rootPart and humanoid then
-                local moveDirection = humanoid.MoveDirection
-                local targetVelocity = Vector3.new(moveDirection.X, 0, moveDirection.Z) * FIXED_SPEED
-                local currentVelocity = rootPart.Velocity
-                rootPart.Velocity = currentVelocity:Lerp(Vector3.new(targetVelocity.X, currentVelocity.Y, targetVelocity.Z), 0.45)
-            end
-        end)
-    end
 end)
 
 player.CharacterRemoving:Connect(function()
@@ -3044,7 +2974,7 @@ ArcadeUILib:AddToggleRow("Aimbot", toggleAimbot, "Kick Steal", toggleKickSteal)
 ArcadeUILib:AddToggleRow("Unwalk Anim", toggleUnwalkAnim, "Auto Steal", toggleAutoSteal)
 ArcadeUILib:AddToggleRow("Anti Debuff", toggleAntiDebuff, "Anti Rdoll", toggleAntiRagdoll)
 ArcadeUILib:AddToggleRow("Xray Base", toggleXrayBase, "Fps Boost", toggleFpsBoost)
-ArcadeUILib:AddToggleRow("Esp Timer", toggleEspTimer, "Speed Reduce", toggleSpeedReduce)
+ArcadeUILib:AddToggleRow("Esp Timer", toggleEspTimer, "", nil)
 
-print("🎮 Arcade UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff, Anti Rdoll, Xray Base, Fps Boost, Esp Timer & Speed Reduce Loaded Successfully!")
+print("🎮 Arcade UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff, Anti Rdoll, Xray Base, Fps Boost & Esp Timer Loaded Successfully!")
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Sabstealtoolsv1.lua"))()
