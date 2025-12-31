@@ -543,18 +543,6 @@ local function createHighestValueESP(brainrotData)
         
         highestValueESP = espContainer
         highestValueData = brainrotData
-        
-        -- TAMBAH: Notifikasi untuk ESP Best
-        if espBestEnabled then
-            local petName = brainrotData.petName or "Unknown"
-            local genValue = brainrotData.formattedValue or formatNumber(brainrotData.generation or 0)
-            
-            -- Hanya beri notifikasi jika ini adalah haiwan yang berbeza dari yang terakhir diberitahu
-            if not lastNotifiedPet or lastNotifiedPet ~= petName .. genValue then
-                lastNotifiedPet = petName .. genValue
-                ArcadeUILib:Notify(petName .. " " .. genValue)
-            end
-        end
     end)
 end
 
@@ -2708,12 +2696,6 @@ local function enableTimerESP()
     if timerEspEnabled then return end
     timerEspEnabled = true
     
-    StarterGui:SetCore("SendNotification", {
-        Title = "Timer ESP",
-        Text = "Timer ESP: ON",
-        Duration = 2
-    })
-
     task.spawn(function()
         while timerEspEnabled do
             pcall(scanAndConnect)
@@ -2727,12 +2709,6 @@ end
 local function disableTimerESP()
     if not timerEspEnabled then return end
     timerEspEnabled = false
-    
-    StarterGui:SetCore("SendNotification", {
-        Title = "Timer ESP",
-        Text = "Timer ESP: OFF",
-        Duration = 2
-    })
 
     for _, plot in pairs(Workspace:FindFirstChild("Plots"):GetChildren()) do
         local purchases = plot:FindFirstChild("Purchases")
@@ -2963,9 +2939,6 @@ end)
 
 -- ==================== CREATE UI AND ADD TOGGLES ====================
 ArcadeUILib:CreateUI()
-
--- Notifikasi apabila UI dimuatkan
-ArcadeUILib:Notify("Nightmare Hub")
 
 -- Tambah toggle dalam baris yang sama
 ArcadeUILib:AddToggleRow("Esp Players", toggleEspPlayers, "Esp Best", toggleEspBest)
