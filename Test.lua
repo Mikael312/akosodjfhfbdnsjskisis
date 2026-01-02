@@ -1,14 +1,14 @@
 --[[
-    ARCADE UI - INTEGRASI ESP PLAYERS, ESP BEST, BASE LINE, ANTI TURRET, AIMBOT, KICK STEAL, UNWALK ANIM, AUTO STEAL, ANTI DEBUFF, ANTI RDOLL, XRAY BASE, FPS BOOST & ESP TIMER
+    NIGHTMARE HUB UI - INTEGRASI ESP PLAYERS, ESP BEST, BASE LINE, ANTI TURRET, AIMBOT, KICK STEAL, UNWALK ANIM, AUTO STEAL, ANTI DEBUFF, ANTI RDOLL, XRAY BASE, FPS BOOST & ESP TIMER
 ]]
 
 -- ==================== LOAD LIBRARY ====================
-local success, ArcadeUILib = pcall(function()
-    return loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/Nightmare-Ui/refs/heads/main/ArcadeUiLib.lua"))()
+local success, NightmareHubUi = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/Nightmare-Ui/refs/heads/main/NightmareHubUi.lua"))()
 end)
 
 if not success then
-    warn("❌ Failed to load ArcadeUI library!")
+    warn("❌ Failed to load NightmareHubUi library!")
     return
 end
 
@@ -552,7 +552,7 @@ local function createHighestValueESP(brainrotData)
             -- Hanya beri notifikasi jika ini adalah haiwan yang berbeza dari yang terakhir diberitahu
             if not lastNotifiedPet or lastNotifiedPet ~= petName .. genValue then
                 lastNotifiedPet = petName .. genValue
-                ArcadeUILib:Notify(petName .. " " .. genValue)
+                NightmareHubUi:Notify(petName .. " " .. genValue)
             end
         end
     end)
@@ -2759,103 +2759,6 @@ local function disableTimerESP()
     print("❌ Timer ESP disabled")
 end
 
--- ==================== TOGGLE FUNCTIONS FOR UI ====================
-local function toggleEspPlayers(state)
-    if state then
-        enableESPPlayers()
-    else
-        disableESPPlayers()
-    end
-end
-
-local function toggleEspBest(state)
-    if state then
-        enableESPBest()
-    else
-        disableESPBest()
-    end
-end
-
-local function toggleBaseLine(state)
-    if state then
-        enableBaseLine()
-    else
-        disableBaseLine()
-    end
-end
-
-local function toggleAntiTurret(state)
-    if state then
-        enableAntiTurret()
-    else
-        disableAntiTurret()
-    end
-end
-
-local function toggleAimbot(state)
-    if state then
-        enableAimbot()
-    else
-        disableAimbot()
-    end
-end
-
-local function toggleKickSteal(state)
-    if state then
-        enableKickSteal()
-    else
-        disableKickSteal()
-    end
-end
-
-local function toggleUnwalkAnim(state)
-    if state then
-        enableUnwalkAnim()
-    else
-        disableUnwalkAnim()
-    end
-end
-
-local function toggleAutoSteal(state)
-    if state then
-        enableAutoSteal()
-    else
-        disableAutoSteal()
-    end
-end
-
-local function toggleAntiRagdoll(state)
-    if state then
-        ANTI_RAGDOLL.Enable()
-    else
-        ANTI_RAGDOLL.Disable()
-    end
-end
-
-local function toggleXrayBase(state)
-    if state then
-        enableXrayBase()
-    else
-        disableXrayBase()
-    end
-end
-
-local function toggleFpsBoost(state)
-    if state then
-        enableFpsBoost()
-    else
-        disableFpsBoost()
-    end
-end
-
-local function toggleEspTimer(state)
-    if state then
-        enableTimerESP()
-    else
-        disableTimerESP()
-    end
-end
-
 -- ==================== PLAYER EVENT HANDLERS ====================
 -- Apabila pemain baru masuk
 Players.PlayerAdded:Connect(function(targetPlayer)
@@ -2962,18 +2865,99 @@ task.spawn(function()
 end)
 
 -- ==================== CREATE UI AND ADD TOGGLES ====================
-ArcadeUILib:CreateUI()
+NightmareHubUi:CreateUI()
 
 -- Notifikasi apabila UI dimuatkan
-ArcadeUILib:Notify("Nightmare Hub")
+NightmareHubUi:Notify("Nightmare Hub")
 
 -- Tambah toggle dalam baris yang sama
-ArcadeUILib:AddToggleRow("Esp Players", toggleEspPlayers, "Esp Best", toggleEspBest)
-ArcadeUILib:AddToggleRow("Base Line", toggleBaseLine, "Anti Turret", toggleAntiTurret)
-ArcadeUILib:AddToggleRow("Aimbot", toggleAimbot, "Kick Steal", toggleKickSteal)
-ArcadeUILib:AddToggleRow("Unwalk Anim", toggleUnwalkAnim, "Auto Steal", toggleAutoSteal)
-ArcadeUILib:AddToggleRow("Anti Debuff", toggleAntiDebuff, "Anti Rdoll", toggleAntiRagdoll)
-ArcadeUILib:AddToggleRow("Xray Base", toggleXrayBase, "Fps Boost", toggleFpsBoost)
-ArcadeUILib:AddToggleRow("Esp Timer", toggleEspTimer, "", nil)
+NightmareHubUi:AddToggleRow("Esp Players", function(state)
+    if state then
+        enableESPPlayers()
+    else
+        disableESPPlayers()
+    end
+end, "Esp Best", function(state)
+    if state then
+        enableESPBest()
+    else
+        disableESPBest()
+    end
+end)
 
-print("🎮 Arcade UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff, Anti Rdoll, Xray Base, Fps Boost & Esp Timer Loaded Successfully!")
+NightmareHubUi:AddToggleRow("Base Line", function(state)
+    if state then
+        enableBaseLine()
+    else
+        disableBaseLine()
+    end
+end, "Anti Turret", function(state)
+    if state then
+        enableAntiTurret()
+    else
+        disableAntiTurret()
+    end
+end)
+
+NightmareHubUi:AddToggleRow("Aimbot", function(state)
+    if state then
+        enableAimbot()
+    else
+        disableAimbot()
+    end
+end, "Kick Steal", function(state)
+    if state then
+        enableKickSteal()
+    else
+        disableKickSteal()
+    end
+end)
+
+NightmareHubUi:AddToggleRow("Unwalk Anim", function(state)
+    if state then
+        enableUnwalkAnim()
+    else
+        disableUnwalkAnim()
+    end
+end, "Auto Steal", function(state)
+    if state then
+        enableAutoSteal()
+    else
+        disableAutoSteal()
+    end
+end)
+
+NightmareHubUi:AddToggleRow("Anti Debuff", function(state)
+    toggleAntiDebuff(state)
+end, "Anti Rdoll", function(state)
+    if state then
+        ANTI_RAGDOLL.Enable()
+    else
+        ANTI_RAGDOLL.Disable()
+    end
+end)
+
+NightmareHubUi:AddToggleRow("Xray Base", function(state)
+    if state then
+        enableXrayBase()
+    else
+        disableXrayBase()
+    end
+end, "Fps Boost", function(state)
+    if state then
+        enableFpsBoost()
+    else
+        disableFpsBoost()
+    end
+end)
+
+NightmareHubUi:AddToggleRow("Esp Timer", function(state)
+    if state then
+        enableTimerESP()
+    else
+        disableTimerESP()
+    end
+end, "", nil)
+
+print("🎮 Nightmare Hub UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff, Anti Rdoll, Xray Base, Fps Boost & Esp Timer Loaded Successfully!")
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Sabstealtoolsv1.lua"))()
