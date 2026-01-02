@@ -1,7 +1,7 @@
 --[[
     SIMPLE ARCADE UI 🎮 (UPDATED)
     Rounded rectangle, draggable, arcade style
-    WITH NEW DEVOURER UI DESIGN
+    WITH NEW DEVOURER UI DESIGN (CORRECTED)
     WITH NEW RESPAWN DESYNC + SERVER POSITION ESP
     WITH NEW FLY/TP TO BEST FEATURE (FIXED MODULES & LOGIC)
     WITH IMPROVED INFINITE JUMP + LOW GRAVITY (NEW)
@@ -1682,91 +1682,71 @@ toggleButton3.MouseButton1Click:Connect(function()
     end
 end)
 
--- ==================== NEW DEVOURER UI DESIGN ====================
--- Main Devourer Frame
-local devourerFrame = Instance.new("TextButton")
-devourerFrame.Size = UDim2.new(0, 160, 0, 50)
-devourerFrame.Position = UDim2.new(0.5, -80, 0, 170)
-devourerFrame.BackgroundColor3 = Color3.fromRGB(180, 0, 0) -- Bright red background
-devourerFrame.BorderSizePixel = 0
-devourerFrame.Text = "" -- No text on the button itself
-devourerFrame.AutoButtonColor = false
-devourerFrame.Parent = mainFrame
+-- ==================== NEW DEVOURER UI DESIGN (CORRECTED) ====================
+-- Main Toggle Button (Fps Devourer)
+local devourerToggleButton = Instance.new("TextButton")
+devourerToggleButton.Size = UDim2.new(0, 125, 0, 32) -- Smaller width to make space for TP button
+devourerToggleButton.Position = UDim2.new(0, 20, 0, 170)
+devourerToggleButton.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+devourerToggleButton.BorderSizePixel = 0
+devourerToggleButton.Text = "Fps Devourer"
+devourerToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+devourerToggleButton.TextSize = 15
+devourerToggleButton.Font = Enum.Font.Arcade
+devourerToggleButton.Parent = mainFrame
 
-local devourerCorner = Instance.new("UICorner")
-devourerCorner.CornerRadius = UDim.new(0, 8)
-devourerCorner.Parent = devourerFrame
+local devourerToggleCorner = Instance.new("UICorner")
+devourerToggleCorner.CornerRadius = UDim.new(0, 10)
+devourerToggleCorner.Parent = devourerToggleButton
 
-local devourerStroke = Instance.new("UIStroke")
-devourerStroke.Color = Color3.fromRGB(255, 50, 50)
-devourerStroke.Thickness = 2
-devourerStroke.Parent = devourerFrame
+local devourerToggleStroke = Instance.new("UIStroke")
+devourerToggleStroke.Color = Color3.fromRGB(255, 50, 50)
+devourerToggleStroke.Thickness = 1
+devourerToggleStroke.Parent = devourerToggleButton
 
--- DEVOURER Label
-local devourerLabel = Instance.new("TextLabel")
-devourerLabel.Size = UDim2.new(1, 0, 0, 25)
-devourerLabel.Position = UDim2.new(0, 0, 0, 5)
-devourerLabel.BackgroundTransparency = 1
-devourerLabel.Text = "DEVOURER"
-devourerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-devourerLabel.TextSize = 22
-devourerLabel.Font = Enum.Font.GothamBlack
-devourerLabel.Parent = devourerFrame
+local isDevourerToggled = false
 
--- need auras Label
-local aurasLabel = Instance.new("TextLabel")
-aurasLabel.Size = UDim2.new(1, 0, 0, 15)
-aurasLabel.Position = UDim2.new(0, 0, 0, 28)
-aurasLabel.BackgroundTransparency = 1
-aurasLabel.Text = "need auras"
-aurasLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-aurasLabel.TextSize = 12
-aurasLabel.Font = Enum.Font.Gotham
-aurasLabel.Parent = devourerFrame
-
--- TP Button
+-- Small TP Button
 local tpButton = Instance.new("TextButton")
-tpButton.Size = UDim2.new(0, 30, 0, 30)
-tpButton.Position = UDim2.new(0, 170, 0, 180) -- Positioned to the right of the devourer frame
-tpButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+tpButton.Size = UDim2.new(0, 30, 0, 32) -- Same size as switch button
+tpButton.Position = UDim2.new(0, 153, 0, 170) -- Position next to the main button
+tpButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
 tpButton.BorderSizePixel = 0
 tpButton.Text = "TP"
 tpButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 tpButton.TextSize = 14
-tpButton.Font = Enum.Font.GothamBold
-tpButton.AutoButtonColor = false
+tpButton.Font = Enum.Font.GothamBold -- Using GothamBold to match other switch buttons
 tpButton.Parent = mainFrame
 
 local tpCorner = Instance.new("UICorner")
-tpCorner.CornerRadius = UDim.new(0, 5)
+tpCorner.CornerRadius = UDim.new(0, 10)
 tpCorner.Parent = tpButton
 
 local tpStroke = Instance.new("UIStroke")
 tpStroke.Color = Color3.fromRGB(255, 50, 50)
-tpStroke.Thickness = 2
+tpStroke.Thickness = 1
 tpStroke.Parent = tpButton
 
-local isToggled4 = false
-
--- Devourer Frame Click Function
-devourerFrame.MouseButton1Click:Connect(function()
-    isToggled4 = not isToggled4
+-- Devourer Toggle Function
+devourerToggleButton.MouseButton1Click:Connect(function()
+    isDevourerToggled = not isDevourerToggled
     
-    if isToggled4 then
-        devourerFrame.BackgroundColor3 = Color3.fromRGB(220, 20, 20) -- Brighter red when ON
-        print("🔴 FPS Devourer: ON")
+    if isDevourerToggled then
+        devourerToggleButton.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+        print("🔴 Fps Devourer: ON")
         fpsDevourer()
     else
-        devourerFrame.BackgroundColor3 = Color3.fromRGB(180, 0, 0) -- Normal red when OFF
-        print("⚫ FPS Devourer: OFF")
+        devourerToggleButton.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+        print("⚫ Fps Devourer: OFF")
     end
 end)
 
--- TP Button Click Function
+-- TP Button Function
 tpButton.MouseButton1Click:Connect(function()
     print("🔴 TP Button Clicked")
     performQuantumDesync()
 end)
+
 
 -- ==================== TOGGLE BUTTON 6 WITH SWITCH - Fly/Tp to Best (NEW) ====================
 local isToggled6 = false
@@ -1775,7 +1755,7 @@ local isFlyBestMode = true -- true = Fly, false = Tp
 -- Main button
 local toggleButton6 = Instance.new("TextButton")
 toggleButton6.Size = UDim2.new(0, 125, 0, 32)
-toggleButton6.Position = UDim2.new(0, 20, 0, 230) -- Moved down to make space
+toggleButton6.Position = UDim2.new(0, 20, 0, 210) -- Moved down to make space
 toggleButton6.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
 toggleButton6.BorderSizePixel = 0
 toggleButton6.Text = "Fly to Best" -- Default text
@@ -1796,7 +1776,7 @@ toggleStroke6.Parent = toggleButton6
 -- Switch Button
 local switchButton6 = Instance.new("TextButton")
 switchButton6.Size = UDim2.new(0, 30, 0, 32)
-switchButton6.Position = UDim2.new(0, 153, 0, 230)
+switchButton6.Position = UDim2.new(0, 153, 0, 210)
 switchButton6.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
 switchButton6.BorderSizePixel = 0
 switchButton6.Text = "⇄"
@@ -1862,7 +1842,7 @@ end)
 -- Toggle Button 5 - Steal Floor (DIALIHKAN KE BAWAH)
 local toggleButton5 = Instance.new("TextButton")
 toggleButton5.Size = UDim2.new(0, 160, 0, 32)
-toggleButton5.Position = UDim2.new(0.5, -80, 0, 270) -- Moved down
+toggleButton5.Position = UDim2.new(0.5, -80, 0, 250) -- Moved down
 toggleButton5.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
 toggleButton5.BorderSizePixel = 0
 toggleButton5.Text = "Steal Floor"
@@ -1898,8 +1878,8 @@ end)
 
 -- Content area (placeholder) - DIALIHKAN KE BAWAH
 local contentLabel = Instance.new("TextLabel")
-contentLabel.Size = UDim2.new(1, -40, 1, -310) -- Adjusted
-contentLabel.Position = UDim2.new(0, 20, 0, 310) -- Adjusted
+contentLabel.Size = UDim2.new(1, -40, 1, -295) -- Adjusted
+contentLabel.Position = UDim2.new(0, 20, 0, 290) -- Adjusted
 contentLabel.BackgroundTransparency = 1
 contentLabel.Text = ""
 contentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -1952,9 +1932,9 @@ LocalPlayer.CharacterAdded:Connect(function()
     end
     
     -- Reset Devourer on respawn
-    if isToggled4 then
-        isToggled4 = false
-        devourerFrame.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+    if isDevourerToggled then
+        isDevourerToggled = false
+        devourerToggleButton.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
         warn("⚠️ Character respawned - FPS Devourer stopped")
     end
     
@@ -1982,7 +1962,7 @@ print("🎮 Font: Arcade")
 print("🔴 Title: NIGHTMARE HUB")
 print("🔆 Transparency: 0.1 (More visible)")
 print("🔘 Toggles: Perm Desync, Speed Booster, Inf Jump + Low Gravity, Steal Floor")
-print("🔥 Special: New DEVOURER UI Design (NEW)")
+print("🔥 Special: New DEVOURER UI Design (CORRECTED)")
 print("📍 New: Fly/Tp to Best with Switch (NEW)")
 print("📍 New: Server Position ESP with Perm Desync")
 print("==========================================")
