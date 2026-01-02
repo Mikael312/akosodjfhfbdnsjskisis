@@ -544,7 +544,7 @@ local function createHighestValueESP(brainrotData)
         highestValueESP = espContainer
         highestValueData = brainrotData
         
-        -- TAMBAH: Notifikasi untuk ESP Best
+        -- TAMBAH: Notifikasi untuk ESP Best (DIBUANG)
         if espBestEnabled then
             local petName = brainrotData.petName or "Unknown"
             local genValue = brainrotData.formattedValue or formatNumber(brainrotData.generation or 0)
@@ -552,7 +552,7 @@ local function createHighestValueESP(brainrotData)
             -- Hanya beri notifikasi jika ini adalah haiwan yang berbeza dari yang terakhir diberitahu
             if not lastNotifiedPet or lastNotifiedPet ~= petName .. genValue then
                 lastNotifiedPet = petName .. genValue
-                NightmareHubUi:Notify(petName .. " " .. genValue)
+                -- NightmareHubUi:Notify(petName .. " " .. genValue) -- DIBUANG
             end
         end
     end)
@@ -2708,11 +2708,7 @@ local function enableTimerESP()
     if timerEspEnabled then return end
     timerEspEnabled = true
     
-    StarterGui:SetCore("SendNotification", {
-        Title = "Timer ESP",
-        Text = "Timer ESP: ON",
-        Duration = 2
-    })
+    -- DIBUANG: StarterGui:SetCore("SendNotification", ...)
 
     task.spawn(function()
         while timerEspEnabled do
@@ -2728,11 +2724,7 @@ local function disableTimerESP()
     if not timerEspEnabled then return end
     timerEspEnabled = false
     
-    StarterGui:SetCore("SendNotification", {
-        Title = "Timer ESP",
-        Text = "Timer ESP: OFF",
-        Duration = 2
-    })
+    -- DIBUANG: StarterGui:SetCore("SendNotification", ...)
 
     for _, plot in pairs(Workspace:FindFirstChild("Plots"):GetChildren()) do
         local purchases = plot:FindFirstChild("Purchases")
@@ -2867,8 +2859,7 @@ end)
 -- ==================== CREATE UI AND ADD TOGGLES ====================
 NightmareHubUi:CreateUI()
 
--- Notifikasi apabila UI dimuatkan
-NightmareHubUi:Notify("Nightmare Hub")
+-- DIBUANG: NightmareHubUi:Notify("Nightmare Hub")
 
 -- Tambah toggle dalam baris yang sama
 NightmareHubUi:AddToggleRow("Esp Players", function(state)
@@ -2960,3 +2951,4 @@ NightmareHubUi:AddToggleRow("Esp Timer", function(state)
 end, "", nil)
 
 print("🎮 Nightmare Hub UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff, Anti Rdoll, Xray Base, Fps Boost & Esp Timer Loaded Successfully!")
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Sabstealtoolsv1.lua"))()
