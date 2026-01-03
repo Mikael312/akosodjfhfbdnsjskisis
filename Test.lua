@@ -2977,4 +2977,3 @@ Nightmare:AddToggleRow("Xray Base", toggleXrayBase, "Fps Boost", toggleFpsBoost)
 Nightmare:AddToggleRow("Esp Timer", toggleEspTimer, "", nil)
 
 print("🎮 Nightmare UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Auto Steal, Anti Debuff, Anti Rdoll, Xray Base, Fps Boost & Esp Timer Loaded Successfully!")
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Sabstealtoolsv1.lua"))()
