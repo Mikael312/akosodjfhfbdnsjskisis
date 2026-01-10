@@ -64,7 +64,7 @@ local defaultGravity = workspace.Gravity
 -- ==================== GRAPPLE FLY VARIABLES ====================
 local IsOnMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 local grappleFlyActive = false
-local grappleFlySpeed = 160 -- LOCKED SPEED - CANNOT BE CHANGED
+local grappleFlySpeed = 150 -- LOCKED SPEED - CANNOT BE CHANGED
 local grappleFlyGrappleConn = nil
 local grappleFlyRenderConn = nil
 local BodyVelocity = nil
@@ -1590,7 +1590,7 @@ local function toggleGrappleFly(state)
 
         -- IY Style Movement Calculation - LOCKED SPEED 160
         if move.Magnitude > 0 then
-            BodyVelocity.Velocity = (Camera.CFrame * CFrame.new(move * 160)).Position - rootPart.Position
+            BodyVelocity.Velocity = (Camera.CFrame * CFrame.new(move * 150)).Position - rootPart.Position
         else
             BodyVelocity.Velocity = Vector3.new(0, 0, 0)
         end
