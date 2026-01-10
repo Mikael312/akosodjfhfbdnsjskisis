@@ -1616,7 +1616,7 @@ screenGui.Parent = game.CoreGui
 
 -- Main Frame (Rounded Rectangle - Vertical Block) - DIUBAH SAIZ
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 200, 0, 380) -- DARI 280 JADI 320
+mainFrame.Size = UDim2.new(0, 200, 0, 360) -- DARI 280 JADI 320
 mainFrame.Position = UDim2.new(0.5, -100, 0.5, -180) -- DARI -140 JADI -160
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.BackgroundTransparency = 0.1
