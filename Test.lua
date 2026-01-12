@@ -81,6 +81,7 @@ local PromptMemoryCache = {}
 local InternalStealCache = {}
 local stealConnection = nil
 local AUTO_STEAL_PROX_RADIUS = 35
+local isScanning = false -- TAMBAH: Flag untuk mengelakkan race condition
 
 -- UI Variables for Auto Steal
 local screenGui = nil
@@ -187,155 +188,170 @@ local function getSafeCoreGuiParent()
 end
 
 local function createAutoStealUI()
-    if screenGui then return end
-    
-    screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "StealBar"
-    screenGui.ResetOnSpawn = false
-    screenGui.Parent = getSafeCoreGuiParent()
+    local success, err = pcall(function()
+        if screenGui then return end
+        
+        screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "StealBar"
+        screenGui.ResetOnSpawn = false
+        screenGui.Parent = getSafeCoreGuiParent()
 
-    -- Main Frame (SMALLER: 280x55)
-    mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 280, 0, 55)
-    mainFrame.Position = UDim2.new(0.5, -140, 0.15, 0)
-    mainFrame.Active = true
-    mainFrame.Draggable = true
-    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Parent = screenGui
+        -- Main Frame (SMALLER: 280x55)
+        mainFrame = Instance.new("Frame")
+        mainFrame.Size = UDim2.new(0, 280, 0, 55)
+        mainFrame.Position = UDim2.new(0.5, -140, 0.15, 0)
+        mainFrame.Active = true
+        mainFrame.Draggable = true
+        mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+        mainFrame.BorderSizePixel = 0
+        mainFrame.Parent = screenGui
 
-    -- Rounded corners
-    local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 18)
-    mainCorner.Parent = mainFrame
+        -- Rounded corners
+        local mainCorner = Instance.new("UICorner")
+        mainCorner.CornerRadius = UDim.new(0, 18)
+        mainCorner.Parent = mainFrame
 
-    -- Red border stroke (thickness 1.0)
-    local outerStroke = Instance.new("UIStroke")
-    outerStroke.Color = Color3.fromRGB(220, 50, 50)
-    outerStroke.Thickness = 1.0
-    outerStroke.Transparency = 0
-    outerStroke.Parent = mainFrame
+        -- Red border stroke (thickness 1.0)
+        local outerStroke = Instance.new("UIStroke")
+        outerStroke.Color = Color3.fromRGB(220, 50, 50)
+        outerStroke.Thickness = 1.0
+        outerStroke.Transparency = 0
+        outerStroke.Parent = mainFrame
 
-    -- Title label (nama animal) - tengah
-    titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -20, 0, 18)
-    titleLabel.Position = UDim2.new(0, 10, 0, 6)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = "WAITING FOR STEAL"
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextSize = 14
-    titleLabel.Font = Enum.Font.Arcade
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Center
-    titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    titleLabel.Parent = mainFrame
+        -- Title label (nama animal) - tengah
+        titleLabel = Instance.new("TextLabel")
+        titleLabel.Size = UDim2.new(1, -20, 0, 18)
+        titleLabel.Position = UDim2.new(0, 10, 0, 6)
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.Text = "WAITING FOR STEAL"
+        titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        titleLabel.TextSize = 14
+        titleLabel.Font = Enum.Font.Arcade
+        titleLabel.TextXAlignment = Enum.TextXAlignment.Center
+        titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+        titleLabel.Parent = mainFrame
 
-    -- Stud label (kanan atas)
-    studLabel = Instance.new("TextLabel")
-    studLabel.Size = UDim2.new(0.35, 0, 0, 16)
-    studLabel.Position = UDim2.new(0.65, 0, 0, 7)
-    studLabel.BackgroundTransparency = 1
-    studLabel.Text = "0.0 studs"
-    studLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    studLabel.TextSize = 10
-    studLabel.Font = Enum.Font.Arcade
-    studLabel.TextXAlignment = Enum.TextXAlignment.Right
-    studLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    studLabel.Parent = mainFrame
+        -- Stud label (kanan atas)
+        studLabel = Instance.new("TextLabel")
+        studLabel.Size = UDim2.new(0.35, 0, 0, 16)
+        studLabel.Position = UDim2.new(0.65, 0, 0, 7)
+        studLabel.BackgroundTransparency = 1
+        studLabel.Text = "0.0 studs"
+        studLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        studLabel.TextSize = 10
+        studLabel.Font = Enum.Font.Arcade
+        studLabel.TextXAlignment = Enum.TextXAlignment.Right
+        studLabel.TextTruncate = Enum.TextTruncate.AtEnd
+        studLabel.Parent = mainFrame
 
-    -- Money label (hijau, tengah bawah title)
-    moneyLabel = Instance.new("TextLabel")
-    moneyLabel.Size = UDim2.new(1, -20, 0, 15)
-    moneyLabel.Position = UDim2.new(0, 10, 0, 24)
-    moneyLabel.BackgroundTransparency = 1
-    moneyLabel.Text = "$0.0M/s"
-    moneyLabel.TextColor3 = Color3.fromRGB(70, 220, 90)
-    moneyLabel.TextSize = 11
-    moneyLabel.Font = Enum.Font.Arcade
-    moneyLabel.TextXAlignment = Enum.TextXAlignment.Center
-    moneyLabel.Parent = mainFrame
+        -- Money label (hijau, tengah bawah title)
+        moneyLabel = Instance.new("TextLabel")
+        moneyLabel.Size = UDim2.new(1, -20, 0, 15)
+        moneyLabel.Position = UDim2.new(0, 10, 0, 24)
+        moneyLabel.BackgroundTransparency = 1
+        moneyLabel.Text = "$0.0M/s"
+        moneyLabel.TextColor3 = Color3.fromRGB(70, 220, 90)
+        moneyLabel.TextSize = 11
+        moneyLabel.Font = Enum.Font.Arcade
+        moneyLabel.TextXAlignment = Enum.TextXAlignment.Center
+        moneyLabel.Parent = mainFrame
 
-    -- Progress bar container (bawah sekali)
-    local barContainer = Instance.new("Frame")
-    barContainer.Size = UDim2.new(1, -20, 0, 12)
-    barContainer.Position = UDim2.new(0, 10, 1, -18)
-    barContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    barContainer.BorderSizePixel = 0
-    barContainer.Parent = mainFrame
+        -- Progress bar container (bawah sekali)
+        local barContainer = Instance.new("Frame")
+        barContainer.Size = UDim2.new(1, -20, 0, 12)
+        barContainer.Position = UDim2.new(0, 10, 1, -18)
+        barContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+        barContainer.BorderSizePixel = 0
+        barContainer.Parent = mainFrame
 
-    local barCorner = Instance.new("UICorner")
-    barCorner.CornerRadius = UDim.new(0, 6)
-    barCorner.Parent = barContainer
+        local barCorner = Instance.new("UICorner")
+        barCorner.CornerRadius = UDim.new(0, 6)
+        barCorner.Parent = barContainer
 
-    local barStroke = Instance.new("UIStroke")
-    barStroke.Color = Color3.fromRGB(40, 40, 40)
-    barStroke.Thickness = 1.0
-    barStroke.Parent = barContainer
+        local barStroke = Instance.new("UIStroke")
+        barStroke.Color = Color3.fromRGB(40, 40, 40)
+        barStroke.Thickness = 1.0
+        barStroke.Parent = barContainer
 
-    -- Fill bar (merah) - FASTER: 0.7s
-    fillBar = Instance.new("Frame")
-    fillBar.Size = UDim2.new(0, 0, 1, 0)
-    fillBar.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-    fillBar.BorderSizePixel = 0
-    fillBar.Parent = barContainer
+        -- Fill bar (merah) - FASTER: 0.7s
+        fillBar = Instance.new("Frame")
+        fillBar.Size = UDim2.new(0, 0, 1, 0)
+        fillBar.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+        fillBar.BorderSizePixel = 0
+        fillBar.Parent = barContainer
 
-    local fillCorner = Instance.new("UICorner")
-    fillCorner.CornerRadius = UDim.new(0, 6)
-    fillCorner.Parent = fillBar
+        local fillCorner = Instance.new("UICorner")
+        fillCorner.CornerRadius = UDim.new(0, 6)
+        fillCorner.Parent = fillBar
 
-    -- Percent label
-    percentLabel = Instance.new("TextLabel")
-    percentLabel.Size = UDim2.new(1, 0, 1, 0)
-    percentLabel.BackgroundTransparency = 1
-    percentLabel.Text = ""
-    percentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    percentLabel.TextSize = 8
-    percentLabel.Font = Enum.Font.Arcade
-    percentLabel.ZIndex = 2
-    percentLabel.Parent = barContainer
+        -- Percent label
+        percentLabel = Instance.new("TextLabel")
+        percentLabel.Size = UDim2.new(1, 0, 1, 0)
+        percentLabel.BackgroundTransparency = 1
+        percentLabel.Text = ""
+        percentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        percentLabel.TextSize = 8
+        percentLabel.Font = Enum.Font.Arcade
+        percentLabel.ZIndex = 2
+        percentLabel.Parent = barContainer
+    end)
+    if not success then
+        warn("[ERROR] createAutoStealUI failed: " .. tostring(err))
+    end
 end
 
 local function destroyAutoStealUI()
-    if screenGui then
-        screenGui:Destroy()
-        screenGui = nil
-        mainFrame = nil
-        titleLabel = nil
-        studLabel = nil
-        moneyLabel = nil
-        fillBar = nil
-        percentLabel = nil
+    local success, err = pcall(function()
+        if screenGui then
+            screenGui:Destroy()
+            screenGui = nil
+            mainFrame = nil
+            titleLabel = nil
+            studLabel = nil
+            moneyLabel = nil
+            fillBar = nil
+            percentLabel = nil
+        end
+    end)
+    if not success then
+        warn("[ERROR] destroyAutoStealUI failed: " .. tostring(err))
     end
 end
 
 -- FASTER ANIMATION: 0.7 seconds
 local function animateFill()
-    if isAnimating or not fillBar then return end 
-    isAnimating = true
+    local success, err = pcall(function()
+        if isAnimating or not fillBar then return end 
+        isAnimating = true
 
-    local tweenInfo = TweenInfo.new(0.7, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(fillBar, tweenInfo, {Size = UDim2.new(1, 0, 1, 0)})
-    
-    tween:Play()
-    
-    task.spawn(function()
-        for i = 0, 100 do
-            if percentLabel then
-                percentLabel.Text = i .. "%"
+        local tweenInfo = TweenInfo.new(0.7, Enum.EasingStyle.Linear)
+        local tween = TweenService:Create(fillBar, tweenInfo, {Size = UDim2.new(1, 0, 1, 0)})
+        
+        tween:Play()
+        
+        task.spawn(function()
+            for i = 0, 100 do
+                if percentLabel then
+                    percentLabel.Text = i .. "%"
+                end
+                task.wait(0.7 / 100)
             end
-            task.wait(0.7 / 100)
-        end
-    end)
-    
-    tween.Completed:Wait()
-    task.wait(0.14)
+        end)
+        
+        tween.Completed:Wait()
+        task.wait(0.14)
 
-    if fillBar then
-        fillBar.Size = UDim2.new(0, 0, 1, 0)
+        if fillBar then
+            fillBar.Size = UDim2.new(0, 0, 1, 0)
+        end
+        if percentLabel then
+            percentLabel.Text = ""
+        end
+        isAnimating = false
+    end)
+    if not success then
+        warn("[ERROR] animateFill failed: " .. tostring(err))
     end
-    if percentLabel then
-        percentLabel.Text = ""
-    end
-    isAnimating = false
 end
 
 -- ==================== ESP PLAYERS FUNCTIONS (FIXED) ====================
@@ -1793,42 +1809,59 @@ local function getAnimalPosition(animalData)
 end
 
 local function getNearestAnimal()
-    local character = player.Character
-    if not character then return nil end
-    
-    local hrp = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("UpperTorso")
-    if not hrp then return nil end
-    
-    local nearest = nil
-    local minDist = math.huge
-    
-    for _, animalData in ipairs(allAnimalsCache) do
-        if isMyBaseAnimal(animalData) then
-            continue
-        end
+    local success, result = pcall(function()
+        if isScanning or #allAnimalsCache == 0 then return nil end -- Elakkan race condition dan error jika cache kosong
         
-        local pos = getAnimalPosition(animalData)
-        if pos then
-            local dist = (hrp.Position - pos).Magnitude
+        local character = player.Character
+        if not character then return nil end
+        
+        local hrp = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("UpperTorso")
+        if not hrp then return nil end
+        
+        local nearest = nil
+        local minDist = math.huge
+        
+        for _, animalData in ipairs(allAnimalsCache) do
+            if isMyBaseAnimal(animalData) then
+                continue
+            end
             
-            if dist < minDist then
-                minDist = dist
-                nearest = animalData
+            local pos = getAnimalPosition(animalData)
+            if pos then
+                local dist = (hrp.Position - pos).Magnitude
+                
+                if dist < minDist then
+                    minDist = dist
+                    nearest = animalData
+                end
             end
         end
+        
+        return nearest
+    end)
+    if not success then
+        warn("[ERROR] getNearestAnimal failed: " .. tostring(result))
+        return nil
     end
-    
-    return nearest
+    return result
 end
 
 local function getBestGenAnimal()
-    -- allAnimalsCache already sorted by genValue in scanAllPlots
-    for _, animalData in ipairs(allAnimalsCache) do
-        if not isMyBaseAnimal(animalData) then
-            return animalData
+    local success, result = pcall(function()
+        if isScanning or #allAnimalsCache == 0 then return nil end -- Elakkan race condition dan error jika cache kosong
+        -- allAnimalsCache already sorted by genValue in scanAllPlots
+        for _, animalData in ipairs(allAnimalsCache) do
+            if not isMyBaseAnimal(animalData) then
+                return animalData
+            end
         end
+        return nil
+    end)
+    if not success then
+        warn("[ERROR] getBestGenAnimal failed: " .. tostring(result))
+        return nil
     end
-    return nil
+    return result
 end
 
 local function buildStealCallbacks(prompt)
@@ -1905,112 +1938,131 @@ local function attemptSteal(prompt)
 end
 
 local function scanAllPlots()
-    local plots = workspace:FindFirstChild("Plots")
-    if not plots then return {} end
-    
-    local newCache = {}
-    
-    for _, plot in ipairs(plots:GetChildren()) do
-        if not Synchronizer then continue end
+    local success, err = pcall(function()
+        isScanning = true -- Set flag untuk mencegah akses serentak
         
-        local channel = Synchronizer:Get(plot.Name)
-        if not channel then continue end
-        
-        local animalList = channel:Get("AnimalList")
-        if not animalList then continue end
-        
-        local owner = channel:Get("Owner")
-        if not owner then continue end
-        
-        local ownerName = "Unknown"
-        if typeof(owner) == "Instance" and owner:IsA("Player") then
-            ownerName = owner.Name
-        elseif typeof(owner) == "table" and owner.Name then
-            ownerName = owner.Name
+        local plots = workspace:FindFirstChild("Plots")
+        if not plots then 
+            isScanning = false
+            return {} 
         end
         
-        for slot, animalData in pairs(animalList) do
-            if type(animalData) == "table" then
-                local animalName = animalData.Index
-                local animalInfo = AnimalsData[animalName]
-                if not animalInfo then continue end
-                
-                local rarity = animalInfo.Rarity
-                local mutation = animalData.Mutation or "None"
-                local traits = (animalData.Traits and #animalData.Traits > 0) and table.concat(animalData.Traits, ", ") or "None"
-                
-                local genValue = AnimalsShared:GetGeneration(animalName, animalData.Mutation, animalData.Traits, nil)
-                
-                table.insert(newCache, {
-                    name = animalInfo.DisplayName or animalName,
-                    genValue = genValue,
-                    mutation = mutation,
-                    traits = traits,
-                    owner = ownerName,
-                    plot = plot.Name,
-                    slot = tostring(slot),
-                    uid = plot.Name .. "_" .. tostring(slot),
-                })
+        local newCache = {}
+        
+        for _, plot in ipairs(plots:GetChildren()) do
+            if not Synchronizer then continue end
+            
+            local channel = Synchronizer:Get(plot.Name)
+            if not channel then continue end
+            
+            local animalList = channel:Get("AnimalList")
+            if not animalList then continue end
+            
+            local owner = channel:Get("Owner")
+            if not owner then continue end
+            
+            local ownerName = "Unknown"
+            if typeof(owner) == "Instance" and owner:IsA("Player") then
+                ownerName = owner.Name
+            elseif typeof(owner) == "table" and owner.Name then
+                ownerName = owner.Name
+            end
+            
+            for slot, animalData in pairs(animalList) do
+                if type(animalData) == "table" then
+                    local animalName = animalData.Index
+                    local animalInfo = AnimalsData[animalName]
+                    if not animalInfo then continue end
+                    
+                    local rarity = animalInfo.Rarity
+                    local mutation = animalData.Mutation or "None"
+                    local traits = (animalData.Traits and #animalData.Traits > 0) and table.concat(animalData.Traits, ", ") or "None"
+                    
+                    local genValue = AnimalsShared:GetGeneration(animalName, animalData.Mutation, animalData.Traits, nil)
+                    
+                    table.insert(newCache, {
+                        name = animalInfo.DisplayName or animalName,
+                        genValue = genValue,
+                        mutation = mutation,
+                        traits = traits,
+                        owner = ownerName,
+                        plot = plot.Name,
+                        slot = tostring(slot),
+                        uid = plot.Name .. "_" .. tostring(slot),
+                    })
+                end
             end
         end
-    end
-    
-    allAnimalsCache = newCache
-    
-    table.sort(allAnimalsCache, function(a, b)
-        return a.genValue > b.genValue
+        
+        allAnimalsCache = newCache
+        
+        table.sort(allAnimalsCache, function(a, b)
+            return a.genValue > b.genValue
+        end)
+        
+        isScanning = false -- Reset flag
+        return #allAnimalsCache
     end)
-    
-    return #allAnimalsCache
+    if not success then
+        isScanning = false -- Pastikan flag sentiasa direset walaupun ada error
+        warn("[ERROR] scanAllPlots failed: " .. tostring(err))
+        return 0
+    end
+    return err
 end
 
 local function startAutoSteal()
     if stealConnection then return end
     
     stealConnection = RunService.Heartbeat:Connect(function()
-        if not autoStealEnabled then return end
-        
-        local targetAnimal = nil
-        
-        if autoStealMode == "nearest" then
-            targetAnimal = getNearestAnimal()
-        elseif autoStealMode == "best" then
-            targetAnimal = getBestGenAnimal()
-        end
-        
-        if not targetAnimal then
-            if titleLabel then titleLabel.Text = "WAITING FOR STEAL" end
-            if studLabel then studLabel.Text = "0.0 studs" end
-            if moneyLabel then moneyLabel.Text = "$0.0M/s" end
-            return
-        end
-        
-        local character = player.Character
-        if not character then return end
-        
-        local hrp = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("UpperTorso")
-        if not hrp then return end
-        
-        local animalPos = getAnimalPosition(targetAnimal)
-        if not animalPos then return end
-        
-        local dist = (hrp.Position - animalPos).Magnitude
-        
-        if titleLabel then titleLabel.Text = string.upper(targetAnimal.name) end
-        if studLabel then studLabel.Text = string.format("%.1f studs", dist) end
-        if moneyLabel then moneyLabel.Text = string.format("$%.1fM/s", targetAnimal.genValue / 1000000) end
-        
-        if dist <= AUTO_STEAL_PROX_RADIUS then
-            task.spawn(animateFill)
+        local success, err = pcall(function()
+            if not autoStealEnabled or isScanning then return end -- Tambah pemeriksaan isScanning
             
-            local prompt = PromptMemoryCache[targetAnimal.uid]
-            if not prompt or not prompt.Parent then
-                prompt = findProximityPromptForAnimal(targetAnimal)
+            local targetAnimal = nil
+            
+            if autoStealMode == "nearest" then
+                targetAnimal = getNearestAnimal()
+            elseif autoStealMode == "best" then
+                targetAnimal = getBestGenAnimal()
             end
             
-            if prompt then
-                attemptSteal(prompt)
+            if not targetAnimal then
+                if titleLabel then titleLabel.Text = "WAITING FOR STEAL" end
+                if studLabel then studLabel.Text = "0.0 studs" end
+                if moneyLabel then moneyLabel.Text = "$0.0M/s" end
+                return
             end
+            
+            local character = player.Character
+            if not character then return end
+            
+            local hrp = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("UpperTorso")
+            if not hrp then return end
+            
+            local animalPos = getAnimalPosition(targetAnimal)
+            if not animalPos then return end
+            
+            local dist = (hrp.Position - animalPos).Magnitude
+            
+            if titleLabel then titleLabel.Text = string.upper(targetAnimal.name) end
+            if studLabel then studLabel.Text = string.format("%.1f studs", dist) end
+            if moneyLabel then moneyLabel.Text = string.format("$%.1fM/s", targetAnimal.genValue / 1000000) end
+            
+            if dist <= AUTO_STEAL_PROX_RADIUS then
+                task.spawn(animateFill)
+                
+                local prompt = PromptMemoryCache[targetAnimal.uid]
+                if not prompt or not prompt.Parent then
+                    prompt = findProximityPromptForAnimal(targetAnimal)
+                end
+                
+                if prompt then
+                    attemptSteal(prompt)
+                end
+            end
+        end)
+        if not success then
+            warn("[ERROR] AutoSteal Heartbeat loop failed: " .. tostring(err))
         end
     end)
 end
@@ -2023,21 +2075,31 @@ local function stopAutoSteal()
 end
 
 local function enableAutoSteal()
-    if autoStealEnabled then return end
-    autoStealEnabled = true
-    
-    createAutoStealUI()
-    startAutoSteal()
-    print("✅ " .. (autoStealMode == "best" and "Best Gen" or "Nearest") .. " Steal Enabled")
+    local success, err = pcall(function()
+        if autoStealEnabled then return end
+        autoStealEnabled = true
+        
+        createAutoStealUI()
+        startAutoSteal()
+        print("✅ " .. (autoStealMode == "best" and "Best Gen" or "Nearest") .. " Steal Enabled")
+    end)
+    if not success then
+        warn("[ERROR] enableAutoSteal failed: " .. tostring(err))
+    end
 end
 
 local function disableAutoSteal()
-    if not autoStealEnabled then return end
-    autoStealEnabled = false
-    
-    stopAutoSteal()
-    destroyAutoStealUI()
-    print("❌ " .. (autoStealMode == "best" and "Best Gen" or "Nearest") .. " Steal Disabled")
+    local success, err = pcall(function()
+        if not autoStealEnabled then return end
+        autoStealEnabled = false
+        
+        stopAutoSteal()
+        destroyAutoStealUI()
+        print("❌ " .. (autoStealMode == "best" and "Best Gen" or "Nearest") .. " Steal Disabled")
+    end)
+    if not success then
+        warn("[ERROR] disableAutoSteal failed: " .. tostring(err))
+    end
 end
 
 -- ==================== ANTI DEBUFF FUNCTIONS ====================
@@ -3051,24 +3113,34 @@ local function toggleUnwalkAnim(state)
 end
 
 local function toggleAutoSteal(state)
-    if state then
-        enableAutoSteal()
-    else
-        disableAutoSteal()
+    local success, err = pcall(function()
+        if state then
+            enableAutoSteal()
+        else
+            disableAutoSteal()
+        end
+    end)
+    if not success then
+        warn("[ERROR] toggleAutoSteal failed: " .. tostring(err))
     end
 end
 
 local function toggleBestGen(state)
-    autoStealMode = state and "best" or "nearest"
-    
-    if autoStealEnabled then
-        -- Restart auto steal with new mode
-        disableAutoSteal()
-        task.wait(0.1)
-        enableAutoSteal()
+    local success, err = pcall(function()
+        autoStealMode = state and "best" or "nearest"
+        
+        if autoStealEnabled then
+            -- Restart auto steal with new mode
+            disableAutoSteal()
+            task.wait(0.1)
+            enableAutoSteal()
+        end
+        
+        print("✅ " .. (state and "Best Gen" or "Nearest") .. " Mode " .. (state and "Enabled" or "Disabled"))
+    end)
+    if not success then
+        warn("[ERROR] toggleBestGen failed: " .. tostring(err))
     end
-    
-    print("✅ " .. (state and "Best Gen" or "Nearest") .. " Mode " .. (state and "Enabled" or "Disabled"))
 end
 
 local function toggleAntiRagdoll(state)
@@ -3197,9 +3269,11 @@ player.CharacterAdded:Connect(function(newCharacter)
     end
     
     if autoStealEnabled then
-        disableAutoSteal()
-        task.wait(0.5)
-        enableAutoSteal()
+        pcall(function()
+            disableAutoSteal()
+            task.wait(0.5)
+            enableAutoSteal()
+        end)
     end
 end)
 
