@@ -37,7 +37,7 @@ local tracerAttachment0 = nil
 local tracerAttachment1 = nil
 local tracerBeam = nil
 local tracerConnection = nil
-local lastNotifiedPet = nil -- Untuk mengelakkan notifikasi berulang
+local lastNotifiedPet = nil
 
 -- ==================== BASE LINE VARIABLES ====================
 local baseLineEnabled = false
@@ -81,7 +81,6 @@ local PromptMemoryCache = {}
 local InternalStealCache = {}
 local stealConnection = nil
 local AUTO_STEAL_PROX_RADIUS = 35
-local isScanning = false -- TAMBAH: Flag untuk mengelakkan race condition
 
 -- UI Variables for Auto Steal
 local screenGui = nil
@@ -188,182 +187,165 @@ local function getSafeCoreGuiParent()
 end
 
 local function createAutoStealUI()
-    local success, err = pcall(function()
-        if screenGui then return end
-        
-        screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "StealBar"
-        screenGui.ResetOnSpawn = false
-        screenGui.Parent = getSafeCoreGuiParent()
+    if screenGui then return end
+    
+    screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "StealBar"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = getSafeCoreGuiParent()
 
-        -- Main Frame (SMALLER: 280x55)
-        mainFrame = Instance.new("Frame")
-        mainFrame.Size = UDim2.new(0, 280, 0, 55)
-        mainFrame.Position = UDim2.new(0.5, -140, 0.15, 0)
-        mainFrame.Active = true
-        mainFrame.Draggable = true
-        mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-        mainFrame.BorderSizePixel = 0
-        mainFrame.Parent = screenGui
+    -- Main Frame (SMALLER: 280x55)
+    mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 280, 0, 55)
+    mainFrame.Position = UDim2.new(0.5, -140, 0.15, 0)
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
 
-        -- Rounded corners
-        local mainCorner = Instance.new("UICorner")
-        mainCorner.CornerRadius = UDim.new(0, 18)
-        mainCorner.Parent = mainFrame
+    -- Rounded corners
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 18)
+    mainCorner.Parent = mainFrame
 
-        -- Red border stroke (thickness 1.0)
-        local outerStroke = Instance.new("UIStroke")
-        outerStroke.Color = Color3.fromRGB(220, 50, 50)
-        outerStroke.Thickness = 1.0
-        outerStroke.Transparency = 0
-        outerStroke.Parent = mainFrame
+    -- Red border stroke (thickness 1.0)
+    local outerStroke = Instance.new("UIStroke")
+    outerStroke.Color = Color3.fromRGB(220, 50, 50)
+    outerStroke.Thickness = 1.0
+    outerStroke.Transparency = 0
+    outerStroke.Parent = mainFrame
 
-        -- Title label (nama animal) - tengah
-        titleLabel = Instance.new("TextLabel")
-        titleLabel.Size = UDim2.new(1, -20, 0, 18)
-        titleLabel.Position = UDim2.new(0, 10, 0, 6)
-        titleLabel.BackgroundTransparency = 1
-        titleLabel.Text = "WAITING FOR STEAL"
-        titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        titleLabel.TextSize = 14
-        titleLabel.Font = Enum.Font.Arcade
-        titleLabel.TextXAlignment = Enum.TextXAlignment.Center
-        titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
-        titleLabel.Parent = mainFrame
+    -- Title label (nama animal) - tengah
+    titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -20, 0, 18)
+    titleLabel.Position = UDim2.new(0, 10, 0, 6)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = "WAITING FOR STEAL"
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.TextSize = 14
+    titleLabel.Font = Enum.Font.Arcade
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Center
+    titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    titleLabel.Parent = mainFrame
 
-        -- Stud label (kanan atas)
-        studLabel = Instance.new("TextLabel")
-        studLabel.Size = UDim2.new(0.35, 0, 0, 16)
-        studLabel.Position = UDim2.new(0.65, 0, 0, 7)
-        studLabel.BackgroundTransparency = 1
-        studLabel.Text = "0.0 studs"
-        studLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        studLabel.TextSize = 10
-        studLabel.Font = Enum.Font.Arcade
-        studLabel.TextXAlignment = Enum.TextXAlignment.Right
-        studLabel.TextTruncate = Enum.TextTruncate.AtEnd
-        studLabel.Parent = mainFrame
+    -- Stud label (kanan atas)
+    studLabel = Instance.new("TextLabel")
+    studLabel.Size = UDim2.new(0.35, 0, 0, 16)
+    studLabel.Position = UDim2.new(0.65, 0, 0, 7)
+    studLabel.BackgroundTransparency = 1
+    studLabel.Text = "0.0 studs"
+    studLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    studLabel.TextSize = 10
+    studLabel.Font = Enum.Font.Arcade
+    studLabel.TextXAlignment = Enum.TextXAlignment.Right
+    studLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    studLabel.Parent = mainFrame
 
-        -- Money label (hijau, tengah bawah title)
-        moneyLabel = Instance.new("TextLabel")
-        moneyLabel.Size = UDim2.new(1, -20, 0, 15)
-        moneyLabel.Position = UDim2.new(0, 10, 0, 24)
-        moneyLabel.BackgroundTransparency = 1
-        moneyLabel.Text = "$0.0M/s"
-        moneyLabel.TextColor3 = Color3.fromRGB(70, 220, 90)
-        moneyLabel.TextSize = 11
-        moneyLabel.Font = Enum.Font.Arcade
-        moneyLabel.TextXAlignment = Enum.TextXAlignment.Center
-        moneyLabel.Parent = mainFrame
+    -- Money label (hijau, tengah bawah title)
+    moneyLabel = Instance.new("TextLabel")
+    moneyLabel.Size = UDim2.new(1, -20, 0, 15)
+    moneyLabel.Position = UDim2.new(0, 10, 0, 24)
+    moneyLabel.BackgroundTransparency = 1
+    moneyLabel.Text = "$0.0M/s"
+    moneyLabel.TextColor3 = Color3.fromRGB(70, 220, 90)
+    moneyLabel.TextSize = 11
+    moneyLabel.Font = Enum.Font.Arcade
+    moneyLabel.TextXAlignment = Enum.TextXAlignment.Center
+    moneyLabel.Parent = mainFrame
 
-        -- Progress bar container (bawah sekali)
-        local barContainer = Instance.new("Frame")
-        barContainer.Size = UDim2.new(1, -20, 0, 12)
-        barContainer.Position = UDim2.new(0, 10, 1, -18)
-        barContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-        barContainer.BorderSizePixel = 0
-        barContainer.Parent = mainFrame
+    -- Progress bar container (bawah sekali)
+    local barContainer = Instance.new("Frame")
+    barContainer.Size = UDim2.new(1, -20, 0, 12)
+    barContainer.Position = UDim2.new(0, 10, 1, -18)
+    barContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    barContainer.BorderSizePixel = 0
+    barContainer.Parent = mainFrame
 
-        local barCorner = Instance.new("UICorner")
-        barCorner.CornerRadius = UDim.new(0, 6)
-        barCorner.Parent = barContainer
+    local barCorner = Instance.new("UICorner")
+    barCorner.CornerRadius = UDim.new(0, 6)
+    barCorner.Parent = barContainer
 
-        local barStroke = Instance.new("UIStroke")
-        barStroke.Color = Color3.fromRGB(40, 40, 40)
-        barStroke.Thickness = 1.0
-        barStroke.Parent = barContainer
+    local barStroke = Instance.new("UIStroke")
+    barStroke.Color = Color3.fromRGB(40, 40, 40)
+    barStroke.Thickness = 1.0
+    barStroke.Parent = barContainer
 
-        -- Fill bar (merah) - FASTER: 0.7s
-        fillBar = Instance.new("Frame")
-        fillBar.Size = UDim2.new(0, 0, 1, 0)
-        fillBar.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-        fillBar.BorderSizePixel = 0
-        fillBar.Parent = barContainer
+    -- Fill bar (merah) - FASTER: 0.7s
+    fillBar = Instance.new("Frame")
+    fillBar.Size = UDim2.new(0, 0, 1, 0)
+    fillBar.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    fillBar.BorderSizePixel = 0
+    fillBar.Parent = barContainer
 
-        local fillCorner = Instance.new("UICorner")
-        fillCorner.CornerRadius = UDim.new(0, 6)
-        fillCorner.Parent = fillBar
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 6)
+    fillCorner.Parent = fillBar
 
-        -- Percent label
-        percentLabel = Instance.new("TextLabel")
-        percentLabel.Size = UDim2.new(1, 0, 1, 0)
-        percentLabel.BackgroundTransparency = 1
-        percentLabel.Text = ""
-        percentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        percentLabel.TextSize = 8
-        percentLabel.Font = Enum.Font.Arcade
-        percentLabel.ZIndex = 2
-        percentLabel.Parent = barContainer
-    end)
-    if not success then
-        warn("[ERROR] createAutoStealUI failed: " .. tostring(err))
-    end
+    -- Percent label
+    percentLabel = Instance.new("TextLabel")
+    percentLabel.Size = UDim2.new(1, 0, 1, 0)
+    percentLabel.BackgroundTransparency = 1
+    percentLabel.Text = ""
+    percentLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    percentLabel.TextSize = 8
+    percentLabel.Font = Enum.Font.Arcade
+    percentLabel.ZIndex = 2
+    percentLabel.Parent = barContainer
 end
 
 local function destroyAutoStealUI()
-    local success, err = pcall(function()
-        if screenGui then
-            screenGui:Destroy()
-            screenGui = nil
-            mainFrame = nil
-            titleLabel = nil
-            studLabel = nil
-            moneyLabel = nil
-            fillBar = nil
-            percentLabel = nil
-        end
-    end)
-    if not success then
-        warn("[ERROR] destroyAutoStealUI failed: " .. tostring(err))
+    if screenGui then
+        screenGui:Destroy()
+        screenGui = nil
+        mainFrame = nil
+        titleLabel = nil
+        studLabel = nil
+        moneyLabel = nil
+        fillBar = nil
+        percentLabel = nil
     end
 end
 
 -- FASTER ANIMATION: 0.7 seconds
 local function animateFill()
-    local success, err = pcall(function()
-        if isAnimating or not fillBar then return end 
-        isAnimating = true
+    if isAnimating or not fillBar then return end 
+    isAnimating = true
 
-        local tweenInfo = TweenInfo.new(0.7, Enum.EasingStyle.Linear)
-        local tween = TweenService:Create(fillBar, tweenInfo, {Size = UDim2.new(1, 0, 1, 0)})
-        
-        tween:Play()
-        
-        task.spawn(function()
-            for i = 0, 100 do
-                if percentLabel then
-                    percentLabel.Text = i .. "%"
-                end
-                task.wait(0.7 / 100)
+    local tweenInfo = TweenInfo.new(0.7, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(fillBar, tweenInfo, {Size = UDim2.new(1, 0, 1, 0)})
+    
+    tween:Play()
+    
+    task.spawn(function()
+        for i = 0, 100 do
+            if percentLabel then
+                percentLabel.Text = i .. "%"
             end
-        end)
-        
-        tween.Completed:Wait()
-        task.wait(0.14)
-
-        if fillBar then
-            fillBar.Size = UDim2.new(0, 0, 1, 0)
+            task.wait(0.7 / 100)
         end
-        if percentLabel then
-            percentLabel.Text = ""
-        end
-        isAnimating = false
     end)
-    if not success then
-        warn("[ERROR] animateFill failed: " .. tostring(err))
+    
+    tween.Completed:Wait()
+    task.wait(0.14)
+
+    if fillBar then
+        fillBar.Size = UDim2.new(0, 0, 1, 0)
     end
+    if percentLabel then
+        percentLabel.Text = ""
+    end
+    isAnimating = false
 end
 
 -- ==================== ESP PLAYERS FUNCTIONS (FIXED) ====================
 -- Fungsi untuk mendapatkan nama item yang dipegang oleh pemain
 local function getEquippedItem(character)
-    -- Semak jika ada tool di tangan
     local tool = character:FindFirstChildOfClass("Tool")
     if tool then
         return tool.Name
     end
     
-    -- Semak humanoid untuk tool yang dipegang
     local humanoid = character:FindFirstChild("Humanoid")
     if humanoid then
         for _, child in pairs(character:GetChildren()) do
@@ -378,7 +360,6 @@ end
 
 -- Fungsi untuk mencipta ESP untuk seorang pemain
 local function createESP(targetPlayer)
-    -- Jangan buat ESP untuk diri sendiri
     if targetPlayer == player then return end
     
     local character = targetPlayer.Character
@@ -387,27 +368,24 @@ local function createESP(targetPlayer)
     local rootPart = character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return end
     
-    -- Cipta Highlight (outline cyan)
     local highlight = Instance.new("Highlight")
     highlight.Name = "PlayerESP"
     highlight.Adornee = character
-    highlight.FillColor = Color3.fromRGB(0, 255, 255) -- Warna isi cyan
-    highlight.OutlineColor = Color3.fromRGB(0, 200, 255) -- Warna garis cyan
+    highlight.FillColor = Color3.fromRGB(0, 255, 255)
+    highlight.OutlineColor = Color3.fromRGB(0, 200, 255)
     highlight.FillTransparency = 0.5
     highlight.OutlineTransparency = 0
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- Sentiasa kelihatan melalui objek lain
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     highlight.Parent = character
     
-    -- Cipta BillboardGui untuk paparkan nama + item
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESPInfo"
     billboard.Adornee = rootPart
-    billboard.Size = UDim2.new(0, 200, 0, 40) -- Saiz dipendekkan kerana tiada jarak
-    billboard.StudsOffset = Vector3.new(0, 3, 0) -- Kedudukan di atas kepala
+    billboard.Size = UDim2.new(0, 200, 0, 40)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
     billboard.AlwaysOnTop = true
     billboard.Parent = character
     
-    -- Label untuk nama pemain
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Size = UDim2.new(1, 0, 0, 20)
     nameLabel.BackgroundTransparency = 1
@@ -419,20 +397,18 @@ local function createESP(targetPlayer)
     nameLabel.TextSize = 14
     nameLabel.Parent = billboard
     
-    -- Label untuk item
     local itemLabel = Instance.new("TextLabel")
     itemLabel.Size = UDim2.new(1, 0, 0, 18)
     itemLabel.Position = UDim2.new(0, 0, 0, 22)
     itemLabel.BackgroundTransparency = 1
     itemLabel.Text = "Item: None"
-    itemLabel.TextColor3 = Color3.fromRGB(255, 255, 100) -- Warna kuning asal
+    itemLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
     itemLabel.TextStrokeTransparency = 0.5
     itemLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
     itemLabel.Font = Enum.Font.Gotham
     itemLabel.TextSize = 12
     itemLabel.Parent = billboard
     
-    -- Simpan semua objek ESP dalam jadual
     espObjects[targetPlayer] = {
         highlight = highlight,
         billboard = billboard,
@@ -441,7 +417,6 @@ local function createESP(targetPlayer)
     }
 end
 
--- Fungsi untuk membuang ESP untuk seorang pemain
 local function removeESP(targetPlayer)
     if espObjects[targetPlayer] then
         if espObjects[targetPlayer].highlight then
@@ -454,67 +429,54 @@ local function removeESP(targetPlayer)
     end
 end
 
--- Fungsi untuk mengemas kini ESP (hanya item, tiada jarak)
 local function updateESP()
     if not espPlayersEnabled then return end
     
     for targetPlayer, espData in pairs(espObjects) do
-        -- Semak jika pemain dan watak masih wujud
         if targetPlayer and targetPlayer.Parent and espData.character and espData.character.Parent then
             local character = espData.character
             local rootPart = character:FindFirstChild("HumanoidRootPart")
             
             if rootPart then
-                -- Kemas kini item yang dipegang
                 local equippedItem = getEquippedItem(character)
                 espData.itemLabel.Text = "Item: " .. equippedItem
                 
-                -- Tukar warna berdasarkan item
                 if equippedItem ~= "None" then
-                    espData.itemLabel.TextColor3 = Color3.fromRGB(255, 100, 100) -- Warna merah jika ada item
+                    espData.itemLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
                 else
-                    espData.itemLabel.TextColor3 = Color3.fromRGB(255, 255, 100) -- Warna kuning jika tiada item
+                    espData.itemLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
                 end
             else
-                -- Jika tiada rootPart, buang ESP
                 removeESP(targetPlayer)
             end
         else
-            -- Jika pemain telah keluar, buang ESP
             removeESP(targetPlayer)
         end
     end
 end
 
--- Fungsi untuk menghidupkan ESP
 local function enableESPPlayers()
     if espPlayersEnabled then return end
     espPlayersEnabled = true
     
-    -- Cipta ESP untuk semua pemain yang sedia ada
     for _, targetPlayer in pairs(Players:GetPlayers()) do
         if targetPlayer ~= player and targetPlayer.Character then
             createESP(targetPlayer)
         end
     end
     
-    -- Mulakan gelung kemas kini (update loop)
     updateConnection = RunService.RenderStepped:Connect(updateESP)
-    
     print("✅ ESP Players Diaktifkan")
 end
 
--- Fungsi untuk mematikan ESP
 local function disableESPPlayers()
     if not espPlayersEnabled then return end
     espPlayersEnabled = false
     
-    -- Buang semua ESP
     for targetPlayer, _ in pairs(espObjects) do
         removeESP(targetPlayer)
     end
     
-    -- Hentikan gelung kemas kini
     if updateConnection then
         updateConnection:Disconnect()
         updateConnection = nil
@@ -680,7 +642,6 @@ local function createHighestValueESP(brainrotData)
         
         if not part then return end
         
-        -- Highlight (RED)
         local highlight = Instance.new("Highlight", model)
         highlight.Name = "BrainrotESPHighlight"
         highlight.Adornee = model
@@ -691,7 +652,6 @@ local function createHighestValueESP(brainrotData)
         highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
         espContainer.highlight = highlight
         
-        -- BOX HIGHLIGHT
         local boxAdornment = Instance.new("BoxHandleAdornment")
         boxAdornment.Name = "BrainrotBoxHighlight"
         boxAdornment.Adornee = part
@@ -703,7 +663,6 @@ local function createHighestValueESP(brainrotData)
         boxAdornment.Parent = part
         espContainer.boxAdornment = boxAdornment
         
-        -- RED OUTLINE untuk PODIUM
         local plot = brainrotData.plot
         if plot then
             local podium = plot:FindFirstChild("Podium") or plot:FindFirstChild("Platform") or plot:FindFirstChild("Base")
@@ -721,7 +680,6 @@ local function createHighestValueESP(brainrotData)
             end
         end
         
-        -- Billboard with CENTERED text
         local billboard = Instance.new("BillboardGui", part)
         billboard.Size = UDim2.new(0, 220, 0, 80)
         billboard.StudsOffset = Vector3.new(0, 8, 0)
@@ -731,7 +689,6 @@ local function createHighestValueESP(brainrotData)
         container.Size = UDim2.new(1, 0, 1, 0)
         container.BackgroundTransparency = 1
         
-        -- Pet Name Label (CENTERED)
         local petNameLabel = Instance.new("TextLabel", container)
         petNameLabel.Size = UDim2.new(1, 0, 0.5, 0)
         petNameLabel.BackgroundTransparency = 1
@@ -743,7 +700,6 @@ local function createHighestValueESP(brainrotData)
         petNameLabel.TextXAlignment = Enum.TextXAlignment.Center
         petNameLabel.TextYAlignment = Enum.TextYAlignment.Center
         
-        -- Generation Label (CENTERED)
         local genLabel = Instance.new("TextLabel", container)
         genLabel.Size = UDim2.new(1, 0, 0.5, 0)
         genLabel.Position = UDim2.new(0, 0, 0.5, 0)
@@ -761,12 +717,10 @@ local function createHighestValueESP(brainrotData)
         highestValueESP = espContainer
         highestValueData = brainrotData
         
-        -- TAMBAH: Notifikasi untuk ESP Best
         if espBestEnabled then
             local petName = brainrotData.petName or "Unknown"
             local genValue = brainrotData.formattedValue or formatNumber(brainrotData.generation or 0)
             
-            -- Hanya beri notifikasi jika ini adalah haiwan yang berbeza dari yang terakhir diberitahu
             if not lastNotifiedPet or lastNotifiedPet ~= petName .. genValue then
                 lastNotifiedPet = petName .. genValue
                 Nightmare:Notify(petName .. " " .. genValue)
@@ -863,17 +817,12 @@ local function removeTracerLine()
     if tracerAttachment1 then tracerAttachment1:Destroy() tracerAttachment1 = nil end
 end
 
--- TAMBAH: Fungsi baru untuk menyegarkan tracer
 local function refreshTracerLine()
     if not espBestEnabled or not highestValueData then
         removeTracerLine()
         return
     end
-    
-    -- Buang tracer lama
     removeTracerLine()
-    
-    -- Cipta tracer baru
     createTracerLine()
 end
 
@@ -888,7 +837,7 @@ local function updateHighestValueESP()
         highestValueESP = nil
         highestValueData = nil
         removeTracerLine()
-        lastNotifiedPet = nil -- Reset notifikasi apabila haiwan hilang
+        lastNotifiedPet = nil
     end
     
     local newHighest = findHighestBrainrot()
@@ -898,7 +847,6 @@ local function updateHighestValueESP()
             createHighestValueESP(newHighest)
             
             if espBestEnabled then
-                -- UBAH: Ganti dengan fungsi refreshTracerLine()
                 refreshTracerLine()
             end
             
@@ -922,7 +870,7 @@ local function removeHighestValueESP()
     end
     
     removeTracerLine()
-    lastNotifiedPet = nil -- Reset notifikasi apabila ESP dimatikan
+    lastNotifiedPet = nil
 end
 
 local function enableESPBest()
@@ -935,14 +883,12 @@ local function enableESPBest()
         task.cancel(autoUpdateThread)
     end
     
-    -- UBAH: Tambah thread untuk semakan berkala
     local lastTracerRefresh = 0
     autoUpdateThread = task.spawn(function()
         while espBestEnabled do
             task.wait(1)
             updateHighestValueESP()
             
-            -- TAMBAH: Semak dan kemas kini tracer setiap 2 saat
             if tick() - lastTracerRefresh >= 2 then
                 refreshTracerLine()
                 lastTracerRefresh = tick()
@@ -1208,7 +1154,6 @@ local function updateSentryPosition(desc)
         if desc:IsA("Model") and desc.PrimaryPart then
             desc:SetPrimaryPartCFrame(hrp.CFrame + spawnOffset)
             
-            -- Set CanCollide false for all parts
             for _, part in pairs(desc:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = false
@@ -1257,7 +1202,6 @@ local function destroySentry(desc)
     local hitCount = 0
     local running = true
     
-    -- Monitor sentry destruction
     local destroyConnection
     destroyConnection = desc.AncestryChanged:Connect(function()
         if not sentryExists(desc) then
@@ -1269,7 +1213,6 @@ local function destroySentry(desc)
         end
     end)
     
-    -- Thread 1: FOLLOW PLAYER (Update position continuously with RenderStepped)
     local followConnection
     followConnection = RunService.RenderStepped:Connect(function()
         if not running or not sentryEnabled or not sentryExists(desc) then
@@ -1280,13 +1223,11 @@ local function destroySentry(desc)
             return
         end
         
-        -- Update sentry position to follow player (smoother with RenderStepped)
         updateSentryPosition(desc)
     end)
     
     followConnections[desc] = followConnection
     
-    -- Thread 2: Spam Equip/Unequip
     task.spawn(function()
         while running and sentryEnabled and sentryExists(desc) do
             equipBat()
@@ -1297,7 +1238,6 @@ local function destroySentry(desc)
         end
     end)
     
-    -- Thread 3: Continuous spam attack
     task.spawn(function()
         task.wait(0.1)
         
@@ -1442,7 +1382,6 @@ local function stopSentryWatch()
         scanConn = nil
     end
     
-    -- Disconnect all follow connections
     for _, conn in pairs(followConnections) do
         if conn then
             conn:Disconnect()
@@ -1666,22 +1605,18 @@ local function setupNoWalkAnimation(character)
         end
     end
     
-    -- Hentikan animasi semasa berlari
     local runningConnection = humanoid.Running:Connect(function(speed)
         stopAllAnimations()
     end)
     
-    -- Hentikan animasi semasa melompat
     local jumpingConnection = humanoid.Jumping:Connect(function()
         stopAllAnimations()
     end)
     
-    -- Hentikan sebarang animasi baru yang cuba dimainkan
     local animationPlayedConnection = animator.AnimationPlayed:Connect(function(animationTrack)
         animationTrack:Stop()
     end)
     
-    -- Hentikan animasi secara berterusan pada setiap frame
     local renderSteppedConnection = RunService.RenderStepped:Connect(function()
         stopAllAnimations()
     end)
@@ -1709,7 +1644,6 @@ local function disableUnwalkAnim()
     if not unwalkAnimEnabled then return end
     unwalkAnimEnabled = false
     
-    -- Disconnect all connections
     for _, connection in pairs(unwalkAnimConnections) do
         if connection then
             connection:Disconnect()
@@ -1720,7 +1654,7 @@ local function disableUnwalkAnim()
     print("❌ Unwalk Animation Disabled")
 end
 
--- ==================== AUTO STEAL FUNCTIONS (NEW) ====================
+-- ==================== AUTO STEAL FUNCTIONS (FIXED) ====================
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
     
@@ -1809,59 +1743,41 @@ local function getAnimalPosition(animalData)
 end
 
 local function getNearestAnimal()
-    local success, result = pcall(function()
-        if isScanning or #allAnimalsCache == 0 then return nil end -- Elakkan race condition dan error jika cache kosong
-        
-        local character = player.Character
-        if not character then return nil end
-        
-        local hrp = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("UpperTorso")
-        if not hrp then return nil end
-        
-        local nearest = nil
-        local minDist = math.huge
-        
-        for _, animalData in ipairs(allAnimalsCache) do
-            if isMyBaseAnimal(animalData) then
-                continue
-            end
-            
-            local pos = getAnimalPosition(animalData)
-            if pos then
-                local dist = (hrp.Position - pos).Magnitude
-                
-                if dist < minDist then
-                    minDist = dist
-                    nearest = animalData
-                end
-            end
+    local character = player.Character
+    if not character then return nil end
+    
+    local hrp = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("UpperTorso")
+    if not hrp then return nil end
+    
+    local nearest = nil
+    local minDist = math.huge
+    
+    for _, animalData in ipairs(allAnimalsCache) do
+        if isMyBaseAnimal(animalData) then
+            continue
         end
         
-        return nearest
-    end)
-    if not success then
-        warn("[ERROR] getNearestAnimal failed: " .. tostring(result))
-        return nil
+        local pos = getAnimalPosition(animalData)
+        if pos then
+            local dist = (hrp.Position - pos).Magnitude
+            
+            if dist < minDist then
+                minDist = dist
+                nearest = animalData
+            end
+        end
     end
-    return result
+    
+    return nearest
 end
 
 local function getBestGenAnimal()
-    local success, result = pcall(function()
-        if isScanning or #allAnimalsCache == 0 then return nil end -- Elakkan race condition dan error jika cache kosong
-        -- allAnimalsCache already sorted by genValue in scanAllPlots
-        for _, animalData in ipairs(allAnimalsCache) do
-            if not isMyBaseAnimal(animalData) then
-                return animalData
-            end
+    for _, animalData in ipairs(allAnimalsCache) do
+        if not isMyBaseAnimal(animalData) then
+            return animalData
         end
-        return nil
-    end)
-    if not success then
-        warn("[ERROR] getBestGenAnimal failed: " .. tostring(result))
-        return nil
     end
-    return result
+    return nil
 end
 
 local function buildStealCallbacks(prompt)
@@ -1938,131 +1854,119 @@ local function attemptSteal(prompt)
 end
 
 local function scanAllPlots()
-    local success, err = pcall(function()
-        isScanning = true -- Set flag untuk mencegah akses serentak
-        
-        local plots = workspace:FindFirstChild("Plots")
-        if not plots then 
-            isScanning = false
-            return {} 
-        end
-        
-        local newCache = {}
-        
-        for _, plot in ipairs(plots:GetChildren()) do
-            if not Synchronizer then continue end
-            
-            local channel = Synchronizer:Get(plot.Name)
-            if not channel then continue end
-            
-            local animalList = channel:Get("AnimalList")
-            if not animalList then continue end
-            
-            local owner = channel:Get("Owner")
-            if not owner then continue end
-            
-            local ownerName = "Unknown"
-            if typeof(owner) == "Instance" and owner:IsA("Player") then
-                ownerName = owner.Name
-            elseif typeof(owner) == "table" and owner.Name then
-                ownerName = owner.Name
-            end
-            
-            for slot, animalData in pairs(animalList) do
-                if type(animalData) == "table" then
-                    local animalName = animalData.Index
-                    local animalInfo = AnimalsData[animalName]
-                    if not animalInfo then continue end
-                    
-                    local rarity = animalInfo.Rarity
-                    local mutation = animalData.Mutation or "None"
-                    local traits = (animalData.Traits and #animalData.Traits > 0) and table.concat(animalData.Traits, ", ") or "None"
-                    
-                    local genValue = AnimalsShared:GetGeneration(animalName, animalData.Mutation, animalData.Traits, nil)
-                    
-                    table.insert(newCache, {
-                        name = animalInfo.DisplayName or animalName,
-                        genValue = genValue,
-                        mutation = mutation,
-                        traits = traits,
-                        owner = ownerName,
-                        plot = plot.Name,
-                        slot = tostring(slot),
-                        uid = plot.Name .. "_" .. tostring(slot),
-                    })
-                end
-            end
-        end
-        
-        allAnimalsCache = newCache
-        
-        table.sort(allAnimalsCache, function(a, b)
-            return a.genValue > b.genValue
-        end)
-        
-        isScanning = false -- Reset flag
-        return #allAnimalsCache
-    end)
-    if not success then
-        isScanning = false -- Pastikan flag sentiasa direset walaupun ada error
-        warn("[ERROR] scanAllPlots failed: " .. tostring(err))
-        return 0
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return {} end
+    
+    local newCache = {}
+    
+    -- TAMBAHAN: Safety check untuk module
+    if not Synchronizer or not AnimalsData or not AnimalsShared then
+        return 0 
     end
-    return err
+    
+    for _, plot in ipairs(plots:GetChildren()) do
+        local channel = Synchronizer:Get(plot.Name)
+        if not channel then continue end
+        
+        local animalList = channel:Get("AnimalList")
+        if not animalList then continue end
+        
+        local owner = channel:Get("Owner")
+        if not owner then continue end
+        
+        local ownerName = "Unknown"
+        if typeof(owner) == "Instance" and owner:IsA("Player") then
+            ownerName = owner.Name
+        elseif typeof(owner) == "table" and owner.Name then
+            ownerName = owner.Name
+        end
+        
+        for slot, animalData in pairs(animalList) do
+            if type(animalData) == "table" then
+                local animalName = animalData.Index
+                local animalInfo = AnimalsData[animalName]
+                if not animalInfo then continue end
+                
+                local rarity = animalInfo.Rarity
+                local mutation = animalData.Mutation or "None"
+                local traits = (animalData.Traits and #animalData.Traits > 0) and table.concat(animalData.Traits, ", ") or "None"
+                
+                local genValue = 0
+                -- Safety check untuk AnimalsShared:GetGeneration
+                if AnimalsShared and typeof(AnimalsShared.GetGeneration) == "function" then
+                    genValue = AnimalsShared:GetGeneration(animalName, animalData.Mutation, animalData.Traits, nil)
+                end
+                
+                table.insert(newCache, {
+                    name = animalInfo.DisplayName or animalName,
+                    genValue = genValue,
+                    mutation = mutation,
+                    traits = traits,
+                    owner = ownerName,
+                    plot = plot.Name,
+                    slot = tostring(slot),
+                    uid = plot.Name .. "_" .. tostring(slot),
+                })
+            end
+        end
+    end
+    
+    allAnimalsCache = newCache
+    
+    table.sort(allAnimalsCache, function(a, b)
+        return a.genValue > b.genValue
+    end)
+    
+    return #allAnimalsCache
 end
 
 local function startAutoSteal()
     if stealConnection then return end
     
     stealConnection = RunService.Heartbeat:Connect(function()
-        local success, err = pcall(function()
-            if not autoStealEnabled or isScanning then return end -- Tambah pemeriksaan isScanning
+        if not autoStealEnabled then return end
+        
+        local targetAnimal = nil
+        
+        if autoStealMode == "nearest" then
+            targetAnimal = getNearestAnimal()
+        elseif autoStealMode == "best" then
+            targetAnimal = getBestGenAnimal()
+        end
+        
+        if not targetAnimal then
+            if titleLabel then titleLabel.Text = "WAITING FOR STEAL" end
+            if studLabel then studLabel.Text = "0.0 studs" end
+            if moneyLabel then moneyLabel.Text = "$0.0M/s" end
+            return
+        end
+        
+        local character = player.Character
+        if not character then return end
+        
+        local hrp = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("UpperTorso")
+        if not hrp then return end
+        
+        local animalPos = getAnimalPosition(targetAnimal)
+        if not animalPos then return end
+        
+        local dist = (hrp.Position - animalPos).Magnitude
+        
+        if titleLabel then titleLabel.Text = string.upper(targetAnimal.name) end
+        if studLabel then studLabel.Text = string.format("%.1f studs", dist) end
+        if moneyLabel then moneyLabel.Text = string.format("$%.1fM/s", targetAnimal.genValue / 1000000) end
+        
+        if dist <= AUTO_STEAL_PROX_RADIUS then
+            task.spawn(animateFill)
             
-            local targetAnimal = nil
-            
-            if autoStealMode == "nearest" then
-                targetAnimal = getNearestAnimal()
-            elseif autoStealMode == "best" then
-                targetAnimal = getBestGenAnimal()
+            local prompt = PromptMemoryCache[targetAnimal.uid]
+            if not prompt or not prompt.Parent then
+                prompt = findProximityPromptForAnimal(targetAnimal)
             end
             
-            if not targetAnimal then
-                if titleLabel then titleLabel.Text = "WAITING FOR STEAL" end
-                if studLabel then studLabel.Text = "0.0 studs" end
-                if moneyLabel then moneyLabel.Text = "$0.0M/s" end
-                return
+            if prompt then
+                attemptSteal(prompt)
             end
-            
-            local character = player.Character
-            if not character then return end
-            
-            local hrp = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("UpperTorso")
-            if not hrp then return end
-            
-            local animalPos = getAnimalPosition(targetAnimal)
-            if not animalPos then return end
-            
-            local dist = (hrp.Position - animalPos).Magnitude
-            
-            if titleLabel then titleLabel.Text = string.upper(targetAnimal.name) end
-            if studLabel then studLabel.Text = string.format("%.1f studs", dist) end
-            if moneyLabel then moneyLabel.Text = string.format("$%.1fM/s", targetAnimal.genValue / 1000000) end
-            
-            if dist <= AUTO_STEAL_PROX_RADIUS then
-                task.spawn(animateFill)
-                
-                local prompt = PromptMemoryCache[targetAnimal.uid]
-                if not prompt or not prompt.Parent then
-                    prompt = findProximityPromptForAnimal(targetAnimal)
-                end
-                
-                if prompt then
-                    attemptSteal(prompt)
-                end
-            end
-        end)
-        if not success then
-            warn("[ERROR] AutoSteal Heartbeat loop failed: " .. tostring(err))
         end
     end)
 end
@@ -2075,31 +1979,21 @@ local function stopAutoSteal()
 end
 
 local function enableAutoSteal()
-    local success, err = pcall(function()
-        if autoStealEnabled then return end
-        autoStealEnabled = true
-        
-        createAutoStealUI()
-        startAutoSteal()
-        print("✅ " .. (autoStealMode == "best" and "Best Gen" or "Nearest") .. " Steal Enabled")
-    end)
-    if not success then
-        warn("[ERROR] enableAutoSteal failed: " .. tostring(err))
-    end
+    if autoStealEnabled then return end
+    autoStealEnabled = true
+    
+    createAutoStealUI()
+    startAutoSteal()
+    print("✅ " .. (autoStealMode == "best" and "Best Gen" or "Nearest") .. " Steal Enabled")
 end
 
 local function disableAutoSteal()
-    local success, err = pcall(function()
-        if not autoStealEnabled then return end
-        autoStealEnabled = false
-        
-        stopAutoSteal()
-        destroyAutoStealUI()
-        print("❌ " .. (autoStealMode == "best" and "Best Gen" or "Nearest") .. " Steal Disabled")
-    end)
-    if not success then
-        warn("[ERROR] disableAutoSteal failed: " .. tostring(err))
-    end
+    if not autoStealEnabled then return end
+    autoStealEnabled = false
+    
+    stopAutoSteal()
+    destroyAutoStealUI()
+    print("❌ " .. (autoStealMode == "best" and "Best Gen" or "Nearest") .. " Steal Disabled")
 end
 
 -- ==================== ANTI DEBUFF FUNCTIONS ====================
@@ -2258,17 +2152,12 @@ end
 
 local ANTI_RAGDOLL = {}
 
--- ============================================================
--- HELPER FUNCTIONS
--- ============================================================
-
 local function getHRP()
     local char = player.Character
     if not char then return nil end
     return char:FindFirstChild("HumanoidRootPart")
 end
 
--- Cache character data for performance
 local function cacheCharacterData()
     local char = player.Character
     if not char then return false end
@@ -2287,7 +2176,6 @@ local function cacheCharacterData()
     return true
 end
 
--- Clean disconnect helper
 local function disconnectAll()
     for _, conn in ipairs(ragdollConnections) do
         if typeof(conn) == "RBXScriptConnection" then
@@ -2297,18 +2185,12 @@ local function disconnectAll()
     ragdollConnections = {}
 end
 
--- ============================================================
--- RAGDOLL DETECTION
--- ============================================================
-
--- Check if currently ragdolled (using multiple detection methods)
 local function isRagdolled()
     if not cachedCharData.humanoid then return false end
     
     local hum = cachedCharData.humanoid
     local state = hum:GetState()
     
-    -- State check
     local ragdollStates = {
         [Enum.HumanoidStateType.Physics] = true,
         [Enum.HumanoidStateType.Ragdoll] = true,
@@ -2319,7 +2201,6 @@ local function isRagdolled()
         return true
     end
     
-    -- Timer attribute check
     local endTime = player:GetAttribute("RagdollEndTime")
     if endTime then
         local now = workspace:GetServerTimeNow()
@@ -2331,11 +2212,6 @@ local function isRagdolled()
     return false
 end
 
--- ============================================================
--- RAGDOLL REMOVAL (MOVEABLE MODE)
--- ============================================================
-
--- Remove all ragdoll constraints
 local function removeRagdollConstraints()
     if not cachedCharData.character then return end
     
@@ -2354,48 +2230,37 @@ local function removeRagdollConstraints()
     return removed
 end
 
--- Force exit ragdoll state
 local function forceExitRagdoll()
     if not cachedCharData.humanoid or not cachedCharData.root then return end
     
     local hum = cachedCharData.humanoid
     local root = cachedCharData.root
     
-    -- Clear ragdoll timer
     pcall(function()
         local now = workspace:GetServerTimeNow()
         player:SetAttribute("RagdollEndTime", now)
     end)
     
-    -- Force standing state
     if hum.Health >0 then
         hum:ChangeState(Enum.HumanoidStateType.Running)
     end
     
-    -- Reset physics
     root.Anchored = false
     root.AssemblyLinearVelocity = Vector3.zero
     root.AssemblyAngularVelocity = Vector3.zero
 end
 
--- ============================================================
--- MAIN ANTI-RAGDOLL LOOP (MOVEABLE)
--- ============================================================
-
--- Main heartbeat loop - removes ragdoll and allows movement
 local function antiRagdollLoop()
     while antiRagdollActive and cachedCharData.humanoid do
         task.wait()
         
         if isRagdolled() then
-            -- Remove constraints and force exit
             removeRagdollConstraints()
             forceExitRagdoll()
         end
     end
 end
 
--- Setup camera binding to prevent camera detachment
 local function setupCameraBinding()
     if not cachedCharData.humanoid then return end
     
@@ -2411,13 +2276,8 @@ local function setupCameraBinding()
     table.insert(ragdollConnections, conn)
 end
 
--- ============================================================
--- CHARACTER RESPAWN HANDLER
--- ============================================================
-
--- Handle character respawn
 local function onCharacterAdded(char)
-    task.wait(0.5) -- Wait for character to load
+    task.wait(0.5)
     
     if not antiRagdollActive then return end
     
@@ -2427,17 +2287,12 @@ local function onCharacterAdded(char)
     end
 end
 
--- ============================================================
--- PUBLIC API
--- ============================================================
-
 function ANTI_RAGDOLL.Enable()
     if antiRagdollActive then 
         warn("[Anti-Ragdoll] Already enabled!")
         return 
     end
     
-    -- Cache character data
     if not cacheCharacterData() then
         warn("[Anti-Ragdoll] Failed to cache character data")
         return
@@ -2445,11 +2300,9 @@ function ANTI_RAGDOLL.Enable()
     
     antiRagdollActive = true
     
-    -- Setup character respawn listener
     local charConn = player.CharacterAdded:Connect(onCharacterAdded)
     table.insert(ragdollConnections, charConn)
     
-    -- Start anti-ragdoll
     setupCameraBinding()
     task.spawn(antiRagdollLoop)
     
@@ -2461,10 +2314,8 @@ function ANTI_RAGDOLL.Disable()
     
     antiRagdollActive = false
     
-    -- Disconnect all
     disconnectAll()
     
-    -- Clear cache
     cachedCharData = {}
     
     print("❌ Anti-Ragdoll V2 Disabled")
@@ -2490,7 +2341,6 @@ local function tryApplyInvisibleWalls()
     print("🔍 Applying Xray to base walls...")
     local processedCount = 0
     
-    -- Hanya proses objek dalam plots untuk performance yang lebih baik
     for _, plot in pairs(plots:GetChildren()) do
         for _, obj in pairs(plot:GetDescendants()) do
             if obj:IsA("BasePart") and obj.Anchored and obj.CanCollide and isBaseWall(obj) then
@@ -2508,7 +2358,6 @@ local function tryApplyInvisibleWalls()
 end
 
 local function cleanupRemovedParts()
-    -- Cleanup parts yang sudah dihapus dari game
     for obj, _ in pairs(originalTransparency) do
         if not obj or not obj.Parent then
             originalTransparency[obj] = nil
@@ -2525,16 +2374,13 @@ local function enableXrayBase()
     xrayBaseEnabled = true
     invisibleWallsLoaded = false
     
-    -- Bersihkan dahulu
     cleanupRemovedParts()
     
-    -- Apply dengan delay untuk mengelakkan lag
     task.spawn(function()
-        task.wait(0.5) -- Beri masa untuk UI dimuatkan
+        task.wait(0.5)
         tryApplyInvisibleWalls()
     end)
     
-    -- Setup event handler dengan disconnect yang betul
     if xrayBaseConnection then
         xrayBaseConnection:Disconnect()
     end
@@ -2542,7 +2388,7 @@ local function enableXrayBase()
     xrayBaseConnection = workspace.DescendantAdded:Connect(function(obj)
         if not xrayBaseEnabled then return end
         
-        task.wait(0.1) -- Delay kecil untuk stability
+        task.wait(0.1)
         
         if isBaseWall(obj) and obj:IsA("BasePart") and obj.Anchored and obj.CanCollide then
             if not originalTransparency[obj] then
@@ -2550,14 +2396,6 @@ local function enableXrayBase()
                 obj.LocalTransparencyModifier = 0.85
                 print("🔍 Applied Xray to new base wall: " .. obj.Name)
             end
-        end
-    end)
-    
-    -- Cleanup connection untuk parts yang dihapus
-    local cleanupConnection
-    cleanupConnection = workspace.DescendantRemoving:Connect(function(obj)
-        if originalTransparency[obj] then
-            originalTransparency[obj] = nil
         end
     end)
     
@@ -2573,13 +2411,11 @@ local function disableXrayBase()
     xrayBaseEnabled = false
     invisibleWallsLoaded = false
     
-    -- Disconnect semua connections
     if xrayBaseConnection then
         xrayBaseConnection:Disconnect()
         xrayBaseConnection = nil
     end
     
-    -- Pulihkan transparency untuk semua parts
     local restoredCount = 0
     for obj, value in pairs(originalTransparency) do
         if obj and obj.Parent then
@@ -2975,7 +2811,6 @@ local function scanAndConnect()
                 if main and remTime and locked and remTime:IsA("TextLabel") and locked:IsA("GuiObject") then
                     local isTarget = selected and remTime == selected.remTime
                     
-                    -- Check if base is unlocked (Locked.Visible = false)
                     local isUnlocked = not locked.Visible
                     local displayText = isUnlocked and "Unlocked" or remTime.Text
                     
@@ -3113,34 +2948,24 @@ local function toggleUnwalkAnim(state)
 end
 
 local function toggleAutoSteal(state)
-    local success, err = pcall(function()
-        if state then
-            enableAutoSteal()
-        else
-            disableAutoSteal()
-        end
-    end)
-    if not success then
-        warn("[ERROR] toggleAutoSteal failed: " .. tostring(err))
+    if state then
+        enableAutoSteal()
+    else
+        disableAutoSteal()
     end
 end
 
+-- FIXED toggleBestGen: Removed task.wait and simplified logic
 local function toggleBestGen(state)
-    local success, err = pcall(function()
-        autoStealMode = state and "best" or "nearest"
-        
-        if autoStealEnabled then
-            -- Restart auto steal with new mode
-            disableAutoSteal()
-            task.wait(0.1)
-            enableAutoSteal()
-        end
-        
-        print("✅ " .. (state and "Best Gen" or "Nearest") .. " Mode " .. (state and "Enabled" or "Disabled"))
-    end)
-    if not success then
-        warn("[ERROR] toggleBestGen failed: " .. tostring(err))
-    end
+    autoStealMode = state and "best" or "nearest"
+    
+    -- Hanya print status, tak perlu restart connection sebab loop baca variable setiap frame
+    print("✅ " .. (state and "Best Gen" or "Nearest") .. " Mode Selected")
+    
+    -- Opsional: Jika mahu auto start bila tukar mode
+    -- if not autoStealEnabled and state then
+    --    toggleAutoSteal(true)
+    -- end
 end
 
 local function toggleAntiRagdoll(state)
@@ -3176,22 +3001,19 @@ local function toggleEspTimer(state)
 end
 
 -- ==================== PLAYER EVENT HANDLERS ====================
--- Apabila pemain baru masuk
 Players.PlayerAdded:Connect(function(targetPlayer)
     targetPlayer.CharacterAdded:Connect(function(character)
-        task.wait(1) -- Tunggu sebentar untuk watak dimuatkan sepenuhnya
+        task.wait(1)
         if espPlayersEnabled and targetPlayer ~= player then
             createESP(targetPlayer)
         end
     end)
 end)
 
--- Apabila pemain keluar
 Players.PlayerRemoving:Connect(function(targetPlayer)
     removeESP(targetPlayer)
 end)
 
--- Semak pemain yang sedia ada dalam server
 for _, targetPlayer in pairs(Players:GetPlayers()) do
     if targetPlayer ~= player then
         targetPlayer.CharacterAdded:Connect(function(character)
@@ -3203,14 +3025,11 @@ for _, targetPlayer in pairs(Players:GetPlayers()) do
     end
 end
 
--- Sambungan event untuk memuat semula garis jika watak respawn
 player.CharacterAdded:Connect(function(newCharacter)
     task.wait(1)
-    -- ESP Players is now handled by the new event handlers, no need to re-create here.
     
     if espBestEnabled then
         updateHighestValueESP()
-        -- TAMBAH: Cipta semula tracer line selepas respawn
         if highestValueData then
             createTracerLine()
         end
@@ -3253,8 +3072,6 @@ player.CharacterAdded:Connect(function(newCharacter)
         print("🔄 Reloaded animation blocker after respawn")
     end
     
-    -- Anti-Ragdoll V2 handles its own respawn logic
-    
     if xrayBaseEnabled then
         invisibleWallsLoaded = false
         tryApplyInvisibleWalls()
@@ -3269,11 +3086,9 @@ player.CharacterAdded:Connect(function(newCharacter)
     end
     
     if autoStealEnabled then
-        pcall(function()
-            disableAutoSteal()
-            task.wait(0.5)
-            enableAutoSteal()
-        end)
+        disableAutoSteal()
+        task.wait(0.5)
+        enableAutoSteal()
     end
 end)
 
@@ -3291,10 +3106,8 @@ end)
 -- ==================== CREATE UI AND ADD TOGGLES ====================
 Nightmare:CreateUI()
 
--- Notifikasi apabila UI dimuatkan
-Nightmare:Notify("Nightmare Hub")
+Nightmare:Notify("Nightmare Hub Loaded")
 
--- Tambah toggle dalam baris yang sama
 Nightmare:AddToggleRow("Esp Players", toggleEspPlayers, "Esp Best", toggleEspBest)
 Nightmare:AddToggleRow("Base Line", toggleBaseLine, "Anti Turret", toggleAntiTurret)
 Nightmare:AddToggleRow("Aimbot", toggleAimbot, "Kick Steal", toggleKickSteal)
@@ -3303,5 +3116,4 @@ Nightmare:AddToggleRow("Best Gen", toggleBestGen, "Anti Debuff", toggleAntiDebuf
 Nightmare:AddToggleRow("Anti Rdoll", toggleAntiRagdoll, "Xray Base", toggleXrayBase)
 Nightmare:AddToggleRow("Fps Boost", toggleFpsBoost, "Esp Timer", toggleEspTimer)
 
-print("🎮 Nightmare UI with ESP, Base Line, Anti Turret, Aimbot, Kick Steal, Unwalk Anim, Nearest, Best Gen, Anti Debuff, Anti Rdoll, Xray Base, Fps Boost & Esp Timer Loaded Successfully!")
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/StealBrainrot/refs/heads/main/Sabstealtoolsv1.lua"))()
+print("🎮 Nightmare UI Loaded Successfully!")
