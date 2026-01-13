@@ -113,20 +113,6 @@ pcall(function()
     MutationsModule = require(ReplicatedStorage.Datas.Mutations)
 end)
 
--- ==================== BYPASS FOR INSTANT GRAB ====================
-do
-    local oldInfo
-    oldInfo = hookfunction(debug.info, function(...)
-        local src = oldInfo(1, "s")
-
-        if src and src:find("Packages.Synchronizer") then
-            return nil
-        end
-
-        return oldInfo(...)
-    end)
-end
-
 -- ==================== ESP PLAYERS FUNCTIONS (FIXED) ====================
 -- Fungsi untuk mendapatkan nama item yang dipegang oleh pemain
 local function getEquippedItem(character)
