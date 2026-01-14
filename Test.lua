@@ -3120,10 +3120,13 @@ player.CharacterRemoving:Connect(function()
 end)
 
 -- ==================== CREATE UI AND ADD TOGGLES ====================
+Nightmare:CreateUI()
+
+-- LANGKAH 2: Sekarang barulah boleh gunakan fungsi-fungsi lain dengan selamat
 -- Notifikasi apabila UI dimuatkan
 Nightmare:Notify("Nightmare Hub")
 
--- Tambah toggle dalam baris yang sama (SUSUNAN SEMULA)
+-- LANGKAH 3: Tambah semua toggle
 Nightmare:AddToggleRow("Esp Players", toggleEspPlayers, "Esp Best", toggleEspBest)
 Nightmare:AddToggleRow("Base Line", toggleBaseLine, "Anti Turret", toggleAntiTurret)
 Nightmare:AddToggleRow("Aimbot", toggleAimbot, "Kick Steal", toggleKickSteal)
