@@ -1467,24 +1467,18 @@ local function fpsDevourer()
 end
 
 -- ==================== FLY V2 FUNCTIONS ====================
--- ========================================
--- GRAPPLE SETUP
--- ========================================
 local function startAutoGrapple()
     if autoGrappleConnection then return end
     
     autoGrappleConnection = RunService.Heartbeat:Connect(function()
         autoEquipGrapple()
-        fireGrapple()
+        task.wait(0.1) -- Tambah sedikit kelewatan
+        -- Gunakan UseItemRemote dari skrip utama
+        pcall(function()
+            local args = {1.9832406361897787}
+            UseItemRemote:FireServer(unpack(args))
+        end)
     end)
-end
-
--- Stop Auto Grapple
-local function stopAutoGrapple()
-    if autoGrappleConnection then
-        autoGrappleConnection:Disconnect()
-        autoGrappleConnection = nil
-    end
 end
 
 -- ========================================
