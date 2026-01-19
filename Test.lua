@@ -1467,18 +1467,65 @@ local function fpsDevourer()
 end
 
 -- ==================== FLY V2 FUNCTIONS ====================
+-- Tambah pembolehubah untuk mengesan status auto grapple
+local autoGrappleActive = false
+
+-- Fungsi autoEquipGrapple khusus untuk Fly V2
+local function autoEquipGrappleV2()
+    local success, result = pcall(function()
+        local character = player.Character
+        if not character then return false end
+        
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if not (humanoid and humanoid.Health > 0) then return false end
+        
+        local backpack = player:WaitForChild("Backpack")
+        local grapple = backpack:FindFirstChild("Grapple Hook")
+        
+        if grapple then
+            grapple.Parent = character
+            humanoid:EquipTool(grapple)
+            return true
+        end
+        
+        return false
+    end)
+    
+    return success and result
+end
+
+-- Fungsi fireGrapple khusus untuk Fly V2
+local function fireGrappleV2()
+    pcall(function()
+        local args = {1.9832406361897787}
+        UseItemRemote:FireServer(unpack(args))
+    end)
+end
+
+-- Start Auto Grapple khusus untuk Fly V2
 local function startAutoGrapple()
     if autoGrappleConnection then return end
     
+    autoGrappleActive = true
     autoGrappleConnection = RunService.Heartbeat:Connect(function()
-        autoEquipGrapple()
+        -- Hanya jalankan jika Fly V2 masih aktif
+        if not FLYING or not autoGrappleActive then
+            return
+        end
+        
+        autoEquipGrappleV2()
         task.wait(0.1) -- Tambah sedikit kelewatan
-        -- Gunakan UseItemRemote dari skrip utama
-        pcall(function()
-            local args = {1.9832406361897787}
-            UseItemRemote:FireServer(unpack(args))
-        end)
+        fireGrappleV2()
     end)
+end
+
+-- Stop Auto Grapple
+local function stopAutoGrapple()
+    autoGrappleActive = false -- Tandakan sebagai tidak aktif
+    if autoGrappleConnection then
+        autoGrappleConnection:Disconnect()
+        autoGrappleConnection = nil
+    end
 end
 
 -- ========================================
@@ -1517,7 +1564,7 @@ local function NOFLY()
     end
     
     FLYING = false
-    stopAutoGrapple()
+    stopAutoGrapple() -- Pastikan ini dipanggil
 end
 
 local function startVehicleFly()
