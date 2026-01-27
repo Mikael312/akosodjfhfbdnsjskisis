@@ -2002,31 +2002,21 @@ local SettingsTab = Window:Tab({
 -- ===============================================================
 
 -- Togol Gap Up dan Gap Down di bahagian atas tab Main
-local GapUpToggle = MainTab:Toggle({
+local GapUpButton = MainTab:Button({
     Title = "Gap Up (Next Gap)",
     Desc = "Teleport to the next gap",
-    Default = false,
-    Callback = function(state)
-        if state then
-            CurrentGap = math.min(CurrentGap + 1, TotalGaps)
-            TweenToGapWithLanding(CurrentGap)
-            task.wait(0.5)
-            GapUpToggle:SetState(false)
-        end
+    Callback = function()
+        CurrentGap = math.min(CurrentGap + 1, TotalGaps)
+        TweenToGapWithLanding(CurrentGap)
     end
 })
 
-local GapDownToggle = MainTab:Toggle({
+local GapDownButton = MainTab:Button({
     Title = "Gap Down (Previous Gap)",
     Desc = "Teleport to the previous gap",
-    Default = false,
-    Callback = function(state)
-        if state then
-            CurrentGap = math.max(CurrentGap - 1, 1)
-            TweenToGapWithLanding(CurrentGap)
-            task.wait(0.5)
-            GapDownToggle:SetState(false)
-        end
+    Callback = function()
+        CurrentGap = math.max(CurrentGap - 1, 1)
+        TweenToGapWithLanding(CurrentGap)
     end
 })
 
