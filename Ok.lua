@@ -1,7 +1,5 @@
--- Load The Library
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
--- Get required services
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -12,9 +10,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Bases = workspace.Bases
 local Workspace = workspace
 
--- ========================================
--- THEMES (10+ COLOR VARIATIONS) - ALL RED ACCENTS/ICONS
--- ========================================
 WindUI:AddTheme({
     Name = "Dark",
     Accent = Color3.fromHex("#FF0000"),
@@ -183,10 +178,8 @@ WindUI:AddTheme({
     Icon = Color3.fromHex("#FF0000")
 })
 
--- Set default theme
 WindUI:SetTheme("Dark")
 
--- Creating Window!
 local Window = WindUI:CreateWindow({
     Title = "Escape Tsunami For Brainrots",
     Icon = "sword",
@@ -196,23 +189,18 @@ local Window = WindUI:CreateWindow({
     Theme = "Dark",
 })
 
--- Always debugmode States and all lines of code must have debug mode incase there's any error its easy to troubleshoot!
 local States = {
     DebugMode = false,
     ESPCelestial = false,
     ESPLuckyBlock = false,
 }
 
--- Window must always transparent!
 Window:ToggleTransparency(true)
 
--- CONFIG MANAGER!
 local ConfigManager = Window.ConfigManager
 
--- Example Creating Config!
 local myConfig = ConfigManager:CreateConfig("(game name)")
 
--- made it function
 local function saveConfiguration()
     myConfig:Save()
 end
@@ -233,24 +221,20 @@ local function changeTheme(themeName)
     WindUI:SetTheme(themeName)
 end
 
--- Editing the minimized!
 Window:EditOpenButton({
     Title = "Nightmare Hub",
     Icon = "monitor",
     CornerRadius = UDim.new(0,16),
     StrokeThickness = 2,
-    Color = ColorSequence.new( -- Changed to dark red and bright red
-        Color3.fromHex("#8B0000"), -- Dark red
-        Color3.fromHex("#FF0000")  -- Bright red
+    Color = ColorSequence.new(
+        Color3.fromHex("#8B0000"),
+        Color3.fromHex("#FF0000")
     ),
     OnlyMobile = false,
     Enabled = true,
     Draggable = true,
 })
 
--- ========================================
--- TABS CREATION
--- ========================================
 local MainTab = Window:Tab({
     Title = "Main",
     Icon = "house",
@@ -286,10 +270,6 @@ local SettingsTab = Window:Tab({
     Icon = "settings",
 })
 
--- ========================================
--- MAIN TAB ELEMENTS (NEW FEATURES)
--- ========================================
--- Fly to Base Button (at the top)
 local isTeleporting = false
 local currentVelocity = nil
 local currentAttachment = nil
@@ -349,15 +329,13 @@ local function flyToBase()
     
     WindUI:Notify({
         Title = "Flying to Base",
-        Content = "Flying to your base...", -- [PERUBAHAN 1]
+        Content = "Flying to your base...",
         Duration = 2,
         Icon = "compass",
     })
     
-    -- Set ragdoll state
     hum:ChangeState(Enum.HumanoidStateType.Ragdoll)
     
-    -- Target position dengan offset sikit ke atas untuk landing yang lebih baik
     local targetPos = myBase:GetPivot().Position + Vector3.new(0, 5, 0)
     
     currentAttachment = Instance.new("Attachment")
@@ -370,7 +348,6 @@ local function flyToBase()
     currentVelocity.RelativeTo = Enum.ActuatorRelativeTo.World
     currentVelocity.Parent = hrp
     
-    -- Guna RunService.Heartbeat untuk update yang lebih smooth dan reliable
     heartbeatConnection = RunService.Heartbeat:Connect(function()
         if not char or not char.Parent or not hrp or not hrp.Parent or not hum or hum.Health <= 0 then
             cleanupFlyToBase()
@@ -379,23 +356,20 @@ local function flyToBase()
         
         local distance = (targetPos - hrp.Position).Magnitude
         
-        -- Speed yang lebih laju bila jauh, perlahan bila dekat
         local speed
         if distance < 30 then
-            speed = math.max(40, distance * 2.5) -- Perlahan untuk landing smooth
+            speed = math.max(40, distance * 2.5)
         elseif distance < 80 then
-            speed = 280 -- Sederhana bila dah agak dekat
+            speed = 280
         elseif distance < 200 then
-            speed = 800 -- Laju sikit
+            speed = 800
         else
-            speed = 1000 -- SUPER LAJU bila jauh! 🚀
+            speed = 1000
         end
         
-        -- Stop bila dah sampai
         if distance < 15 then
             cleanupFlyToBase()
             
-            -- Reset velocity HRP
             if hrp then
                 hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
@@ -415,7 +389,6 @@ local function flyToBase()
             return
         end
         
-        -- Update direction dan velocity
         local direction = (targetPos - hrp.Position).Unit
         if currentVelocity and currentVelocity.Parent then
             currentVelocity.VectorVelocity = direction * speed
@@ -425,16 +398,14 @@ local function flyToBase()
     end)
 end
 
--- Fly to Base Button (at the top)
 local FlyToBaseButton = MainTab:Button({
     Title = "Fly to Base",
-    Desc = "Flying to your base (Press B key for shortcut)", -- [PERUBAHAN 2]
+    Desc = "Flying to your base (Press B key for shortcut)",
     Callback = function()
         flyToBase()
     end
 })
 
--- Speed Toggle with Input
 local speedValue = 50
 local SpeedInput = MainTab:Input({
     Title = "Speed Value",
@@ -459,12 +430,11 @@ local function cleanupSpeed()
     end
 end
 
--- FIX: Get character reference inside the loop to handle respawns
 local function enableSpeed()
     cleanupSpeed()
     
     speedConnection = RunService.Heartbeat:Connect(function()
-        local character = LocalPlayer.Character -- Get fresh reference every frame
+        local character = LocalPlayer.Character
         if character and character.Parent then
             local rootPart = character:FindFirstChild("HumanoidRootPart")
             local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -504,7 +474,6 @@ local SpeedToggle = MainTab:Toggle({
     end
 })
 
--- God Mode Toggle
 local isGodModeEnabled = false
 local godModeConnection = nil
 local healthChangedConnection = nil
@@ -520,7 +489,6 @@ local function cleanupGodMode()
         healthChangedConnection = nil
     end
     
-    -- Restore normal health
     local character = LocalPlayer.Character
     if character then
         local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -532,14 +500,12 @@ local function cleanupGodMode()
     end
 end
 
--- Function to enable SUPER IMPROVED God Mode 💪💀
--- FIX: Get character reference inside the loop to handle respawns
 local function enableGodMode()
     cleanupGodMode()
     
     godModeConnection = RunService.Heartbeat:Connect(function()
         if isGodModeEnabled then
-            local character = LocalPlayer.Character -- Get fresh reference every frame
+            local character = LocalPlayer.Character
             if character then
                 local humanoid = character:FindFirstChildOfClass("Humanoid")
                 if humanoid then
@@ -573,24 +539,19 @@ local GodModeToggle = MainTab:Toggle({
     end
 })
 
--- Auto Steal Toggle with Rarity Dropdown
--- Define rarity tiers
 local RARITY_TIERS = {
     ["Low Tier"] = {"Common", "Uncommon", "Rare"},
     ["Mid Tier"] = {"Epic", "Legendary", "Mythical"},
     ["High Tier"] = {"Cosmic", "Secret", "Celestial"}
 }
 
--- FIX: Initialize selectedRarities based on the default selectedTier
 local selectedTier = "Low Tier"
 local selectedRarities = RARITY_TIERS[selectedTier]
 
--- Cache untuk optimization
 local brainrotCache = {}
 local lastCacheUpdate = 0
 local CACHE_UPDATE_INTERVAL = 0.1
 
--- Function to update brainrot cache ONLY (no general prompts)
 local function updateBrainrotCache()
     brainrotCache = {}
     local activeBrainrots = workspace:FindFirstChild("ActiveBrainrots")
@@ -607,7 +568,7 @@ local function updateBrainrotCache()
                         table.insert(brainrotCache, {
                             prompt = prompt,
                             part = root,
-                            maxDist = prompt.MaxActivationDistance + 20 -- Extra range untuk high speed
+                            maxDist = prompt.MaxActivationDistance + 20
                         })
                     end
                 end
@@ -636,15 +597,12 @@ local RarityDropdown = MainTab:Dropdown({
     Callback = function(option)
         selectedTier = option.Title
         
-        -- Update selected rarities based on tier
         if RARITY_TIERS[selectedTier] then
             selectedRarities = RARITY_TIERS[selectedTier]
         else
-            -- If it's a specific rarity, only select that one
             selectedRarities = {option.Title}
         end
         
-        -- Clear cache when rarity selection changes
         brainrotCache = {}
         saveConfiguration()
     end
@@ -661,18 +619,15 @@ local function cleanupAutoSteal()
     brainrotCache = {}
 end
 
--- Auto steal BRAINROTS ONLY! 🔥
--- FIX: Get character reference inside the loop to handle respawns
 local function enableAutoSteal()
     cleanupAutoSteal()
     
-    -- Initial cache update
     updateBrainrotCache()
     lastCacheUpdate = tick()
     
     autoStealConnection = RunService.Heartbeat:Connect(function()
         local currentTime = tick()
-        local character = LocalPlayer.Character -- Get fresh reference every frame
+        local character = LocalPlayer.Character
         if not character then return end
         
         local rootPart = character:FindFirstChild("HumanoidRootPart")
@@ -680,13 +635,11 @@ local function enableAutoSteal()
         
         local rootPos = rootPart.Position
         
-        -- Update cache periodically
         if currentTime - lastCacheUpdate >= CACHE_UPDATE_INTERVAL then
             updateBrainrotCache()
             lastCacheUpdate = currentTime
         end
         
-        -- Process brainrot prompts ONLY
         for i = #brainrotCache, 1, -1 do
             local data = brainrotCache[i]
             if data.prompt and data.prompt.Parent and data.prompt.Enabled then
@@ -697,7 +650,6 @@ local function enableAutoSteal()
                     end)
                 end
             else
-                -- Remove invalid entries
                 table.remove(brainrotCache, i)
             end
         end
@@ -721,15 +673,13 @@ local AutoStealToggle = MainTab:Toggle({
     end
 })
 
--- Bat Aura Toggle (Moved from Auto Tab to Main Tab)
 local auraValue = 100
 local isBatAuraEnabled = false
 local batAuraConnection = nil
 local currentBat = nil
 local originalHitboxSize = nil
-local currentHitboxSize = 100 -- Cache hitbox size
+local currentHitboxSize = 100
 
--- Function to find bat in backpack or character
 local function findBat()
     local character = LocalPlayer.Character
     if not character then return nil end
@@ -747,7 +697,6 @@ local function cleanupBatAura()
         batAuraConnection = nil
     end
     
-    -- Restore original hitbox size
     if currentBat and originalHitboxSize then
         pcall(function()
             currentBat.Size = originalHitboxSize
@@ -758,8 +707,6 @@ local function cleanupBatAura()
     originalHitboxSize = nil
 end
 
--- Function to enable Bat Aura - Using RenderStepped for silky smooth hitbox! 🎮
--- FIX: Get character reference inside the loop to handle respawns
 local function enableBatAura()
     cleanupBatAura()
     
@@ -767,7 +714,7 @@ local function enableBatAura()
     local targetSize = Vector3.new(currentHitboxSize, currentHitboxSize, currentHitboxSize)
     
     batAuraConnection = RunService.RenderStepped:Connect(function()
-        local character = LocalPlayer.Character -- Get fresh reference every frame
+        local character = LocalPlayer.Character
         pcall(function()
             local bat = findBat()
             if not bat then 
@@ -781,21 +728,18 @@ local function enableBatAura()
                 return 
             end
             
-            -- Save original size if not saved yet
             if currentBat ~= hitbox then
                 currentBat = hitbox
                 originalHitboxSize = hitbox.Size
-                lastHitbox = nil -- Reset to force update
+                lastHitbox = nil
             end
             
-            -- Update target size if changed
             local newTargetSize = Vector3.new(currentHitboxSize, currentHitboxSize, currentHitboxSize)
             if newTargetSize ~= targetSize then
                 targetSize = newTargetSize
-                lastHitbox = nil -- Force update
+                lastHitbox = nil
             end
             
-            -- Only update if hitbox changed or size is different
             if lastHitbox ~= hitbox or hitbox.Size ~= targetSize then
                 hitbox.Size = targetSize
                 hitbox.Massless = true
@@ -824,7 +768,6 @@ local BatAuraToggle = MainTab:Toggle({
     end
 })
 
--- Bat Aura Slider (Moved from Auto Tab to Main Tab)
 local BatAuraSlider = MainTab:Slider({
     Title = "Bat Aura Size",
     Desc = "Warning: Higher aura value may cause more lag!",
@@ -837,27 +780,21 @@ local BatAuraSlider = MainTab:Slider({
         auraValue = value
         currentHitboxSize = value
         if isBatAuraEnabled then
-            enableBatAura() -- Re-enable to apply new size
+            enableBatAura()
         end
         saveConfiguration()
     end
 })
 
--- ========================================
--- AUTO TAB ELEMENTS
--- ========================================
--- Auto Sell Section
 local isAutoSellEnabled = false
 local autoSellConnection = nil
 local selectedSellOption = "Sell All"
 local lastSellTime = 0
-local sellDelayMs = 100 -- Default delay in milliseconds
+local sellDelayMs = 100
 
--- Get remote functions for Auto Sell
 local sellAllRemote = nil
 local sellToolRemote = nil
 
--- Function to initialize remote functions
 local function initializeRemoteFunctions()
     pcall(function()
         sellAllRemote = ReplicatedStorage:WaitForChild("RemoteFunctions"):WaitForChild("SellAll")
@@ -865,7 +802,6 @@ local function initializeRemoteFunctions()
     end)
 end
 
--- Initialize remote functions
 initializeRemoteFunctions()
 
 local function cleanupAutoSell()
@@ -883,7 +819,6 @@ local function enableAutoSell()
             local currentTime = tick()
             if currentTime - lastSellTime >= (sellDelayMs / 1000) then
                 pcall(function()
-                    -- Check if remote functions are still valid
                     if not sellAllRemote or not sellToolRemote then
                         initializeRemoteFunctions()
                     end
@@ -917,7 +852,6 @@ local AutoSellToggle = AutoTab:Toggle({
     end
 })
 
--- Sell Option Dropdown
 local SellOptionDropdown = AutoTab:Dropdown({
     Title = "Sell Option",
     Values = {
@@ -931,7 +865,6 @@ local SellOptionDropdown = AutoTab:Dropdown({
     end
 })
 
--- Auto Sell Delay Slider
 local AutoSellDelaySlider = AutoTab:Slider({
     Title = "Auto Sell Delay",
     Desc = "Adjust the delay between sell actions (ms)",
@@ -946,10 +879,9 @@ local AutoSellDelaySlider = AutoTab:Slider({
     end
 })
 
--- Auto Collect Section
 local isAutoCollectEnabled = false
 local autoCollectConnection = nil
-local collectDelay = 2 -- Default delay in seconds
+local collectDelay = 2
 local autoCollectTask = nil
 
 local function getMyBase()
@@ -1051,7 +983,6 @@ local AutoCollectToggle = AutoTab:Toggle({
     end
 })
 
--- Auto Collect Delay Slider
 local AutoCollectDelaySlider = AutoTab:Slider({
     Title = "Collect Delay",
     Desc = "Adjust the delay between collections (seconds)",
@@ -1062,7 +993,6 @@ local AutoCollectDelaySlider = AutoTab:Slider({
     },
     Callback = function(value)
         collectDelay = value
-        -- Restart auto collect if it's enabled to apply the new delay
         if isAutoCollectEnabled then
             cleanupAutoCollect()
             enableAutoCollect()
@@ -1071,14 +1001,12 @@ local AutoCollectDelaySlider = AutoTab:Slider({
     end
 })
 
--- Auto Buy Speed Section
 local isAutoBuySpeedEnabled = false
 local autoBuySpeedConnection = nil
 local selectedSpeedOption = "+1"
-local upgradeDelay = 1 -- Default delay in seconds
+local upgradeDelay = 1
 local lastUpgradeTime = 0
 
--- Function to upgrade speed
 local function upgradeSpeed(amount)
     local args = {amount}
     pcall(function()
@@ -1133,7 +1061,6 @@ local AutoBuySpeedToggle = AutoTab:Toggle({
     end
 })
 
--- Speed Option Dropdown
 local SpeedOptionDropdown = AutoTab:Dropdown({
     Title = "Speed Upgrade Option",
     Values = {
@@ -1148,7 +1075,6 @@ local SpeedOptionDropdown = AutoTab:Dropdown({
     end
 })
 
--- Auto Upgrade Delay Slider
 local AutoUpgradeDelaySlider = AutoTab:Slider({
     Title = "Auto Upgrade Delay",
     Desc = "Adjust the delay between speed upgrades (seconds)",
@@ -1163,9 +1089,8 @@ local AutoUpgradeDelaySlider = AutoTab:Slider({
     end
 })
 
--- ==================== AUTO UPGRADE CARRY ====================
 local autoUpgradeCarryEnabled = false
-local carryUpgradeDelay = 1 -- Default delay in seconds
+local carryUpgradeDelay = 1
 local carryThread = nil
 
 local function startAutoUpgradeCarry()
@@ -1206,7 +1131,6 @@ local AutoUpgradeCarryToggle = AutoTab:Toggle({
     end
 })
 
--- Carry Upgrade Delay Slider
 local CarryUpgradeDelaySlider = AutoTab:Slider({
     Title = "Carry Upgrade Delay",
     Desc = "Adjust the delay between carry upgrades (seconds)",
@@ -1217,7 +1141,6 @@ local CarryUpgradeDelaySlider = AutoTab:Slider({
     },
     Callback = function(value)
         carryUpgradeDelay = value
-        -- Restart auto upgrade if it's enabled to apply the new delay
         if autoUpgradeCarryEnabled then
             stopAutoUpgradeCarry()
             startAutoUpgradeCarry()
@@ -1226,9 +1149,8 @@ local CarryUpgradeDelaySlider = AutoTab:Slider({
     end
 })
 
--- ==================== AUTO UPGRADE BASE ====================
 local autoUpgradeBaseEnabled = false
-local baseUpgradeDelay = 1 -- Default delay in seconds
+local baseUpgradeDelay = 1
 local baseThread = nil
 
 local function startAutoUpgradeBase()
@@ -1269,7 +1191,6 @@ local AutoUpgradeBaseToggle = AutoTab:Toggle({
     end
 })
 
--- Base Upgrade Delay Slider
 local BaseUpgradeDelaySlider = AutoTab:Slider({
     Title = "Base Upgrade Delay",
     Desc = "Adjust the delay between base upgrades (seconds)",
@@ -1280,7 +1201,6 @@ local BaseUpgradeDelaySlider = AutoTab:Slider({
     },
     Callback = function(value)
         baseUpgradeDelay = value
-        -- Restart auto upgrade if it's enabled to apply the new delay
         if autoUpgradeBaseEnabled then
             stopAutoUpgradeBase()
             startAutoUpgradeBase()
@@ -1289,14 +1209,12 @@ local BaseUpgradeDelaySlider = AutoTab:Slider({
     end
 })
 
--- ==================== AUTO UPGRADE BRAINROT ====================
 local autoUpgradeBrainrotEnabled = false
-local selectedUpgradeMode = "All" -- "All", "5 Slot", "10 Slot", atau nombor slot
-local brainrotUpgradeDelay = 1 -- Default delay in seconds
+local selectedUpgradeMode = "All"
+local brainrotUpgradeDelay = 1
 local upgradeBrainrotThread = nil
-local BrainrotUpgradeModeDropdown = nil -- [TAMBAH] Declare variable di luar fungsi
+local BrainrotUpgradeModeDropdown = nil
 
--- ==================== FIND PLAYER BASE ====================
 local Bases = workspace:FindFirstChild("Bases")
 
 local function getMyBase()
@@ -1311,7 +1229,6 @@ local function getMyBase()
     return nil
 end
 
--- ==================== GET PLOT ID FROM BASE ====================
 local function getPlayerPlotID()
     local myBase = getMyBase()
     if myBase then
@@ -1320,7 +1237,6 @@ local function getPlayerPlotID()
     return nil
 end
 
--- ==================== FIND ALL BRAINROT SLOTS ====================
 local function getBrainrotSlots()
     local myBase = getMyBase()
     if not myBase then return {} end
@@ -1340,7 +1256,6 @@ local function getBrainrotSlots()
     return slots
 end
 
--- ==================== GET SLOTS TO UPGRADE BASED ON MODE ====================
 local function getSlotsToUpgrade()
     local allSlots = getBrainrotSlots()
     if #allSlots == 0 then return {} end
@@ -1431,7 +1346,6 @@ local AutoUpgradeBrainrotToggle = AutoTab:Toggle({
     end
 })
 
--- Brainrot Upgrade Delay Slider
 local BrainrotUpgradeDelaySlider = AutoTab:Slider({
     Title = "Brainrot Upgrade Delay",
     Desc = "Adjust the delay between brainrot upgrades (seconds)",
@@ -1442,7 +1356,6 @@ local BrainrotUpgradeDelaySlider = AutoTab:Slider({
     },
     Callback = function(value)
         brainrotUpgradeDelay = value
-        -- Restart auto upgrade if it's enabled to apply the new delay
         if autoUpgradeBrainrotEnabled then
             stopAutoUpgradeBrainrot()
             startAutoUpgradeBrainrot()
@@ -1451,7 +1364,6 @@ local BrainrotUpgradeDelaySlider = AutoTab:Slider({
     end
 })
 
--- [DIUBAH] Fungsi untuk membuat dropdown secara dinamik
 local function createBrainrotUpgradeDropdown()
     local slots = getBrainrotSlots()
     local dropdownValues = {
@@ -1468,10 +1380,8 @@ local function createBrainrotUpgradeDropdown()
     end
     
     if BrainrotUpgradeModeDropdown then
-        -- Jika dropdown sudah wujud, kemas kini nilainya
         BrainrotUpgradeModeDropdown:SetValues(dropdownValues)
     else
-        -- Jika belum, buat dropdown baru
         BrainrotUpgradeModeDropdown = AutoTab:Dropdown({
             Title = "Brainrot Upgrade Mode",
             Values = dropdownValues,
@@ -1481,20 +1391,17 @@ local function createBrainrotUpgradeDropdown()
                 saveConfiguration()
             end
         })
-        -- Daftar untuk config manager
         myConfig:Register("BrainrotUpgradeMode", BrainrotUpgradeModeDropdown)
     end
 end
 
--- [TAMBAH] Panggil fungsi ini selepas kelewatan untuk memastikan base sudah dimuatkan
 task.spawn(function()
-    task.wait(3) -- Tunggu 3 saat untuk base load
+    task.wait(3)
     createBrainrotUpgradeDropdown()
 end)
 
--- ==================== AUTO PLACE BRAINROT ====================
 local autoPlaceBrainrotEnabled = false
-local brainrotPlaceDelay = 1 -- Default delay in seconds
+local brainrotPlaceDelay = 1
 local brainrotThread = nil
 
 local function startAutoPlaceBrainrot()
@@ -1553,7 +1460,6 @@ local AutoPlaceBrainrotToggle = AutoTab:Toggle({
     end
 })
 
--- Brainrot Place Delay Slider
 local BrainrotPlaceDelaySlider = AutoTab:Slider({
     Title = "Brainrot Place Delay",
     Desc = "Adjust the delay between brainrot placements (seconds)",
@@ -1564,7 +1470,6 @@ local BrainrotPlaceDelaySlider = AutoTab:Slider({
     },
     Callback = function(value)
         brainrotPlaceDelay = value
-        -- Restart auto place if it's enabled to apply the new delay
         if autoPlaceBrainrotEnabled then
             stopAutoPlaceBrainrot()
             startAutoPlaceBrainrot()
@@ -1573,7 +1478,6 @@ local BrainrotPlaceDelaySlider = AutoTab:Slider({
     end
 })
 
--- Auto Bat Section
 local isAutoBatEnabled = false
 local autoBatConnection = nil
 
@@ -1584,30 +1488,25 @@ local function cleanupAutoBat()
     end
 end
 
--- Function to enable Auto Bat - Using RenderStepped for instant response! ⚡
--- FIX: Get character reference inside the loop to handle respawns
 local function enableAutoBat()
     cleanupAutoBat()
     
     local lastEquipAttempt = 0
-    local EQUIP_COOLDOWN = 0.3 -- Reduced cooldown untuk faster equip
+    local EQUIP_COOLDOWN = 0.3
     
     autoBatConnection = RunService.RenderStepped:Connect(function()
-        local character = LocalPlayer.Character -- Get fresh reference every frame
+        local character = LocalPlayer.Character
         pcall(function()
             if not character then return end
             
             local humanoid = character:FindFirstChildOfClass("Humanoid")
             if not humanoid then return end
             
-            -- Check if bat is already equipped
             local equippedBat = character:FindFirstChild("Basic Bat")
             
             if equippedBat then
-                -- If bat is equipped, activate it instantly
                 equippedBat:Activate()
             else
-                -- Only try to equip if cooldown passed
                 local currentTime = tick()
                 if currentTime - lastEquipAttempt >= EQUIP_COOLDOWN then
                     local backpackBat = LocalPlayer.Backpack:FindFirstChild("Basic Bat")
@@ -1638,9 +1537,8 @@ local AutoBatToggle = AutoTab:Toggle({
     end
 })
 
--- ==================== AUTO REBIRTH ====================
 local isAutoRebirthEnabled = false
-local autoRebirthDelay = 0.5 -- Default delay in seconds
+local autoRebirthDelay = 0.5
 local autoRebirthThread = nil
 
 local function rebirth()
@@ -1684,7 +1582,6 @@ local AutoRebirthToggle = AutoTab:Toggle({
     end
 })
 
--- Auto Rebirth Delay Slider
 local AutoRebirthDelaySlider = AutoTab:Slider({
     Title = "Auto Rebirth Delay",
     Desc = "Adjust the delay between rebirths (seconds)",
@@ -1695,7 +1592,6 @@ local AutoRebirthDelaySlider = AutoTab:Slider({
     },
     Callback = function(value)
         autoRebirthDelay = value
-        -- Restart auto rebirth if it's enabled to apply the new delay
         if isAutoRebirthEnabled then
             stopAutoRebirth()
             startAutoRebirth()
@@ -1704,10 +1600,6 @@ local AutoRebirthDelaySlider = AutoTab:Slider({
     end
 })
 
--- ========================================
--- VISUAL TAB ELEMENTS
--- ========================================
--- ESP Players Toggle
 local espEnabled = false
 local espObjects = {}
 local espConnection = nil
@@ -1722,7 +1614,7 @@ local function createESP(player)
     }
     
     esp.box.Visible = false
-    esp.box.Color = Color3.fromRGB(255, 0, 0) -- Red ESP
+    esp.box.Color = Color3.fromRGB(255, 0, 0)
     esp.box.Thickness = 1
     esp.box.Filled = false
     esp.box.Transparency = 1
@@ -1734,9 +1626,9 @@ local function createESP(player)
     esp.name.Outline = true
     esp.name.Text = player.Name
     
-    esp.highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Red Highlight
+    esp.highlight.FillColor = Color3.fromRGB(255, 0, 0)
     esp.highlight.FillTransparency = 1
-    esp.highlight.OutlineColor = Color3.fromRGB(255, 0, 0) -- Red Outline
+    esp.highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
     esp.highlight.OutlineTransparency = 0
     esp.highlight.Enabled = false
     
@@ -1846,7 +1738,6 @@ local EspPlayersToggle = VisualTab:Toggle({
     end
 })
 
--- ESP Celestial Toggle
 local ESPCelestialObjects = {}
 local Connections = {
     ESPCelestial = nil,
@@ -1870,7 +1761,7 @@ local function createESPCelestial(part, text)
     textLabel.Text = text
     textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     textLabel.TextSize = 18
-    textLabel.Font = Enum.Font.Gotham -- [DIUBAH] Tukar font ke Gotham
+    textLabel.Font = Enum.Font.Gotham
     textLabel.TextStrokeTransparency = 0
     textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     textLabel.Parent = billboardGui
@@ -1903,7 +1794,7 @@ local function toggleESPCelestial(state)
     States.ESPCelestial = state
     
     if state then
-        Connections.ESPCelestial = RunService.RenderStepped:Connect(function() -- [PERUBAHAN 3]
+        Connections.ESPCelestial = RunService.RenderStepped:Connect(function()
             if not States.ESPCelestial then return end
             
             pcall(function()
@@ -1931,7 +1822,6 @@ local function toggleESPCelestial(state)
     end
 end
 
--- ESP Lucky Block Toggle
 local ESPLuckyBlockObjects = {}
 
 local function createESPLuckyBlock(part, text)
@@ -1951,7 +1841,7 @@ local function createESPLuckyBlock(part, text)
     textLabel.Text = text
     textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     textLabel.TextSize = 18
-    textLabel.Font = Enum.Font.Gotham -- [DIUBAH] Tukar font ke Gotham
+    textLabel.Font = Enum.Font.Gotham
     textLabel.TextStrokeTransparency = 0
     textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     textLabel.Parent = billboardGui
@@ -1959,7 +1849,7 @@ local function createESPLuckyBlock(part, text)
     local highlight = Instance.new("Highlight")
     highlight.Name = "ESPHighlight_LuckyBlock_" .. text
     highlight.Adornee = part
-    highlight.FillColor = Color3.fromRGB(0, 255, 0) -- Green for Lucky Blocks
+    highlight.FillColor = Color3.fromRGB(0, 255, 0)
     highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
     highlight.FillTransparency = 0.8
     highlight.OutlineTransparency = 0
@@ -1984,7 +1874,7 @@ local function toggleESPLuckyBlock(state)
     States.ESPLuckyBlock = state
     
     if state then
-        Connections.ESPLuckyBlock = RunService.RenderStepped:Connect(function() -- [PERUBAHAN 3]
+        Connections.ESPLuckyBlock = RunService.RenderStepped:Connect(function()
             if not States.ESPLuckyBlock then return end
             
             pcall(function()
@@ -1993,7 +1883,6 @@ local function toggleESPLuckyBlock(state)
                 
                 for _, block in pairs(activeLuckyBlocks:GetChildren()) do
                     if block:IsA("Model") and string.find(block.Name, "NaturalLuckyBlock") then
-                        -- [DIUBAH] Tapis hanya untuk Secret dan Cosmic
                         local rarity = block.Name:match("NaturalLuckyBlock_(.+)")
                         if rarity == "Secret" or rarity == "Cosmic" then
                             local primary = block.PrimaryPart or block:FindFirstChildWhichIsA("BasePart")
@@ -2025,8 +1914,8 @@ local EspCelestialToggle = VisualTab:Toggle({
 })
 
 local EspLuckyBlockToggle = VisualTab:Toggle({
-    Title = "ESP Lucky Block", -- [DIUBAH] Nama tetap sama untuk konsistensi
-    Desc = "Highlight Secret and Cosmic Lucky Blocks only", -- [DIUBAH] Deskripsi baru
+    Title = "ESP Lucky Block",
+    Desc = "Highlight Secret and Cosmic Lucky Blocks only",
     Default = false,
     Callback = function(state)
         toggleESPLuckyBlock(state)
@@ -2034,10 +1923,6 @@ local EspLuckyBlockToggle = VisualTab:Toggle({
     end
 })
 
--- ========================================
--- MISC TAB ELEMENTS
--- ========================================
--- Unlock Zoom Limit Toggle
 local UnlockZoomToggle = MiscTab:Toggle({
     Title = "Unlock Zoom Limit",
     Desc = "Allows you to zoom in and out much further.",
@@ -2046,14 +1931,13 @@ local UnlockZoomToggle = MiscTab:Toggle({
         if state then
             LocalPlayer.CameraMaxZoomDistance = 500
         else
-            LocalPlayer.CameraMaxZoomDistance = 20 -- Reset to default Roblox value
+            LocalPlayer.CameraMaxZoomDistance = 20
         end
         LocalPlayer.CameraMinZoomDistance = 0.5
         saveConfiguration()
     end
 })
 
--- Infinite Jump and Jump Boost
 local isInfJumpEnabled = false
 local isJumpBoostEnabled = false
 local jumpBoostPower = 50
@@ -2116,7 +2000,6 @@ local function cleanupJumpFeatures()
     end
 end
 
--- Infinite Jump Toggle
 local InfJumpToggle = MiscTab:Toggle({
     Title = "Infinite Jump",
     Desc = "Jump infinitely in mid-air",
@@ -2134,7 +2017,6 @@ local InfJumpToggle = MiscTab:Toggle({
     end
 })
 
--- Jump Boost Toggle (Moved above its slider)
 local JumpBoostToggle = MiscTab:Toggle({
     Title = "Jump Boost",
     Desc = "Increase your jump height",
@@ -2152,7 +2034,6 @@ local JumpBoostToggle = MiscTab:Toggle({
     end
 })
 
--- Jump Boost Slider (Moved below Jump Boost Toggle)
 local JumpBoostSlider = MiscTab:Slider({
     Title = "Jump Boost Power",
     Desc = "Adjust the power of your jump",
@@ -2167,12 +2048,8 @@ local JumpBoostSlider = MiscTab:Slider({
     end
 })
 
--- ========================================
--- EVENTS TAB ELEMENTS
--- ========================================
--- ==================== AUTO SPIN UFO WHEEL ====================
 local autoSpinUFOEnabled = false
-local ufoSpinDelay = 1 -- Default delay in seconds
+local ufoSpinDelay = 1
 local ufoThread = nil
 
 local function startAutoSpinUFO()
@@ -2217,7 +2094,6 @@ local AutoSpinUFOToggle = EventsTab:Toggle({
     end
 })
 
--- UFO Spin Delay Slider
 local UFOSpinDelaySlider = EventsTab:Slider({
     Title = "UFO Spin Delay",
     Desc = "Adjust the delay between UFO wheel spins (seconds)",
@@ -2228,7 +2104,6 @@ local UFOSpinDelaySlider = EventsTab:Slider({
     },
     Callback = function(value)
         ufoSpinDelay = value
-        -- Restart auto spin if it's enabled to apply the new delay
         if autoSpinUFOEnabled then
             stopAutoSpinUFO()
             startAutoSpinUFO()
@@ -2237,9 +2112,6 @@ local UFOSpinDelaySlider = EventsTab:Slider({
     end
 })
 
--- ========================================
--- CREDITS TAB ELEMENTS (MOVED SERVER INFO HERE)
--- ========================================
 local currentPlayers = #Players:GetPlayers()
 local maxPlayers = Players.MaxPlayers or 0
 
@@ -2255,7 +2127,6 @@ local ServerInfoParagraph = CreditsTab:Paragraph({
     ),
 })
 
--- Update player count every 5 seconds
 task.spawn(function()
     while true do
         task.wait(5)
@@ -2291,9 +2162,6 @@ local CreditsButton = CreditsTab:Button({
     end
 })
 
--- ========================================
--- SETTINGS TAB ELEMENTS
--- ========================================
 local ThemeDropdown = SettingsTab:Dropdown({
     Title = "Theme Selector",
     Values = {
@@ -2322,7 +2190,7 @@ local ThemeDropdown = SettingsTab:Dropdown({
 local ThemeColorPicker = SettingsTab:Colorpicker({
     Title = "Custom Theme Color",
     Desc = "Select a custom accent color for the UI",
-    Default = Color3.fromRGB(255, 0, 0), -- Default to red
+    Default = Color3.fromRGB(255, 0, 0),
     Callback = function(color)
         WindUI:AddTheme({
             Name = "Custom",
@@ -2364,7 +2232,6 @@ local LoadConfigButton = SettingsTab:Button({
     end
 })
 
--- Register elements for saving/loading
 myConfig:Register("UnlockZoom", UnlockZoomToggle)
 myConfig:Register("ESPPlayers", EspPlayersToggle)
 myConfig:Register("ESPCelestial", EspCelestialToggle)
@@ -2395,7 +2262,6 @@ myConfig:Register("CarryUpgradeDelay", CarryUpgradeDelaySlider)
 myConfig:Register("AutoUpgradeBase", AutoUpgradeBaseToggle)
 myConfig:Register("BaseUpgradeDelay", BaseUpgradeDelaySlider)
 myConfig:Register("AutoUpgradeBrainrot", AutoUpgradeBrainrotToggle)
--- myConfig:Register("BrainrotUpgradeMode", BrainrotUpgradeModeDropdown) -- [DIUBAH] Dipindahkan ke dalam fungsi dinamik
 myConfig:Register("BrainrotUpgradeDelay", BrainrotUpgradeDelaySlider)
 myConfig:Register("AutoPlaceBrainrot", AutoPlaceBrainrotToggle)
 myConfig:Register("BrainrotPlaceDelay", BrainrotPlaceDelaySlider)
@@ -2404,9 +2270,6 @@ myConfig:Register("AutoRebirthDelay", AutoRebirthDelaySlider)
 myConfig:Register("AutoSpinUFO", AutoSpinUFOToggle)
 myConfig:Register("UFOSpinDelay", UFOSpinDelaySlider)
 
--- ========================================
--- WELCOME POPUP
--- ========================================
 WindUI:Popup({
     Title = "Escape Tsunami For Brainrots",
     Icon = "cat",
@@ -2434,44 +2297,29 @@ WindUI:Popup({
     }
 })
 
-loadConfiguration() -- automatically load configuration!!!
+loadConfiguration()
 
--- ========================================
--- FIX: Sync script variables with loaded UI state
--- ========================================
--- myConfig:Load() does not trigger the Dropdown Callbacks, so we need to
--- manually update our script variables to match the values loaded into the UI.
-
--- Sync Auto Sell option
 if SellOptionDropdown and SellOptionDropdown.Value then
     selectedSellOption = SellOptionDropdown.Value
 end
 
--- Sync Rarity option
 if RarityDropdown and RarityDropdown.Value then
     selectedTier = RarityDropdown.Value
     if RARITY_TIERS[selectedTier] then
         selectedRarities = RARITY_TIERS[selectedTier]
     else
-        -- If it's a specific rarity, only select that one
         selectedRarities = {selectedTier}
     end
 end
 
--- Sync Speed Option
 if SpeedOptionDropdown and SpeedOptionDropdown.Value then
     selectedSpeedOption = SpeedOptionDropdown.Value
 end
 
--- Sync Brainrot Upgrade Mode
--- [DIUBAH] Sync mungkin tidak berfungsi dengan sempurna pada permulaan kerana dropdown dibuat dinamik
--- Ini adalah batasan yang kecil, tetapi fungsi utama tidak terjejas.
 if BrainrotUpgradeModeDropdown and BrainrotUpgradeModeDropdown.Value then
     selectedUpgradeMode = BrainrotUpgradeModeDropdown.Value
 end
 
-
--- Handle character respawn
 LocalPlayer.CharacterAdded:Connect(function(character)
     task.wait(0.5)
     
@@ -2495,14 +2343,12 @@ LocalPlayer.CharacterAdded:Connect(function(character)
     end
 end)
 
--- Keyboard shortcut for Fly to Base
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.B then
         flyToBase()
     end
 end)
 
--- Cleanup on character death
 LocalPlayer.CharacterAdded:Connect(function(character)
     local humanoid = character:WaitForChild("Humanoid")
     humanoid.Died:Connect(function()
@@ -2510,4 +2356,4 @@ LocalPlayer.CharacterAdded:Connect(function(character)
     end)
 end)
 
-MainTab:Select() -- Always select the MainTab/First tab created!!!
+MainTab:Select()
