@@ -197,8 +197,6 @@ local States = {
     AntiTsunami = false,
     CurrentTween = nil,
     MovementDisabled = false,
-    Speed = false,
-    JumpPower = false,
     CharacterAlive = true
 }
 
@@ -706,10 +704,8 @@ local function tweenToGap(hrp, targetGap, isForward)
         
         task.wait(0.1)
         
-        if humanoid and not States.Speed then
+        if humanoid then
             humanoid.WalkSpeed = 16
-        end
-        if humanoid and not States.JumpPower then
             humanoid.JumpPower = 50
         end
         States.MovementDisabled = false
@@ -744,10 +740,8 @@ local function tweenToGap(hrp, targetGap, isForward)
                     task.wait(1.5)
                     States.MovementDisabled = false
                     
-                    if humanoid and not States.Speed then
+                    if humanoid then
                         humanoid.WalkSpeed = 16
-                    end
-                    if humanoid and not States.JumpPower then
                         humanoid.JumpPower = 50
                     end
                 end)
@@ -757,10 +751,8 @@ local function tweenToGap(hrp, targetGap, isForward)
                 task.wait(1.5)
                 States.MovementDisabled = false
                 
-                if humanoid and not States.Speed then
+                if humanoid then
                     humanoid.WalkSpeed = 16
-                end
-                if humanoid and not States.JumpPower then
                     humanoid.JumpPower = 50
                 end
             end
@@ -1029,44 +1021,6 @@ local function flyToBase()
             currentVelocity.VectorVelocity = direction * speed
         else
             cleanupFlyToBase()
-        end
-    end)
-end
-
-local speedValue = 50
-local isSpeedEnabled = false
-local speedConnection = nil
-
-local function cleanupSpeed()
-    if speedConnection then
-        speedConnection:Disconnect()
-        speedConnection = nil
-    end
-end
-
-local function enableSpeed()
-    cleanupSpeed()
-    
-    speedConnection = RunService.Heartbeat:Connect(function()
-        local character = LocalPlayer.Character
-        if character and character.Parent then
-            local rootPart = character:FindFirstChild("HumanoidRootPart")
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            
-            if rootPart and humanoid then
-                local moveDirection = humanoid.MoveDirection
-                
-                if moveDirection.Magnitude > 0 then
-                    local targetVelocity = Vector3.new(moveDirection.X, 0, moveDirection.Z) * speedValue
-                    local currentVelocity = rootPart.AssemblyLinearVelocity
-                    
-                    rootPart.AssemblyLinearVelocity = Vector3.new(
-                        targetVelocity.X,
-                        currentVelocity.Y,
-                        targetVelocity.Z
-                    )
-                end
-            end
         end
     end)
 end
@@ -2034,68 +1988,6 @@ local function toggleESPLuckyBlock(state)
     end
 end
 
-local isInfJumpEnabled = false
-local isJumpBoostEnabled = false
-local jumpBoostPower = 50
-local jumpRequestConnection = nil
-
-local function doJump()
-    local char = LocalPlayer.Character
-    if not char then return end
-    
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    local rootPart = char:FindFirstChild("HumanoidRootPart")
-    
-    if hum and hum.Health > 0 and rootPart then
-        if isInfJumpEnabled then
-            hum:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
-        
-        if isJumpBoostEnabled then
-            rootPart.Velocity = Vector3.new(rootPart.Velocity.X, jumpBoostPower, rootPart.Velocity.Z)
-        end
-    end
-end
-
-local function setupJumpRequest()
-    if jumpRequestConnection then
-        jumpRequestConnection:Disconnect()
-        jumpRequestConnection = nil
-    end
-    
-    jumpRequestConnection = UserInputService.JumpRequest:Connect(function()
-        if isInfJumpEnabled or isJumpBoostEnabled then
-            doJump()
-        end
-    end)
-end
-
-local function initializeJumpForCharacter(char)
-    local hum = char:WaitForChild("Humanoid")
-    setupJumpRequest()
-    
-    char.ChildAdded:Connect(function(child)
-        if child:IsA("Humanoid") then
-            setupJumpRequest()
-        end
-    end)
-end
-
-local function setupJumpFeatures()
-    if LocalPlayer.Character then
-        initializeJumpForCharacter(LocalPlayer.Character)
-    end
-    
-    LocalPlayer.CharacterAdded:Connect(initializeJumpForCharacter)
-end
-
-local function cleanupJumpFeatures()
-    if jumpRequestConnection then
-        jumpRequestConnection:Disconnect()
-        jumpRequestConnection = nil
-    end
-end
-
 local autoSpinUFOEnabled = false
 local ufoSpinDelay = 1
 local ufoThread = nil
@@ -2213,37 +2105,6 @@ local AntiTsunamiToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         toggleAntiTsunami(state)
-        saveConfiguration()
-    end
-})
-
-local SpeedInput = MainTab:Input({
-    Title = "Speed Value",
-    Desc = "Enter your desired speed value (no limit)",
-    Value = "50",
-    InputIcon = "zap",
-    Type = "Input",
-    Placeholder = "Enter speed value...",
-    Callback = function(input) 
-        speedValue = tonumber(input) or 50
-        saveConfiguration()
-    end
-})
-
-local SpeedToggle = MainTab:Toggle({
-    Title = "Speed",
-    Desc = "Enable speed hack with custom value",
-    Default = false,
-    Callback = function(state)
-        isSpeedEnabled = state
-        States.Speed = state
-        
-        if state then
-            enableSpeed()
-        else
-            cleanupSpeed()
-        end
-        
         saveConfiguration()
     end
 })
@@ -2730,54 +2591,6 @@ local UnlockZoomToggle = MiscTab:Toggle({
     end
 })
 
-local InfJumpToggle = MiscTab:Toggle({
-    Title = "Infinite Jump",
-    Desc = "Jump infinitely in mid-air",
-    Default = false,
-    Callback = function(state)
-        isInfJumpEnabled = state
-        
-        if state or isJumpBoostEnabled then
-            setupJumpFeatures()
-        else
-            cleanupJumpFeatures()
-        end
-        
-        saveConfiguration()
-    end
-})
-
-local JumpBoostToggle = MiscTab:Toggle({
-    Title = "Jump Boost",
-    Desc = "Increase your jump height",
-    Default = false,
-    Callback = function(state)
-        isJumpBoostEnabled = state
-        
-        if state or isInfJumpEnabled then
-            setupJumpFeatures()
-        else
-            cleanupJumpFeatures()
-        end
-        
-        saveConfiguration()
-    end
-})
-
-local JumpBoostSlider = MiscTab:Slider({
-    Title = "Jump Boost Power",
-    Desc = "Adjust the power of your jump",
-    Value = {
-        Min = 0,
-        Max = 1000,
-        Default = 50,
-    },
-    Callback = function(value)
-        jumpBoostPower = value
-        saveConfiguration()
-    end
-})
-
 local AutoSpinUFOToggle = EventsTab:Toggle({
     Title = "Auto Spin UFO Wheel",
     Desc = "Automatically spin the UFO wheel",
@@ -2946,13 +2759,8 @@ myConfig:Register("AntiTsunami", AntiTsunamiToggle)
 myConfig:Register("AutoSell", AutoSellToggle)
 myConfig:Register("SellOption", SellOptionDropdown)
 myConfig:Register("AutoSellDelay", AutoSellDelaySlider)
-myConfig:Register("InfJump", InfJumpToggle)
-myConfig:Register("JumpBoost", JumpBoostToggle)
-myConfig:Register("JumpBoostPower", JumpBoostSlider)
 myConfig:Register("Theme", ThemeDropdown)
 myConfig:Register("ThemeColor", ThemeColorPicker)
-myConfig:Register("Speed", SpeedToggle)
-myConfig:Register("SpeedValue", SpeedInput)
 myConfig:Register("GodMode", GodModeToggle)
 myConfig:Register("AutoCollect", AutoCollectToggle)
 myConfig:Register("CollectDelay", AutoCollectDelaySlider)
@@ -3030,9 +2838,6 @@ end
 LocalPlayer.CharacterAdded:Connect(function(character)
     task.wait(0.5)
     
-    if isSpeedEnabled then
-        enableSpeed()
-    end
     if isGodModeEnabled then
         enableGodMode()
     end
@@ -3044,9 +2849,6 @@ LocalPlayer.CharacterAdded:Connect(function(character)
     end
     if isBatAuraEnabled then
         enableBatAura()
-    end
-    if isInfJumpEnabled or isJumpBoostEnabled then
-        setupJumpFeatures()
     end
 end)
 
