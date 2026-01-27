@@ -9,6 +9,7 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Bases = workspace.Bases
 local Workspace = workspace
+local TweenService = game:GetService("TweenService")
 
 WindUI:AddTheme({
     Name = "Dark",
@@ -193,6 +194,20 @@ local States = {
     DebugMode = false,
     ESPCelestial = false,
     ESPLuckyBlock = false,
+    AntiTsunami = false,
+    CurrentTween = nil,
+    MovementDisabled = false,
+    Speed = false,
+    JumpPower = false,
+    CharacterAlive = true
+}
+
+local Connections = {
+    ESPCelestial = nil,
+    ESPLuckyBlock = nil,
+    AntiTsunami = nil,
+    CharacterDied = nil,
+    CharacterAdded = nil
 }
 
 Window:ToggleTransparency(true)
@@ -239,6 +254,656 @@ Window:EditOpenButton({
 --  BAHAGIAN 1: SEMUA FUNGSI-FUNGSI UTAMA
 --  Di sinilah semua logik dan keupayaan skrip ditakrifkan.
 -- ===============================================================
+
+-- GAP TWEEN VARIABLES
+local CurrentGap = 1
+local GapPositions = {
+    Vector3.new(200, -3, 0),
+    Vector3.new(286, -3, -1),
+    Vector3.new(393, -3, 5),
+    Vector3.new(541, -3, 5),
+    Vector3.new(758, -3, 1),
+    Vector3.new(1079, -3, 6),
+    Vector3.new(1564, -3, -2),
+    Vector3.new(2247, -3, -14),
+    Vector3.new(2615, -3, 12)
+}
+local TotalGaps = #GapPositions
+local TweenRunning = false
+local TweenSpeed = 100
+local CurrentTween = nil
+local NoclipConnection = nil
+
+-- WAVE CACHE SYSTEM for faster detection
+local WaveCache = {
+    LastUpdate = 0,
+    UpdateInterval = 0.1,
+    Waves = {}
+}
+
+-- HELPER FUNCTIONS
+local function SafeGetCharacter()
+    local char = LocalPlayer.Character
+    if not char then return nil, nil, nil end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    return char, hum, hrp
+end
+
+-- CHARACTER DEATH/RESPAWN HANDLING
+local function onCharacterDied()
+    States.CharacterAlive = false
+    
+    if CurrentTween then
+        CurrentTween:Cancel()
+        CurrentTween = nil
+    end
+    
+    if States.CurrentTween then
+        States.CurrentTween:Cancel()
+        States.CurrentTween = nil
+    end
+    
+    CurrentGap = 1
+    
+    if NoclipConnection then
+        NoclipConnection:Disconnect()
+        NoclipConnection = nil
+    end
+end
+
+local function onCharacterAdded(character)
+    States.CharacterAlive = true
+    
+    character:WaitForChild("HumanoidRootPart")
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    if Connections.CharacterDied then
+        Connections.CharacterDied:Disconnect()
+    end
+    
+    Connections.CharacterDied = humanoid.Died:Connect(onCharacterDied)
+    
+    if States.AntiTsunami then
+        task.wait(2)
+        toggleAntiTsunami(false)
+        task.wait(0.1)
+        toggleAntiTsunami(true)
+    end
+end
+
+if LocalPlayer.Character then
+    onCharacterAdded(LocalPlayer.Character)
+end
+
+Connections.CharacterAdded = LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+
+-- NOCLIP FUNCTIONS
+local function EnableNoclip()
+    if NoclipConnection then return end
+    NoclipConnection = RunService.Stepped:Connect(function()
+        local char = SafeGetCharacter()
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+end
+
+local function DisableNoclip()
+    if NoclipConnection then
+        NoclipConnection:Disconnect()
+        NoclipConnection = nil
+    end
+    local char = SafeGetCharacter()
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.CanCollide = true
+            end
+        end
+    end
+end
+
+-- GAP TWEEN FUNCTIONS
+local function StopCurrentTween()
+    TweenRunning = false
+    if CurrentTween then
+        CurrentTween:Cancel()
+        CurrentTween = nil
+    end
+end
+
+local function TweenToGapWithLanding(gapNumber)
+    local char, hum, hrp = SafeGetCharacter()
+    if not hrp or not States.CharacterAlive then return nil end
+    if gapNumber < 1 or gapNumber > TotalGaps then return nil end
+    local targetPos = GapPositions[gapNumber]
+    if not targetPos then return nil end
+    
+    StopCurrentTween()
+    TweenRunning = true
+    EnableNoclip()
+    
+    local distance = (hrp.Position - targetPos).Magnitude
+    local speed = TweenSpeed
+    if speed <= 0 then speed = 100 end
+    local duration = distance / speed
+    if duration < 0.5 then duration = 0.5 end
+    if duration > 10 then duration = 10 end
+    
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+    local targetCFrame = CFrame.new(targetPos)
+    CurrentTween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+    
+    CurrentTween.Completed:Connect(function()
+        TweenRunning = false
+        CurrentTween = nil
+        task.wait(0.5)
+        DisableNoclip()
+    end)
+    
+    CurrentTween:Play()
+    return CurrentTween
+end
+
+-- IMPROVED ANTI TSUNAMI FUNCTIONS
+local function getAllGaps()
+    local gaps = {}
+    
+    pcall(function()
+        local misc = workspace:FindFirstChild("Misc")
+        if not misc then return end
+        
+        local gapsFolder = misc:FindFirstChild("Gaps")
+        if not gapsFolder then return end
+        
+        for i = 1, 9 do
+            local gapName = "Gap" .. i
+            local gap = gapsFolder:FindFirstChild(gapName)
+            
+            if gap then
+                local mud = gap:FindFirstChild("Mud")
+                if mud and mud:IsA("BasePart") then
+                    table.insert(gaps, {
+                        Name = gapName,
+                        XPosition = mud.Position.X,
+                        Part = mud
+                    })
+                end
+            end
+        end
+    end)
+    
+    return gaps
+end
+
+local function updateWaveCache()
+    local currentTime = tick()
+    
+    if currentTime - WaveCache.LastUpdate < WaveCache.UpdateInterval then
+        return WaveCache.Waves
+    end
+    
+    WaveCache.LastUpdate = currentTime
+    WaveCache.Waves = {}
+    
+    pcall(function()
+        local activeTsunamis = workspace:FindFirstChild("ActiveTsunamis")
+        if not activeTsunamis then return end
+        
+        for i = 1, 20 do
+            local waveName = "Wave" .. i
+            local wave = activeTsunamis:FindFirstChild(waveName)
+            
+            if wave and wave:IsA("Model") then
+                local hitbox = wave:FindFirstChild("Hitbox")
+                
+                if hitbox and hitbox:IsA("BasePart") then
+                    table.insert(WaveCache.Waves, {
+                        Wave = wave,
+                        Position = hitbox.Position,
+                        XPosition = hitbox.Position.X,
+                        Hitbox = hitbox,
+                        Name = waveName
+                    })
+                end
+            end
+        end
+        
+        for _, child in pairs(activeTsunamis:GetChildren()) do
+            if child:IsA("Model") and child.Name:match("Wave") then
+                local hitbox = child:FindFirstChild("Hitbox")
+                
+                if hitbox and hitbox:IsA("BasePart") then
+                    local alreadyAdded = false
+                    for _, existingWave in ipairs(WaveCache.Waves) do
+                        if existingWave.Wave == child then
+                            alreadyAdded = true
+                            break
+                        end
+                    end
+                    
+                    if not alreadyAdded then
+                        table.insert(WaveCache.Waves, {
+                            Wave = child,
+                            Position = hitbox.Position,
+                            XPosition = hitbox.Position.X,
+                            Hitbox = hitbox,
+                            Name = child.Name
+                        })
+                    end
+                end
+            end
+        end
+        
+        for _, child in pairs(activeTsunamis:GetDescendants()) do
+            if child:IsA("BasePart") and child.Name == "Hitbox" then
+                local parent = child.Parent
+                if parent and parent:IsA("Model") then
+                    local alreadyAdded = false
+                    for _, existingWave in ipairs(WaveCache.Waves) do
+                        if existingWave.Hitbox == child then
+                            alreadyAdded = true
+                            break
+                        end
+                    end
+                    
+                    if not alreadyAdded then
+                        table.insert(WaveCache.Waves, {
+                            Wave = parent,
+                            Position = child.Position,
+                            XPosition = child.Position.X,
+                            Hitbox = child,
+                            Name = parent.Name
+                        })
+                    end
+                end
+            end
+        end
+    end)
+    
+    return WaveCache.Waves
+end
+
+local function findNearestWave(playerPosition)
+    local waves = updateWaveCache()
+    
+    local nearestWave = nil
+    local nearestDistance = math.huge
+    
+    for _, wave in ipairs(waves) do
+        local distance = (playerPosition - wave.Position).Magnitude
+        
+        if distance < nearestDistance then
+            nearestDistance = distance
+            nearestWave = {
+                Wave = wave.Wave,
+                XPosition = wave.XPosition,
+                Position = wave.Position,
+                Distance = distance,
+                Name = wave.Name
+            }
+        end
+    end
+    
+    return nearestWave
+end
+
+local function getAllDangerousWaves(playerPosition, maxDistance)
+    local waves = updateWaveCache()
+    local dangerousWaves = {}
+    
+    for _, wave in ipairs(waves) do
+        local distance = (playerPosition - wave.Position).Magnitude
+        
+        if distance <= maxDistance then
+            table.insert(dangerousWaves, {
+                Wave = wave.Wave,
+                XPosition = wave.XPosition,
+                Position = wave.Position,
+                Distance = distance,
+                Name = wave.Name
+            })
+        end
+    end
+    
+    table.sort(dangerousWaves, function(a, b)
+        return a.Distance < b.Distance
+    end)
+    
+    return dangerousWaves
+end
+
+local function getAllWaves()
+    return updateWaveCache()
+end
+
+local function isWaveBlockingGap(playerXPos, gapXPos, waves)
+    for _, wave in ipairs(waves) do
+        if playerXPos < gapXPos then
+            if wave.XPosition > playerXPos and wave.XPosition < gapXPos then
+                return true
+            end
+        else
+            if wave.XPosition < playerXPos and wave.XPosition > gapXPos then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+local function findBestGapToRetreat(playerPosition, wavePosition, gaps, allWaves)
+    if #gaps == 0 then return nil, false end
+    
+    local playerX = playerPosition.X
+    local waveX = wavePosition.X
+    
+    local forwardGaps = {}
+    local backwardGaps = {}
+    
+    for _, gap in ipairs(gaps) do
+        if gap.XPosition > playerX then
+            table.insert(forwardGaps, gap)
+        else
+            table.insert(backwardGaps, gap)
+        end
+    end
+    
+    if #forwardGaps > 0 then
+        table.sort(forwardGaps, function(a, b)
+            return a.XPosition < b.XPosition
+        end)
+        local nearestForward = forwardGaps[1]
+        
+        local isBlocked = isWaveBlockingGap(playerX, nearestForward.XPosition, allWaves)
+        
+        if not isBlocked then
+            local isSafe = true
+            for _, wave in ipairs(allWaves) do
+                local distToGap = math.abs(wave.XPosition - nearestForward.XPosition)
+                
+                if distToGap < 30 then
+                    isSafe = false
+                    break
+                end
+                
+                if wave.XPosition > playerX and wave.XPosition < nearestForward.XPosition then
+                    isSafe = false
+                    break
+                end
+                
+                if wave.XPosition < playerX and math.abs(wave.XPosition - playerX) < 40 then
+                    isSafe = false
+                    break
+                end
+                
+                if wave.XPosition > nearestForward.XPosition and wave.XPosition < nearestForward.XPosition + 40 then
+                    isSafe = false
+                    break
+                end
+            end
+            
+            if isSafe then
+                return nearestForward, true
+            end
+        end
+    end
+    
+    if #backwardGaps > 0 then
+        table.sort(backwardGaps, function(a, b)
+            return b.XPosition < a.XPosition
+        end)
+        local nearestBackward = backwardGaps[1]
+        
+        if not isWaveBlockingGap(playerX, nearestBackward.XPosition, allWaves) then
+            return nearestBackward, false
+        end
+    end
+    
+    local farthestGap = gaps[1]
+    local farthestDist = 0
+    for _, gap in ipairs(gaps) do
+        local dist = math.abs(gap.XPosition - waveX)
+        if dist > farthestDist then
+            farthestDist = dist
+            farthestGap = gap
+        end
+    end
+    return farthestGap, false
+end
+
+local function tweenToGap(hrp, targetGap, isForward)
+    if not States.CharacterAlive then return end
+    
+    if States.CurrentTween then
+        States.CurrentTween:Cancel()
+        States.CurrentTween = nil
+    end
+    
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    
+    local currentPos = hrp.Position
+    local targetX = targetGap.XPosition
+    local horizontalDist = math.abs(currentPos.X - targetX)
+    
+    if horizontalDist <= 50 then
+        States.MovementDisabled = true
+        if humanoid then
+            humanoid.WalkSpeed = 0
+            humanoid.JumpPower = 0
+        end
+        
+        hrp.CFrame = CFrame.new(targetX, -3, -1)
+        
+        task.wait(0.1)
+        
+        if humanoid and not States.Speed then
+            humanoid.WalkSpeed = 16
+        end
+        if humanoid and not States.JumpPower then
+            humanoid.JumpPower = 50
+        end
+        States.MovementDisabled = false
+        
+        return
+    end
+    
+    States.MovementDisabled = true
+    if humanoid then
+        humanoid.WalkSpeed = 0
+        humanoid.JumpPower = 0
+    end
+    
+    if currentPos.Y > 3 then
+        hrp.CFrame = CFrame.new(currentPos.X, 3, -1)
+        task.wait(0.05)
+        currentPos = hrp.Position
+    end
+    
+    local speed = 2602
+    local timeNeeded = horizontalDist / speed
+    
+    local tweenInfo = TweenInfo.new(timeNeeded, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetX, 3, -1)})
+    
+    tween.Completed:Connect(function(playbackState)
+        if playbackState == Enum.PlaybackState.Completed then
+            if States.AntiTsunami and States.CharacterAlive then
+                local downTweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+                local downTween = TweenService:Create(hrp, downTweenInfo, {CFrame = CFrame.new(targetX, -2, -1)})
+                downTween.Completed:Connect(function()
+                    task.wait(1.5)
+                    States.MovementDisabled = false
+                    
+                    if humanoid and not States.Speed then
+                        humanoid.WalkSpeed = 16
+                    end
+                    if humanoid and not States.JumpPower then
+                        humanoid.JumpPower = 50
+                    end
+                end)
+                downTween:Play()
+                States.CurrentTween = downTween
+            else
+                task.wait(1.5)
+                States.MovementDisabled = false
+                
+                if humanoid and not States.Speed then
+                    humanoid.WalkSpeed = 16
+                end
+                if humanoid and not States.JumpPower then
+                    humanoid.JumpPower = 50
+                end
+            end
+        else
+            task.wait(1.5)
+            States.MovementDisabled = false
+        end
+    end)
+    
+    tween:Play()
+    States.CurrentTween = tween
+end
+
+function toggleAntiTsunami(state)
+    States.AntiTsunami = state
+    
+    if state then
+        print("Anti Tsunami: ENABLED")
+        local lastAntiTsunamiCheck = 0
+        Connections.AntiTsunami = RunService.Heartbeat:Connect(function()
+            if not States.AntiTsunami or not States.CharacterAlive then return end
+            
+            local currentTime = tick()
+            if currentTime - lastAntiTsunamiCheck < 0.1 then return end
+            lastAntiTsunamiCheck = currentTime
+                
+            pcall(function()
+                local character = LocalPlayer.Character
+                if not character then return end
+                
+                local hrp = character:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+                
+                local playerPosition = hrp.Position
+                
+                local gaps = getAllGaps()
+                if #gaps == 0 then return end
+                
+                local nearestWave = findNearestWave(playerPosition)
+                if not nearestWave then return end
+                
+                if nearestWave.Distance > 250 then return end
+
+                local waveIsBehind = false
+                if nearestWave then
+                    if playerPosition.X < nearestWave.XPosition then
+                        waveIsBehind = false
+                    else
+                        if (playerPosition.X - nearestWave.XPosition) > 10 then
+                            waveIsBehind = true
+                        end
+                    end
+                end
+
+                if waveIsBehind then return end
+                
+                if (playerPosition.Y >= -4 and playerPosition.Y <= 2) or playerPosition.X < 152 then
+                    return
+                end
+                
+                local playerInSafeGap = false
+                local currentGapSafetyMargin = 25
+                
+                for _, gap in ipairs(gaps) do
+                    local distToGap = math.abs(playerPosition.X - gap.XPosition)
+                    if distToGap < currentGapSafetyMargin and playerPosition.Y < 0 then
+                        playerInSafeGap = true
+                        break
+                    end
+                end
+                
+                local allWaves = getAllWaves()
+                local bestGap, isForward = findBestGapToRetreat(playerPosition, nearestWave.Position, gaps, allWaves)
+                if not bestGap then return end
+                
+                local distToBestGap = math.abs(playerPosition.X - bestGap.XPosition)
+                
+                if playerInSafeGap then
+                    if nearestWave.Distance > 60 and distToBestGap < 100 then
+                        return
+                    end
+                    
+                    if nearestWave.Distance <= 60 then
+                        -- Continue to evacuation
+                    elseif distToBestGap >= 100 then
+                        -- Continue to evacuation
+                    else
+                        return
+                    end
+                end
+                
+                if distToBestGap < 10 and playerPosition.Y < -1 then
+                    return
+                end
+                
+                if isWaveBlockingGap(playerPosition.X, bestGap.XPosition, allWaves) then
+                    local alternativeGaps = {}
+                    local targetDirection = bestGap.XPosition > playerPosition.X and 1 or -1
+    
+                    for _, gap in ipairs(gaps) do
+                        local gapDirection = gap.XPosition > playerPosition.X and 1 or -1
+                        if gapDirection ~= targetDirection then
+                            if not isWaveBlockingGap(playerPosition.X, gap.XPosition, allWaves) then
+                                table.insert(alternativeGaps, gap)
+                            end
+                        end
+                    end
+    
+                    if #alternativeGaps > 0 then
+                        table.sort(alternativeGaps, function(a, b)
+                            return math.abs(playerPosition.X - a.XPosition) < math.abs(playerPosition.X - b.XPosition)
+                        end)
+        
+                        bestGap = alternativeGaps[1]
+                    else
+                        return
+                    end
+                end
+                
+                tweenToGap(hrp, bestGap, isForward)
+            end)
+        end)
+    else
+        print("Anti Tsunami: DISABLED")
+        if Connections.AntiTsunami then
+            Connections.AntiTsunami:Disconnect()
+            Connections.AntiTsunami = nil
+        end
+        
+        if States.CurrentTween then
+            States.CurrentTween:Cancel()
+            States.CurrentTween = nil
+        end
+        
+        States.MovementDisabled = false
+        
+        local char, hum = SafeGetCharacter()
+        if hum then
+            hum.WalkSpeed = 16
+            hum.JumpPower = 50
+        end
+    end
+end
 
 local isTeleporting = false
 local currentVelocity = nil
@@ -841,7 +1506,7 @@ local autoUpgradeBrainrotEnabled = false
 local selectedUpgradeMode = "All"
 local brainrotUpgradeDelay = 1
 local upgradeBrainrotThread = nil
-local BrainrotUpgradeModeDropdown = nil -- Dibiarkan di sini untuk diakses oleh fungsi
+local BrainrotUpgradeModeDropdown = nil
 
 local Bases = workspace:FindFirstChild("Bases")
 
@@ -945,7 +1610,7 @@ local function stopAutoUpgradeBrainrot()
     end
 end
 
--- PERUBAHAN: Fungsi ini sekarang hanya mengemas kini dropdown yang sedia ada.
+-- Fungsi ini dikemas kini untuk menyertakan slot 1-30
 local function updateBrainrotUpgradeDropdown()
     local slots = getBrainrotSlots()
     local dropdownValues = {
@@ -954,10 +1619,11 @@ local function updateBrainrotUpgradeDropdown()
         {Title = "10 Slot", Icon = "filter-10"},
     }
     
-    for _, slotNumber in ipairs(slots) do
+    -- Tambah slot individu 1-30
+    for i = 1, 30 do
         table.insert(dropdownValues, {
-            Title = "Slot " .. slotNumber, 
-            Icon = "numeric-" .. slotNumber
+            Title = "Slot " .. i, 
+            Icon = "numeric-" .. i
         })
     end
     
@@ -968,7 +1634,6 @@ local function updateBrainrotUpgradeDropdown()
     end
 end
 
--- PERUBAHAN: Guna nama fungsi baru.
 task.spawn(function()
     task.wait(3)
     updateBrainrotUpgradeDropdown()
@@ -1209,10 +1874,6 @@ local function stopESP()
 end
 
 local ESPCelestialObjects = {}
-local Connections = {
-    ESPCelestial = nil,
-    ESPLuckyBlock = nil,
-}
 
 local function createESPCelestial(part, text)
     if not part or not part:IsA("BasePart") then return end
@@ -1508,11 +2169,51 @@ local SettingsTab = Window:Tab({
 --  dan ditambah ke dalam tab yang sesuai.
 -- ===============================================================
 
+-- Togol Gap Up dan Gap Down di bahagian atas tab Main
+local GapUpToggle = MainTab:Toggle({
+    Title = "Gap Up (Next Gap)",
+    Desc = "Teleport to the next gap",
+    Default = false,
+    Callback = function(state)
+        if state then
+            CurrentGap = math.min(CurrentGap + 1, TotalGaps)
+            TweenToGapWithLanding(CurrentGap)
+            task.wait(0.5)
+            GapUpToggle:SetState(false)
+        end
+    end
+})
+
+local GapDownToggle = MainTab:Toggle({
+    Title = "Gap Down (Previous Gap)",
+    Desc = "Teleport to the previous gap",
+    Default = false,
+    Callback = function(state)
+        if state then
+            CurrentGap = math.max(CurrentGap - 1, 1)
+            TweenToGapWithLanding(CurrentGap)
+            task.wait(0.5)
+            GapDownToggle:SetState(false)
+        end
+    end
+})
+
 local FlyToBaseButton = MainTab:Button({
     Title = "Fly to Base",
     Desc = "Flying to your base (Press B key for shortcut)",
     Callback = function()
         flyToBase()
+    end
+})
+
+-- Togol Anti Tsunami di bawah butang Fly to Base
+local AntiTsunamiToggle = MainTab:Toggle({
+    Title = "Anti Tsunami",
+    Desc = "Automatically avoid tsunamis by teleporting to safe gaps",
+    Default = false,
+    Callback = function(state)
+        toggleAntiTsunami(state)
+        saveConfiguration()
     end
 })
 
@@ -1535,6 +2236,7 @@ local SpeedToggle = MainTab:Toggle({
     Default = false,
     Callback = function(state)
         isSpeedEnabled = state
+        States.Speed = state
         
         if state then
             enableSpeed()
@@ -1875,7 +2577,7 @@ local BrainrotUpgradeDelaySlider = AutoTab:Slider({
     end
 })
 
--- PERUBAHAN: Dropdown ini sekarang dicipta di sini dengan nama baru.
+-- Dropdown ini sekarang dicipta dengan nama baru dan pilihan yang dikemas kini
 BrainrotUpgradeModeDropdown = AutoTab:Dropdown({
     Title = "Brainrot Upgrade Option", -- Nama ditukar seperti yang diminta
     Values = { -- Nilai awal, akan dikemas kini kemudian
@@ -2240,6 +2942,7 @@ myConfig:Register("UnlockZoom", UnlockZoomToggle)
 myConfig:Register("ESPPlayers", EspPlayersToggle)
 myConfig:Register("ESPCelestial", EspCelestialToggle)
 myConfig:Register("ESPLuckyBlock", EspLuckyBlockToggle)
+myConfig:Register("AntiTsunami", AntiTsunamiToggle)
 myConfig:Register("AutoSell", AutoSellToggle)
 myConfig:Register("SellOption", SellOptionDropdown)
 myConfig:Register("AutoSellDelay", AutoSellDelaySlider)
@@ -2273,7 +2976,6 @@ myConfig:Register("AutoRebirth", AutoRebirthToggle)
 myConfig:Register("AutoRebirthDelay", AutoRebirthDelaySlider)
 myConfig:Register("AutoSpinUFO", AutoSpinUFOToggle)
 myConfig:Register("UFOSpinDelay", UFOSpinDelaySlider)
--- PERUBAHAN: Pendaftaran untuk "BrainrotUpgradeMode" telah dipindahkan ke atas.
 
 WindUI:Popup({
     Title = "Escape Tsunami For Brainrots",
