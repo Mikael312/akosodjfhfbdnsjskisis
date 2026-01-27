@@ -1923,105 +1923,13 @@ local EspLuckyBlockToggle = VisualTab:Toggle({
     end
 })
 
-local isForceRenderEnabled = false
-local forceRenderConnection = nil
-local forceRenderLoop = nil
-
-local function forceRenderAll()
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            pcall(function()
-                obj.RenderFidelity = Enum.RenderFidelity.Precise
-            end)
-        end
-    end
-end
-
-local function enableForceRender()
-    -- Set quality max
-    pcall(function()
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Level21
-    end)
-    
-    -- Force render existing objects
-    forceRenderAll()
-    
-    -- Auto apply untuk object baru
-    forceRenderConnection = workspace.DescendantAdded:Connect(function(obj)
-        if obj:IsA("BasePart") then
-            task.wait()
-            pcall(function()
-                obj.RenderFidelity = Enum.RenderFidelity.Precise
-            end)
-        end
-    end)
-    
-    -- Loop update setiap 5 saat
-    forceRenderLoop = task.spawn(function()
-        while isForceRenderEnabled do
-            task.wait(15)
-            forceRenderAll()
-        end
-    end)
-    
-    WindUI:Notify({
-        Title = "Force Render Enabled",
-        Content = "All objects will render with maximum quality",
-        Duration = 3,
-        Icon = "eye",
-    })
-end
-
-local function disableForceRender()
-    -- Disconnect connections
-    if forceRenderConnection then
-        forceRenderConnection:Disconnect()
-        forceRenderConnection = nil
-    end
-    
-    -- Cancel loop
-    if forceRenderLoop then
-        task.cancel(forceRenderLoop)
-        forceRenderLoop = nil
-    end
-    
-    -- Reset quality (optional)
-    pcall(function()
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
-    end)
-    
-    WindUI:Notify({
-        Title = "Force Render Disabled",
-        Content = "Render quality reset to normal",
-        Duration = 3,
-        Icon = "eye-off",
-    })
-end
-
-local ForceRenderToggle = VisualTab:Toggle({
-    Title = "Force Max Render",
-    Desc = "Force all objects to render with maximum quality (may cause lag)",
-    Default = false,
-    Callback = function(state)
-        isForceRenderEnabled = state
-        
-        if state then
-            enableForceRender()
-        else
-            disableForceRender()
-        end
-        
-        saveConfiguration()
-    end
-})
-
 local UnlockZoomToggle = MiscTab:Toggle({
     Title = "Unlock Zoom Limit",
     Desc = "Allows you to zoom in and out much further.",
     Default = false,
     Callback = function(state)
         if state then
-            LocalPlayer.CameraMaxZoomDistance = 500
+            LocalPlayer.CameraMaxZoomDistance = 999
         else
             LocalPlayer.CameraMaxZoomDistance = 20
         end
@@ -2328,7 +2236,6 @@ myConfig:Register("UnlockZoom", UnlockZoomToggle)
 myConfig:Register("ESPPlayers", EspPlayersToggle)
 myConfig:Register("ESPCelestial", EspCelestialToggle)
 myConfig:Register("ESPLuckyBlock", EspLuckyBlockToggle)
-myConfig:Register("ForceRender", ForceRenderToggle)
 myConfig:Register("AutoSell", AutoSellToggle)
 myConfig:Register("SellOption", SellOptionDropdown)
 myConfig:Register("AutoSellDelay", AutoSellDelaySlider)
