@@ -13,27 +13,6 @@ local Bases = workspace.Bases
 local Workspace = workspace
 
 -- ========================================
--- STATES TABLE - All states in one place
--- ========================================
-local States = {
-    DebugMode = false,
-    ESPCelestial = false,
-    ESPLuckyBlock = false,
-    AutoCollectRadioactive = false,
-    AutoCollectUFO = false,
-}
-
--- ========================================
--- CONNECTIONS TABLE - All connections in one place
--- ========================================
-local Connections = {
-    ESPCelestial = nil,
-    ESPLuckyBlock = nil,
-    AutoCollectRadioactive = nil,
-    AutoCollectUFO = nil,
-}
-
--- ========================================
 -- THEMES (10+ COLOR VARIATIONS) - ALL RED ACCENTS/ICONS
 -- ========================================
 WindUI:AddTheme({
@@ -218,6 +197,12 @@ local Window = WindUI:CreateWindow({
 })
 
 -- Always debugmode States and all lines of code must have debug mode incase there's any error its easy to troubleshoot!
+local States = {
+    DebugMode = false,
+    ESPCelestial = false,
+    ESPLuckyBlock = false,
+}
+
 -- Window must always transparent!
 Window:ToggleTransparency(true)
 
@@ -1863,6 +1848,10 @@ local EspPlayersToggle = VisualTab:Toggle({
 
 -- ESP Celestial Toggle
 local ESPCelestialObjects = {}
+local Connections = {
+    ESPCelestial = nil,
+    ESPLuckyBlock = nil,
+}
 
 local function createESPCelestial(part, text)
     if not part or not part:IsA("BasePart") then return end
@@ -2248,168 +2237,6 @@ local UFOSpinDelaySlider = EventsTab:Slider({
     end
 })
 
--- ==================== AUTO COLLECT UFO COIN ====================
--- Function to collect UFO Coins
-local function toggleAutoCollectUFO(state)
-    States.AutoCollectUFO = state
-    
-    if state then
-        Connections.AutoCollectUFO = RunService.Heartbeat:Connect(function()
-            if not States.AutoCollectUFO then return end
-            
-            pcall(function()
-                local character = LocalPlayer.Character
-                if not character then return end
-                
-                local hrp = character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
-                
-                -- Find UFO folder in Workspace
-                local ufoFolder = Workspace:FindFirstChild("UFO")
-                if not ufoFolder then return end
-                
-                -- Loop through all UFO coins
-                for _, coin in pairs(ufoFolder:GetChildren()) do
-                    if coin:IsA("Model") or coin:IsA("Part") then
-                        local coinPart = coin:IsA("Model") and coin.PrimaryPart or coin
-                        
-                        if coinPart then
-                            local distance = (hrp.Position - coinPart.Position).Magnitude
-                            
-                            -- If coin is within 50 studs, teleport to it
-                            if distance <= 50 then
-                                -- Find ProximityPrompt
-                                local prompt = coinPart:FindFirstChildOfClass("ProximityPrompt") or 
-                                              coin:FindFirstChildOfClass("ProximityPrompt", true)
-                                
-                                if prompt then
-                                    -- Teleport to coin
-                                    hrp.CFrame = coinPart.CFrame
-                                    task.wait(0.1)
-                                    
-                                    -- Trigger the prompt
-                                    fireproximityprompt(prompt)
-                                    task.wait(0.2)
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end)
-        
-        WindUI:Notify({
-            Title = "Auto Collect UFO",
-            Content = "UFO coin collection enabled!",
-            Duration = 2,
-            Icon = "zap",
-        })
-    else
-        if Connections.AutoCollectUFO then
-            Connections.AutoCollectUFO:Disconnect()
-            Connections.AutoCollectUFO = nil
-        end
-        
-        WindUI:Notify({
-            Title = "Auto Collect UFO",
-            Content = "UFO coin collection disabled!",
-            Duration = 2,
-            Icon = "x",
-        })
-    end
-end
-
-local AutoCollectUFOToggle = EventsTab:Toggle({
-    Title = "Auto Collect UFO Coin",
-    Desc = "Automatically collect UFO coins",
-    Default = false,
-    Callback = function(state)
-        toggleAutoCollectUFO(state)
-        saveConfiguration()
-    end
-})
-
--- ==================== AUTO COLLECT RADIOACTIVE COIN ====================
--- Function to collect Radioactive Coins
-local function toggleAutoCollectRadioactive(state)
-    States.AutoCollectRadioactive = state
-    
-    if state then
-        Connections.AutoCollectRadioactive = RunService.Heartbeat:Connect(function()
-            if not States.AutoCollectRadioactive then return end
-            
-            pcall(function()
-                local character = LocalPlayer.Character
-                if not character then return end
-                
-                local hrp = character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return end
-                
-                -- Find Radioactive folder in Workspace
-                local radioactiveFolder = Workspace:FindFirstChild("Radioactive")
-                if not radioactiveFolder then return end
-                
-                -- Loop through all radioactive coins
-                for _, coin in pairs(radioactiveFolder:GetChildren()) do
-                    if coin:IsA("Model") or coin:IsA("Part") then
-                        local coinPart = coin:IsA("Model") and coin.PrimaryPart or coin
-                        
-                        if coinPart then
-                            local distance = (hrp.Position - coinPart.Position).Magnitude
-                            
-                            -- If coin is within 50 studs, teleport to it
-                            if distance <= 50 then
-                                -- Find ProximityPrompt
-                                local prompt = coinPart:FindFirstChildOfClass("ProximityPrompt") or 
-                                              coin:FindFirstChildOfClass("ProximityPrompt", true)
-                                
-                                if prompt then
-                                    -- Teleport to coin
-                                    hrp.CFrame = coinPart.CFrame
-                                    task.wait(0.1)
-                                    
-                                    -- Trigger the prompt
-                                    fireproximityprompt(prompt)
-                                    task.wait(0.2)
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end)
-        
-        WindUI:Notify({
-            Title = "Auto Collect Radioactive",
-            Content = "Radioactive coin collection enabled!",
-            Duration = 2,
-            Icon = "zap",
-        })
-    else
-        if Connections.AutoCollectRadioactive then
-            Connections.AutoCollectRadioactive:Disconnect()
-            Connections.AutoCollectRadioactive = nil
-        end
-        
-        WindUI:Notify({
-            Title = "Auto Collect Radioactive",
-            Content = "Radioactive coin collection disabled!",
-            Duration = 2,
-            Icon = "x",
-        })
-    end
-end
-
-local AutoCollectRadioactiveToggle = EventsTab:Toggle({
-    Title = "Auto Collect Radioactive Coin",
-    Desc = "Automatically collect radioactive coins",
-    Default = false,
-    Callback = function(state)
-        toggleAutoCollectRadioactive(state)
-        saveConfiguration()
-    end
-})
-
 -- ========================================
 -- CREDITS TAB ELEMENTS (MOVED SERVER INFO HERE)
 -- ========================================
@@ -2576,8 +2403,6 @@ myConfig:Register("AutoRebirth", AutoRebirthToggle)
 myConfig:Register("AutoRebirthDelay", AutoRebirthDelaySlider)
 myConfig:Register("AutoSpinUFO", AutoSpinUFOToggle)
 myConfig:Register("UFOSpinDelay", UFOSpinDelaySlider)
-myConfig:Register("AutoCollectUFO", AutoCollectUFOToggle)
-myConfig:Register("AutoCollectRadioactive", AutoCollectRadioactiveToggle)
 
 -- ========================================
 -- WELCOME POPUP
