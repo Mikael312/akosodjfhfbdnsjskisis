@@ -1457,10 +1457,8 @@ local function stopAutoUpgradeBase()
 end
 
 local autoUpgradeBrainrotEnabled = false
-local selectedUpgradeMode = "All"
 local brainrotUpgradeDelay = 1
 local upgradeBrainrotThread = nil
-local BrainrotUpgradeModeDropdown = nil
 
 local Bases = workspace:FindFirstChild("Bases")
 
@@ -1491,38 +1489,9 @@ local function getBrainrotSlots()
     return slots
 end
 
+-- Fungsi ini kini hanya mengembalikan semua slot
 local function getSlotsToUpgrade()
-    local allSlots = getBrainrotSlots()
-    if #allSlots == 0 then return {} end
-    
-    if selectedUpgradeMode == "All" then
-        return allSlots
-    elseif selectedUpgradeMode == "5 Slot" then
-        local randomSlots = {}
-        local availableSlots = {table.unpack(allSlots)}
-        for i = 1, math.min(5, #availableSlots) do
-            local randomIndex = math.random(1, #availableSlots)
-            table.insert(randomSlots, availableSlots[randomIndex])
-            table.remove(availableSlots, randomIndex)
-        end
-        return randomSlots
-    elseif selectedUpgradeMode == "10 Slot" then
-        local randomSlots = {}
-        local availableSlots = {table.unpack(allSlots)}
-        for i = 1, math.min(10, #availableSlots) do
-            local randomIndex = math.random(1, #availableSlots)
-            table.insert(randomSlots, availableSlots[randomIndex])
-            table.remove(availableSlots, randomIndex)
-        end
-        return randomSlots
-    else
-        for _, slot in ipairs(allSlots) do
-            if slot == selectedUpgradeMode then
-                return {slot}
-            end
-        end
-        return {}
-    end
+    return getBrainrotSlots()
 end
 
 local function startAutoUpgradeBrainrot()
@@ -1563,35 +1532,6 @@ local function stopAutoUpgradeBrainrot()
         upgradeBrainrotThread = nil
     end
 end
-
--- Fungsi ini dikemas kini untuk menyertakan slot 1-30
-local function updateBrainrotUpgradeDropdown()
-    local slots = getBrainrotSlots()
-    local dropdownValues = {
-        {Title = "All", Icon = "all-inclusive"},
-        {Title = "5 Slot", Icon = "filter-5"},
-        {Title = "10 Slot", Icon = "filter-10"},
-    }
-    
-    -- Tambah slot individu 1-30
-    for i = 1, 30 do
-        table.insert(dropdownValues, {
-            Title = "Slot " .. i, 
-            Icon = "numeric-" .. i
-        })
-    end
-    
-    if BrainrotUpgradeModeDropdown then
-        pcall(function() -- Tambah pcall untuk keselamatan
-            BrainrotUpgradeModeDropdown:SetValues(dropdownValues)
-        end)
-    end
-end
-
-task.spawn(function()
-    task.wait(3)
-    updateBrainrotUpgradeDropdown()
-end)
 
 local autoPlaceBrainrotEnabled = false
 local brainrotPlaceDelay = 1
@@ -2405,7 +2345,7 @@ local BaseUpgradeDelaySlider = AutoTab:Slider({
 
 local AutoUpgradeBrainrotToggle = AutoTab:Toggle({
     Title = "Auto Upgrade Brainrots",
-    Desc = "Automatically upgrade your brainrot slots",
+    Desc = "Automatically upgrade all your brainrot slots",
     Default = false,
     Callback = function(state)
         autoUpgradeBrainrotEnabled = state
@@ -2437,20 +2377,6 @@ local BrainrotUpgradeDelaySlider = AutoTab:Slider({
         saveConfiguration()
     end
 })
-
--- Dropdown ini sekarang dicipta dengan nama baru dan pilihan yang dikemas kini
-BrainrotUpgradeModeDropdown = AutoTab:Dropdown({
-    Title = "Brainrot Upgrade Option", -- Nama ditukar seperti yang diminta
-    Values = { -- Nilai awal, akan dikemas kini kemudian
-        {Title = "Loading...", Icon = "loading"}
-    },
-    Value = "All",
-    Callback = function(option)
-        selectedUpgradeMode = option.Title
-        saveConfiguration()
-    end
-})
-myConfig:Register("BrainrotUpgradeMode", BrainrotUpgradeModeDropdown) -- Daftar di sini
 
 local AutoPlaceBrainrotToggle = AutoTab:Toggle({
     Title = "Auto Place Brainrots",
@@ -2829,10 +2755,6 @@ end
 
 if SpeedOptionDropdown and SpeedOptionDropdown.Value then
     selectedSpeedOption = SpeedOptionDropdown.Value
-end
-
-if BrainrotUpgradeModeDropdown and BrainrotUpgradeModeDropdown.Value then
-    selectedUpgradeMode = BrainrotUpgradeModeDropdown.Value
 end
 
 LocalPlayer.CharacterAdded:Connect(function(character)
