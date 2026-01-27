@@ -841,7 +841,7 @@ local autoUpgradeBrainrotEnabled = false
 local selectedUpgradeMode = "All"
 local brainrotUpgradeDelay = 1
 local upgradeBrainrotThread = nil
-local BrainrotUpgradeModeDropdown = nil
+local BrainrotUpgradeModeDropdown = nil -- Dibiarkan di sini untuk diakses oleh fungsi
 
 local Bases = workspace:FindFirstChild("Bases")
 
@@ -945,7 +945,8 @@ local function stopAutoUpgradeBrainrot()
     end
 end
 
-local function createBrainrotUpgradeDropdown()
+-- PERUBAHAN: Fungsi ini sekarang hanya mengemas kini dropdown yang sedia ada.
+local function updateBrainrotUpgradeDropdown()
     local slots = getBrainrotSlots()
     local dropdownValues = {
         {Title = "All", Icon = "all-inclusive"},
@@ -961,24 +962,16 @@ local function createBrainrotUpgradeDropdown()
     end
     
     if BrainrotUpgradeModeDropdown then
-        BrainrotUpgradeModeDropdown:SetValues(dropdownValues)
-    else
-        BrainrotUpgradeModeDropdown = AutoTab:Dropdown({
-            Title = "Brainrot Upgrade Mode",
-            Values = dropdownValues,
-            Value = "All",
-            Callback = function(option)
-                selectedUpgradeMode = option.Title
-                saveConfiguration()
-            end
-        })
-        myConfig:Register("BrainrotUpgradeMode", BrainrotUpgradeModeDropdown)
+        pcall(function() -- Tambah pcall untuk keselamatan
+            BrainrotUpgradeModeDropdown:SetValues(dropdownValues)
+        end)
     end
 end
 
+-- PERUBAHAN: Guna nama fungsi baru.
 task.spawn(function()
     task.wait(3)
-    createBrainrotUpgradeDropdown()
+    updateBrainrotUpgradeDropdown()
 end)
 
 local autoPlaceBrainrotEnabled = false
@@ -1882,6 +1875,20 @@ local BrainrotUpgradeDelaySlider = AutoTab:Slider({
     end
 })
 
+-- PERUBAHAN: Dropdown ini sekarang dicipta di sini dengan nama baru.
+BrainrotUpgradeModeDropdown = AutoTab:Dropdown({
+    Title = "Brainrot Upgrade Option", -- Nama ditukar seperti yang diminta
+    Values = { -- Nilai awal, akan dikemas kini kemudian
+        {Title = "Loading...", Icon = "loading"}
+    },
+    Value = "All",
+    Callback = function(option)
+        selectedUpgradeMode = option.Title
+        saveConfiguration()
+    end
+})
+myConfig:Register("BrainrotUpgradeMode", BrainrotUpgradeModeDropdown) -- Daftar di sini
+
 local AutoPlaceBrainrotToggle = AutoTab:Toggle({
     Title = "Auto Place Brainrots",
     Desc = "Automatically place brainrots in available slots",
@@ -2266,6 +2273,7 @@ myConfig:Register("AutoRebirth", AutoRebirthToggle)
 myConfig:Register("AutoRebirthDelay", AutoRebirthDelaySlider)
 myConfig:Register("AutoSpinUFO", AutoSpinUFOToggle)
 myConfig:Register("UFOSpinDelay", UFOSpinDelaySlider)
+-- PERUBAHAN: Pendaftaran untuk "BrainrotUpgradeMode" telah dipindahkan ke atas.
 
 WindUI:Popup({
     Title = "Escape Tsunami For Brainrots",
