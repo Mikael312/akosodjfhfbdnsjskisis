@@ -1842,11 +1842,11 @@ tpSound.Parent = SoundService
 -- Variable untuk switch antara Instant Clone dan Fps Devourer
 local isInstantCloneMode = true -- Default: Instant Clone
 
--- Main button untuk Instant Clone/Fps Devourer
-local mainSwitchButton = createToggleButton(mainFrame, "MainSwitch", "Instant Clone", UDim2.new(0.5, -80, 0, -40), UDim2.new(0, 125, 0, 32))
+-- Main button untuk Instant Clone/Fps Devourer (DIBETULKAN KEDUDUKAN)
+local mainSwitchButton = createToggleButton(mainFrame, "MainSwitch", "Instant Clone", UDim2.new(0, 10, 0, 10), UDim2.new(0, 125, 0, 32))
 
--- Switch button untuk tukar mod
-local switchModeButton = createSwitchButton(mainFrame, "SwitchMode", "⇄", UDim2.new(0.5, 50, 0, -40), UDim2.new(0, 30, 0, 32))
+-- Switch button untuk tukar mod (DIBETULKAN KEDUDUKAN)
+local switchModeButton = createSwitchButton(mainFrame, "SwitchMode", "⇄", UDim2.new(0, 140, 0, 10), UDim2.new(0, 30, 0, 32))
 
 -- Fungsi untuk switch mod
 switchModeButton.MouseButton1Click:Connect(function()
@@ -1870,8 +1870,8 @@ mainSwitchButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Toggle Button 1 - Semi Invisible (DIUBAH DARI "Perm Desync")
-local toggleButton = createToggleButton(mainFrame, "SemiInvisible", "Semi Invisible", UDim2.new(0.5, -80, 0, 30), UDim2.new(0, 160, 0, 32))
+-- Toggle Button 1 - Semi Invisible (DIUBAH KEDUDUKAN)
+local toggleButton = createToggleButton(mainFrame, "SemiInvisible", "Semi Invisible", UDim2.new(0.5, -80, 0, 50), UDim2.new(0, 160, 0, 32))
 local isToggled = false
 
 toggleButton.MouseButton1Click:Connect(function()
@@ -1906,8 +1906,8 @@ toggleButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- Toggle Button 2 - Speed (DIUBAH)
-local toggleButton2 = createToggleButton(mainFrame, "SpeedBooster", "Speed", UDim2.new(0, 10, 0, 70), UDim2.new(0, 75, 0, 32))
+-- Toggle Button 2 - Speed (DIUBAH KEDUDUKAN)
+local toggleButton2 = createToggleButton(mainFrame, "SpeedBooster", "Speed", UDim2.new(0, 10, 0, 90), UDim2.new(0, 75, 0, 32))
 local isToggled2 = false
 
 toggleButton2.MouseButton1Click:Connect(function()
@@ -1921,8 +1921,8 @@ toggleButton2.MouseButton1Click:Connect(function()
     end
 end)
 
--- Toggle Button 3 - Inf Jump + Low Gravity (NEW) (DIUBAH)
-local toggleButton3 = createToggleButton(mainFrame, "InfJump", "Inf Jump", UDim2.new(0, 95, 0, 70), UDim2.new(0, 75, 0, 32))
+-- Toggle Button 3 - Inf Jump + Low Gravity (NEW) (DIUBAH KEDUDUKAN)
+local toggleButton3 = createToggleButton(mainFrame, "InfJump", "Inf Jump", UDim2.new(0, 95, 0, 90), UDim2.new(0, 75, 0, 32))
 local isToggled3 = false
 
 toggleButton3.MouseButton1Click:Connect(function()
@@ -1936,10 +1936,10 @@ local isToggled6 = false
 local isFlyBestMode = true -- true = Fly, false = Tp
 
 -- Main button (DIUBAH KEDUDUKAN)
-local toggleButton6 = createToggleButton(mainFrame, "FlyTpBest", "Fly to Best", UDim2.new(0, 10, 0, 110), UDim2.new(0, 125, 0, 32))
+local toggleButton6 = createToggleButton(mainFrame, "FlyTpBest", "Fly to Best", UDim2.new(0, 10, 0, 130), UDim2.new(0, 125, 0, 32))
 
 -- Switch Button (DIUBAH KEDUDUKAN)
-local switchButton6 = createSwitchButton(mainFrame, "SwitchButton", "⇄", UDim2.new(0, 140, 0, 110), UDim2.new(0, 30, 0, 32))
+local switchButton6 = createSwitchButton(mainFrame, "SwitchButton", "⇄", UDim2.new(0, 140, 0, 130), UDim2.new(0, 30, 0, 32))
 
 -- Switch button click function (DENGAN LOGIK ANTI-BUG)
 switchButton6.MouseButton1Click:Connect(function()
@@ -1984,7 +1984,7 @@ end)
 
 -- ==================== NEW FLY V2 TOGGLE BUTTON ====================
 -- Toggle Button 7 - Fly V2 (DIUBAH KEDUDUKAN)
-local toggleButton7 = createToggleButton(mainFrame, "FlyV2", "Fly V2", UDim2.new(0.5, -80, 0, 150), UDim2.new(0, 160, 0, 32))
+local toggleButton7 = createToggleButton(mainFrame, "FlyV2", "Fly V2", UDim2.new(0.5, -80, 0, 170), UDim2.new(0, 160, 0, 32))
 local isToggled7 = false
 
 toggleButton7.MouseButton1Click:Connect(function()
@@ -1999,7 +1999,7 @@ toggleButton7.MouseButton1Click:Connect(function()
 end)
 
 -- Toggle Button 5 - Steal Floor (DIUBAH KEDUDUKAN)
-local toggleButton5 = createToggleButton(mainFrame, "StealFloor", "Steal Floor", UDim2.new(0.5, -80, 0, 190), UDim2.new(0, 160, 0, 32))
+local toggleButton5 = createToggleButton(mainFrame, "StealFloor", "Steal Floor", UDim2.new(0.5, -80, 0, 210), UDim2.new(0, 160, 0, 32))
 local isToggled5 = false
 
 toggleButton5.MouseButton1Click:Connect(function()
@@ -2016,7 +2016,7 @@ end)
 -- Content area (placeholder) - DIUBAH KEDUDUKAN
 local contentLabel = Instance.new("TextLabel")
 contentLabel.Size = UDim2.new(1, -40, 0, 30)
-contentLabel.Position = UDim2.new(0, 20, 0, 230) -- DISESUAIKAN
+contentLabel.Position = UDim2.new(0, 20, 0, 250) -- DISESUAIKAN
 contentLabel.BackgroundTransparency = 1
 contentLabel.Text = ""
 contentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
