@@ -862,7 +862,7 @@ local function getPlotBlockEdgePosition(plot, fromPos, petPos)
     local info = getPlotBlockBounds(plot)
     if not info then return nil end
     
-    local MARGIN = 39.4
+    local MARGIN = 39.2
     
     local dirX = fromPos.X - info.centerX
     
