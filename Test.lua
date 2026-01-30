@@ -1249,7 +1249,7 @@ local function enableInvisibility()
                 local root = player.Character.PrimaryPart or player.Character:FindFirstChild("HumanoidRootPart")
                 if root then
                     local cf = root.CFrame - Vector3.new(0, player.Character.Humanoid.HipHeight + (root.Size.Y / 2) - 1 + 0.3, 0)
-                    oldRoot.CFrame = cf * CFrame.Angles(math.rad(219), 0, 0)
+                    oldRoot.CFrame = cf * CFrame.Angles(math.rad(210), 0, 0)
                     oldRoot.Velocity = root.Velocity
                     oldRoot.CanCollide = false
                 end
