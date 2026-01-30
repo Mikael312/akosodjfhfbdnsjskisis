@@ -2,6 +2,7 @@
     SIMPLE ARCADE UI 🎮 (UPDATED)
     Rounded rectangle, draggable, arcade style
     WITH NEW DEVOURER UI DESIGN (IMPROVED)
+    WITH NEW SEMI INVISIBLE (REPLACING RESPAWN DESYNC + SERVER POSITION ESP)
     WITH NEW FLY/TP TO BEST FEATURE (FIXED MODULES & LOGIC)
     WITH IMPROVED INFINITE JUMP + LOW GRAVITY (NEW)
     WITH NEW FLY V2 FEATURE
@@ -41,6 +42,12 @@ local originalTransparency = {}
 -- Auto Laser
 local autoLaserThread = nil
 local laserCapeEquipped = false
+
+-- ==================== SEMI INVISIBLE VARIABLES ====================
+local ESPFolder = nil
+local fakePosESP = nil
+local serverPosition = nil
+local semiInvisibleEnabled = false
 
 -- ==================== FLY/TP TO BEST VARIABLES ====================
 local isFlyingToBest = false
@@ -1082,6 +1089,7 @@ local function safeTeleportToPet()
 end
 
 -- ==================== SEMI INVISIBLE FUNCTIONS ====================
+-- Semi Invisible Variables
 local connections = {
     SemiInvisible = {}
 }
@@ -1248,8 +1256,8 @@ local function enableInvisibility()
             if player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 and oldRoot then
                 local root = player.Character.PrimaryPart or player.Character:FindFirstChild("HumanoidRootPart")
                 if root then
-                    local cf = root.CFrame - Vector3.new(0, player.Character.Humanoid.HipHeight + (root.Size.Y / 2) - 1 + 0.06, 0)
-                    oldRoot.CFrame = cf * CFrame.Angles(math.rad(219), 0, 0)
+                    local cf = root.CFrame - Vector3.new(0, player.Character.Humanoid.HipHeight + (root.Size.Y / 2) - 1 + 1.6, 0)
+                    oldRoot.CFrame = cf * CFrame.Angles(math.rad(180), 0, 0)
                     oldRoot.Velocity = root.Velocity
                     oldRoot.CanCollide = false
                 end
@@ -1806,7 +1814,7 @@ tpSound.Volume = 1
 tpSound.Looped = false
 tpSound.Parent = SoundService
 
--- Toggle Button 1 - Semi Invisible (DIUBAH DARI Perm Desync)
+-- Toggle Button 1 - Semi Invisible (DIUBAH DARI "Perm Desync")
 local toggleButton = createToggleButton(mainFrame, "SemiInvisible", "Semi Invisible", UDim2.new(0.5, -80, 0, 20), UDim2.new(0, 160, 0, 32))
 local isToggled = false
 
@@ -1823,19 +1831,22 @@ toggleButton.MouseButton1Click:Connect(function()
         
         -- Send the notification
         StarterGui:SetCore("SendNotification", {
-            Title = "Semi Invisible";
-            Text = "Invisibility Activated";
+            Title = "Invisibility";
+            Text = "Semi Invisible Activated";
             Duration = 5;
         })
         
-        -- Start invisibility
+        -- Enable Semi Invisible
+        setupGodmode()
         if enableInvisibility() then
             isInvisible = true
+            semiInvisibleEnabled = true
         end
     else
-        -- Disable invisibility
+        -- Disable Semi Invisible
         disableInvisibility()
         isInvisible = false
+        semiInvisibleEnabled = false
     end
 end)
 
@@ -2071,40 +2082,29 @@ LocalPlayer.CharacterAdded:Connect(function()
         setToggleState(toggleButton, isToggled)
         disableInvisibility()
         isInvisible = false
-        for _, conn in ipairs(connections.SemiInvisible) do if conn then conn:Disconnect() end end
-        connections.SemiInvisible = {}
+        semiInvisibleEnabled = false
     end
 end)
 
 player.CharacterRemoving:Connect(function()
-    -- ESP section removed
+    if semiInvisibleEnabled then
+        disableInvisibility()
+        isInvisible = false
+        semiInvisibleEnabled = false
+    end
 end)
 
--- Initialize Semi Invisible system
+-- Cleanup on respawn
+LocalPlayer.CharacterAdded:Connect(function()
+    stopVelocity()
+end)
+
+-- ==================== INITIALIZATION ====================
+-- Initialize Semi Invisible
 player.CharacterAdded:Wait()
 task.wait(0.5)
 
 removeFolders()
 setupGodmode()
-
--- Cleanup on respawn
-LocalPlayer.CharacterAdded:Connect(function()
-    if isInvisible then
-        disableInvisibility()
-    end
-    
-    for _, conn in ipairs(connections.SemiInvisible) do 
-        if conn then conn:Disconnect() end 
-    end
-    connections.SemiInvisible = {}
-    
-    local newChar = player.Character or player.CharacterAdded:Wait()
-    newChar:WaitForChild("Humanoid")
-    newChar:WaitForChild("HumanoidRootPart")
-    task.wait(0.5)
-    
-    removeFolders()
-    setupGodmode()
-end)
 
 -- ==================== INITIALIZATION ====================
