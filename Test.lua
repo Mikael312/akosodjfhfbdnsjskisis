@@ -1256,8 +1256,8 @@ local function enableInvisibility()
             if player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 and oldRoot then
                 local root = player.Character.PrimaryPart or player.Character:FindFirstChild("HumanoidRootPart")
                 if root then
-                    local cf = root.CFrame - Vector3.new(0, player.Character.Humanoid.HipHeight + (root.Size.Y / 2) - 1 + 0.6, 0)
-                    oldRoot.CFrame = cf * CFrame.Angles(math.rad(220), 0, 0)
+                    local cf = root.CFrame - Vector3.new(0, player.Character.Humanoid.HipHeight + (root.Size.Y / 2) - 1 + 0.3, 0)
+                    oldRoot.CFrame = cf * CFrame.Angles(math.rad(217), 0, 0)
                     oldRoot.Velocity = root.Velocity
                     oldRoot.CanCollide = false
                 end
@@ -1644,8 +1644,8 @@ screenGui.Parent = game.CoreGui
 
 -- Main Frame (Rounded Rectangle - Vertical Block) - DIUBAH SAIZ
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 180, 0, 280) -- DIKURANGKAN KERANA SATU BARIS DIBUANG
-mainFrame.Position = UDim2.new(1, -290, 0.5, -140) -- KEDUDUKAN BAHARU UNTUK TENGAH
+mainFrame.Size = UDim2.new(0, 180, 0, 320) -- DITAMBAH SAIZ
+mainFrame.Position = UDim2.new(1, -290, 0.5, -160) -- DIALIH KE ATAS
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -1798,6 +1798,30 @@ local function setSwitchState(button, enabled)
     end
 end
 
+-- ====================================================--
+--  FUNGSI UNTUK KELIPKAN BUTANG (FLASH EFFECT)
+-- ====================================================--
+local function flashButton(button)
+    local stroke = button:FindFirstChildWhichIsA("UIStroke")
+    if not stroke then return end
+
+    local originalBgColor = button.BackgroundColor3
+    local originalStrokeColor = stroke.Color
+    
+    -- Set to bright red
+    button.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    stroke.Color = Color3.fromRGB(255, 150, 150)
+    
+    -- Wait for 0.3 seconds
+    task.wait(0.3)
+    
+    -- Restore original colors safely
+    pcall(function()
+        button.BackgroundColor3 = originalBgColor
+        stroke.Color = originalStrokeColor
+    end)
+end
+
 -- Create Sound Object
 local desyncSound = Instance.new("Sound")
 desyncSound.Name = "DesyncSound"
@@ -1814,8 +1838,23 @@ tpSound.Volume = 1
 tpSound.Looped = false
 tpSound.Parent = SoundService
 
+-- ==================== NEW SWITCH STYLE BUTTONS ====================
+-- Fps Devourer Button (DIUBAH KEDUDUKAN & GAYA)
+local devourerButton = createSwitchButton(mainFrame, "FpsDevourer", "Fps Devourer", UDim2.new(0.5, -80, 0, -40), UDim2.new(0, 160, 0, 32))
+devourerButton.MouseButton1Click:Connect(function()
+    flashButton(devourerButton)
+    fpsDevourer()
+end)
+
+-- Instant Clone Button (DIUBAH DARI TP)
+local instantCloneButton = createSwitchButton(mainFrame, "InstantClone", "Instant Clone", UDim2.new(0.5, -80, 0, -5), UDim2.new(0, 160, 0, 32))
+instantCloneButton.MouseButton1Click:Connect(function()
+    flashButton(instantCloneButton)
+    performQuantumDesync()
+end)
+
 -- Toggle Button 1 - Semi Invisible (DIUBAH DARI "Perm Desync")
-local toggleButton = createToggleButton(mainFrame, "SemiInvisible", "Semi Invisible", UDim2.new(0.5, -80, 0, 20), UDim2.new(0, 160, 0, 32))
+local toggleButton = createToggleButton(mainFrame, "SemiInvisible", "Semi Invisible", UDim2.new(0.5, -80, 0, 30), UDim2.new(0, 160, 0, 32))
 local isToggled = false
 
 toggleButton.MouseButton1Click:Connect(function()
@@ -1851,7 +1890,7 @@ toggleButton.MouseButton1Click:Connect(function()
 end)
 
 -- Toggle Button 2 - Speed (DIUBAH)
-local toggleButton2 = createToggleButton(mainFrame, "SpeedBooster", "Speed", UDim2.new(0, 10, 0, 60), UDim2.new(0, 75, 0, 32))
+local toggleButton2 = createToggleButton(mainFrame, "SpeedBooster", "Speed", UDim2.new(0, 10, 0, 70), UDim2.new(0, 75, 0, 32))
 local isToggled2 = false
 
 toggleButton2.MouseButton1Click:Connect(function()
@@ -1866,7 +1905,7 @@ toggleButton2.MouseButton1Click:Connect(function()
 end)
 
 -- Toggle Button 3 - Inf Jump + Low Gravity (NEW) (DIUBAH)
-local toggleButton3 = createToggleButton(mainFrame, "InfJump", "Inf Jump", UDim2.new(0, 95, 0, 60), UDim2.new(0, 75, 0, 32))
+local toggleButton3 = createToggleButton(mainFrame, "InfJump", "Inf Jump", UDim2.new(0, 95, 0, 70), UDim2.new(0, 75, 0, 32))
 local isToggled3 = false
 
 toggleButton3.MouseButton1Click:Connect(function()
@@ -1875,78 +1914,15 @@ toggleButton3.MouseButton1Click:Connect(function()
     toggleInfJump(isToggled3)
 end)
 
--- ==================== NEW DEVOURER UI DESIGN (IMPROVED) ====================
--- Main Button (Fps Devourer) - SEKARANG BUTANG BIASA (DIUBAH KEDUDUKAN)
-local devourerButton = Instance.new("TextButton")
-devourerButton.Name = "FpsDevourer"
-devourerButton.Size = UDim2.new(0, 125, 0, 32) -- DIPANJANGKAN
-devourerButton.Position = UDim2.new(0, 10, 0, 100) -- DIALIHKAN KE BAWAH
-devourerButton.BackgroundColor3 = Color3.fromRGB(80, 0, 0) -- Warna latar belakang OFF (Merah Gelap)
-devourerButton.BorderSizePixel = 0
-devourerButton.Text = "Fps Devourer"
-devourerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-devourerButton.TextSize = 13
-devourerButton.Font = Enum.Font.Arcade
-devourerButton.AutoButtonColor = false
-devourerButton.Parent = mainFrame
-
--- Mencipta bucu bulat
-local devourerCorner = Instance.new("UICorner")
-devourerCorner.CornerRadius = UDim.new(0, 6)
-devourerCorner.Parent = devourerButton
-
--- Mencipta garis luar
-local devourerStroke = Instance.new("UIStroke")
-devourerStroke.Color = Color3.fromRGB(150, 0, 0) -- Warna garis luar OFF (Merah Sederhana)
-devourerStroke.Thickness = 0.5
-devourerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-devourerStroke.Parent = devourerButton
-
--- Small TP Button (WARNA TOGGLE OFF)
-local tpButton = Instance.new("TextButton") -- Dicipta secara langsung untuk warna khas
-tpButton.Name = "TPButton"
-tpButton.Size = UDim2.new(0, 30, 0, 32)
-tpButton.Position = UDim2.new(0, 140, 0, 100) -- DIUBAH POSISI
-tpButton.BackgroundColor3 = Color3.fromRGB(80, 0, 0) -- Warna latar belakang OFF (Merah Gelap) - SAMA DENGAN TOGGLE OFF
-tpButton.BorderSizePixel = 0
-tpButton.Text = "TP"
-tpButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-tpButton.TextSize = 18
-tpButton.Font = Enum.Font.Arcade
-tpButton.AutoButtonColor = false
-tpButton.Parent = mainFrame
-
--- Mencipta bucu bulat untuk TP button
-local tpCorner = Instance.new("UICorner")
-tpCorner.CornerRadius = UDim.new(0, 6)
-tpCorner.Parent = tpButton
-
--- Mencipta garis luar untuk TP button (WARNA TOGGLE OFF)
-local tpStroke = Instance.new("UIStroke")
-tpStroke.Color = Color3.fromRGB(150, 0, 0) -- Warna garis luar OFF (Merah Sederhana) - SAMA DENGAN TOGGLE OFF
-tpStroke.Thickness = 0.5 -- Ketebalan garis luar OFF
-tpStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-tpStroke.Parent = tpButton
-
--- Fps Devourer Button Function (NORMAL BUTTON)
-devourerButton.MouseButton1Click:Connect(function()
-    fpsDevourer() -- Panggil fungsi terus
-end)
-
--- TP Button Function
-tpButton.MouseButton1Click:Connect(function()
-    performQuantumDesync()
-end)
-
 -- ==================== TOGGLE BUTTON 6 WITH SWITCH - Fly/Tp to Best (NEW) ====================
 local isToggled6 = false
 local isFlyBestMode = true -- true = Fly, false = Tp
 
 -- Main button (DIUBAH KEDUDUKAN)
-local toggleButton6 = createToggleButton(mainFrame, "FlyTpBest", "Fly to Best", UDim2.new(0, 10, 0, 140), UDim2.new(0, 125, 0, 32))
+local toggleButton6 = createToggleButton(mainFrame, "FlyTpBest", "Fly to Best", UDim2.new(0, 10, 0, 110), UDim2.new(0, 125, 0, 32))
 
 -- Switch Button (DIUBAH KEDUDUKAN)
-local switchButton6 = createSwitchButton(mainFrame, "SwitchButton", "⇄", UDim2.new(0, 140, 0, 140), UDim2.new(0, 30, 0, 32))
+local switchButton6 = createSwitchButton(mainFrame, "SwitchButton", "⇄", UDim2.new(0, 140, 0, 110), UDim2.new(0, 30, 0, 32))
 
 -- Switch button click function (DENGAN LOGIK ANTI-BUG)
 switchButton6.MouseButton1Click:Connect(function()
@@ -1991,7 +1967,7 @@ end)
 
 -- ==================== NEW FLY V2 TOGGLE BUTTON ====================
 -- Toggle Button 7 - Fly V2 (DIUBAH KEDUDUKAN)
-local toggleButton7 = createToggleButton(mainFrame, "FlyV2", "Fly V2", UDim2.new(0.5, -80, 0, 180), UDim2.new(0, 160, 0, 32))
+local toggleButton7 = createToggleButton(mainFrame, "FlyV2", "Fly V2", UDim2.new(0.5, -80, 0, 150), UDim2.new(0, 160, 0, 32))
 local isToggled7 = false
 
 toggleButton7.MouseButton1Click:Connect(function()
@@ -2006,7 +1982,7 @@ toggleButton7.MouseButton1Click:Connect(function()
 end)
 
 -- Toggle Button 5 - Steal Floor (DIUBAH KEDUDUKAN)
-local toggleButton5 = createToggleButton(mainFrame, "StealFloor", "Steal Floor", UDim2.new(0.5, -80, 0, 220), UDim2.new(0, 160, 0, 32))
+local toggleButton5 = createToggleButton(mainFrame, "StealFloor", "Steal Floor", UDim2.new(0.5, -80, 0, 190), UDim2.new(0, 160, 0, 32))
 local isToggled5 = false
 
 toggleButton5.MouseButton1Click:Connect(function()
@@ -2023,7 +1999,7 @@ end)
 -- Content area (placeholder) - DIUBAH KEDUDUKAN
 local contentLabel = Instance.new("TextLabel")
 contentLabel.Size = UDim2.new(1, -40, 0, 30)
-contentLabel.Position = UDim2.new(0, 20, 0, 250) -- DISESUAIKAN
+contentLabel.Position = UDim2.new(0, 20, 0, 230) -- DISESUAIKAN
 contentLabel.BackgroundTransparency = 1
 contentLabel.Text = ""
 contentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
