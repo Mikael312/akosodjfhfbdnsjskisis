@@ -2,7 +2,6 @@
     SIMPLE ARCADE UI 🎮 (UPDATED)
     Rounded rectangle, draggable, arcade style
     WITH NEW DEVOURER UI DESIGN (IMPROVED)
-    WITH NEW RESPAWN DESYNC + SERVER POSITION ESP
     WITH NEW FLY/TP TO BEST FEATURE (FIXED MODULES & LOGIC)
     WITH IMPROVED INFINITE JUMP + LOW GRAVITY (NEW)
     WITH NEW FLY V2 FEATURE
@@ -42,12 +41,6 @@ local originalTransparency = {}
 -- Auto Laser
 local autoLaserThread = nil
 local laserCapeEquipped = false
-
--- ==================== DESYNC ESP VARIABLES ====================
-local ESPFolder = nil
-local fakePosESP = nil
-local serverPosition = nil
-local respawnDesyncEnabled = false
 
 -- ==================== FLY/TP TO BEST VARIABLES ====================
 local isFlyingToBest = false
@@ -1835,33 +1828,14 @@ toggleButton.MouseButton1Click:Connect(function()
             Duration = 5;
         })
         
-        -- Initialize ESP folder if needed
-        if not ESPFolder then
-            initializeESPFolder()
-        end
-        
         -- Start invisibility
         if enableInvisibility() then
             isInvisible = true
-            respawnDesyncEnabled = true
-        end
-        
-        -- Start ESP update loop
-        if not respawnDesyncConnection then
-            respawnDesyncConnection = RunService.RenderStepped:Connect(function()
-                if respawnDesyncEnabled then
-                    updateESP()
-                end
-            end)
         end
     else
         -- Disable invisibility
         disableInvisibility()
         isInvisible = false
-        respawnDesyncEnabled = false
-        
-        -- Deactivate ESP
-        deactivateESP()
     end
 end)
 
@@ -2048,9 +2022,6 @@ contentLabel.TextWrapped = true
 contentLabel.TextYAlignment = Enum.TextYAlignment.Top
 contentLabel.Parent = mainFrame
 
--- ESP update loop
-local respawnDesyncConnection = nil
-
 -- Cleanup on character respawn
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(1)
@@ -2103,18 +2074,10 @@ LocalPlayer.CharacterAdded:Connect(function()
         for _, conn in ipairs(connections.SemiInvisible) do if conn then conn:Disconnect() end end
         connections.SemiInvisible = {}
     end
-    
-    -- Reinitialize ESP if needed
-    if respawnDesyncEnabled then
-        task.wait(1)
-        initializeESP()
-    end
 end)
 
 player.CharacterRemoving:Connect(function()
-    if respawnDesyncEnabled then
-        deactivateESP()
-    end
+    -- ESP section removed
 end)
 
 -- Initialize Semi Invisible system
