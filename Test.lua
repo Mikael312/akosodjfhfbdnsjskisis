@@ -862,7 +862,7 @@ local function getPlotBlockEdgePosition(plot, fromPos, petPos)
     local info = getPlotBlockBounds(plot)
     if not info then return nil end
     
-    local MARGIN = 39.2
+    local MARGIN = 39.4
     
     local dirX = fromPos.X - info.centerX
     
@@ -1088,194 +1088,212 @@ local function safeTeleportToPet()
     return true
 end
 
--- ==================== DESYNC ESP FUNCTIONS ====================
--- Initialize ESP Folder
-local function initializeESPFolder()
-    -- Clean up any existing ESP folders
-    for _, existing in ipairs(Workspace:GetChildren()) do
-        if existing.Name == "DesyncESP" then
-            existing:Destroy()
+-- ==================== SEMI INVISIBLE FUNCTIONS ====================
+local connections = {
+    SemiInvisible = {}
+}
+local isInvisible = false
+local clone, oldRoot, hip, animTrack, connection, characterConnection
+
+local function removeFolders()
+    local playerName = player.Name
+    local playerFolder = Workspace:FindFirstChild(playerName)
+    if not playerFolder then return end
+    
+    local doubleRig = playerFolder:FindFirstChild("DoubleRig")
+    if doubleRig then doubleRig:Destroy() end
+    
+    local constraints = playerFolder:FindFirstChild("Constraints")
+    if constraints then constraints:Destroy() end
+    
+    local childAddedConn = playerFolder.ChildAdded:Connect(function(child)
+        if child.Name == "DoubleRig" or child.Name == "Constraints" then
+            child:Destroy()
+        end
+    end)
+    table.insert(connections.SemiInvisible, childAddedConn)
+end
+
+local function doClone()
+    if player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+        hip = player.Character.Humanoid.HipHeight
+        oldRoot = player.Character:FindFirstChild("HumanoidRootPart")
+        if not oldRoot or not oldRoot.Parent then return false end
+        
+        local tempParent = Instance.new("Model")
+        tempParent.Parent = game
+        player.Character.Parent = tempParent
+        
+        clone = oldRoot:Clone()
+        clone.Parent = player.Character
+        oldRoot.Parent = game.Workspace.CurrentCamera
+        
+        clone.CFrame = oldRoot.CFrame
+        player.Character.PrimaryPart = clone
+        player.Character.Parent = game.Workspace
+        
+        for _, v in pairs(player.Character:GetDescendants()) do
+            if v:IsA("Weld") or v:IsA("Motor6D") then
+                if v.Part0 == oldRoot then v.Part0 = clone end
+                if v.Part1 == oldRoot then v.Part1 = clone end
+            end
+        end
+        
+        tempParent:Destroy()
+        return true
+    end
+    return false
+end
+
+local function revertClone()
+    if not oldRoot or not oldRoot:IsDescendantOf(game.Workspace) or not player.Character or player.Character.Humanoid.Health <= 0 then return false end
+    
+    local tempParent = Instance.new("Model")
+    tempParent.Parent = game
+    player.Character.Parent = tempParent
+    
+    oldRoot.Parent = player.Character
+    player.Character.PrimaryPart = oldRoot
+    player.Character.Parent = game.Workspace
+    oldRoot.CanCollide = true
+    
+    for _, v in pairs(player.Character:GetDescendants()) do
+        if v:IsA("Weld") or v:IsA("Motor6D") then
+            if v.Part0 == clone then v.Part0 = oldRoot end
+            if v.Part1 == clone then v.Part1 = oldRoot end
         end
     end
     
-    -- Create new ESP folder
-    ESPFolder = Instance.new("Folder")
-    ESPFolder.Name = "DesyncESP"
-    ESPFolder.Parent = Workspace
-end
-
--- Create ESP part for server position
-local function createESPPart(name, color)
-    local part = Instance.new("Part")
-    part.Name = name
-    part.Size = Vector3.new(2, 5, 2)
-    part.Anchored = true
-    part.CanCollide = false
-    part.Material = Enum.Material.Neon
-    part.Color = color
-    part.Transparency = 0.3
-    part.Parent = ESPFolder
+    if clone then
+        local oldPos = clone.CFrame
+        clone:Destroy()
+        clone = nil
+        oldRoot.CFrame = oldPos
+    end
     
-    local highlight = Instance.new("Highlight")
-    highlight.FillColor = color
-    highlight.OutlineColor = color
-    highlight.FillTransparency = 0.5
-    highlight.OutlineTransparency = 0
-    highlight.Parent = part
-    
-    local billboard = Instance.new("BillboardGui")
-    billboard.Size = UDim2.new(0, 100, 0, 40)
-    billboard.Adornee = part
-    billboard.AlwaysOnTop = true
-    billboard.Parent = part
-    
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = name
-    textLabel.TextColor3 = color
-    textLabel.TextStrokeTransparency = 0.5
-    textLabel.TextScaled = true
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.Parent = billboard
-    
-    return part
-end
-
--- Update ESP position
-local function updateESP()
-    if fakePosESP and serverPosition then
-        fakePosESP.CFrame = CFrame.new(serverPosition)
+    oldRoot = nil
+    if player.Character and player.Character.Humanoid then
+        player.Character.Humanoid.HipHeight = hip
     end
 end
 
--- Initialize ESP system
-local function initializeESP()
-    if not ESPFolder then
-        initializeESPFolder()
-    else
-        ESPFolder:ClearAllChildren()
-    end
-    
-    fakePosESP = createESPPart("Server Position", Color3.fromRGB(255, 0, 0))
-    
-    local char = LocalPlayer.Character
-    if char then
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            serverPosition = hrp.Position
-            fakePosESP.CFrame = CFrame.new(serverPosition)
-            
-            hrp:GetPropertyChangedSignal("CFrame"):Connect(function()
-                task.wait(0.2)
-                serverPosition = hrp.Position
+local function animationTrickery()
+    if player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "http://www.roblox.com/asset/?id=18537363391"
+        local humanoid = player.Character.Humanoid
+        local animator = humanoid:FindFirstChild("Animator") or Instance.new("Animator", humanoid)
+        
+        animTrack = animator:LoadAnimation(anim)
+        animTrack.Priority = Enum.AnimationPriority.Action4
+        animTrack:Play(0, 1, 0)
+        anim:Destroy()
+        
+        local animStoppedConn = animTrack.Stopped:Connect(function()
+            if isInvisible then
+                animationTrickery()
+            end
+        end)
+        table.insert(connections.SemiInvisible, animStoppedConn)
+        
+        task.delay(0, function()
+            animTrack.TimePosition = 0.7
+            task.delay(1, function()
+                animTrack:AdjustSpeed(math.huge)
             end)
-        end
+        end)
     end
 end
 
--- Deactivate ESP system
-local function deactivateESP()
-    if ESPFolder then
-        ESPFolder:ClearAllChildren()
-    end
-    fakePosESP = nil
-    serverPosition = nil
-end
-
--- Stop all animations
-local function stopAllAnimations(character)
-    local humanoid = character:FindFirstChildWhichIsA("Humanoid")
-    if humanoid then
-        local animator = humanoid:FindFirstChildOfClass("Animator")
-        if animator then
-            for _, track in pairs(animator:GetPlayingAnimationTracks()) do
-                track:Stop()
+local function setupGodmode()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hum = char:WaitForChild("Humanoid")
+    
+    local mt = getrawmetatable(game)
+    local oldNC = mt.__namecall
+    local oldNI = mt.__newindex
+    setreadonly(mt, false)
+    
+    mt.__namecall = newcclosure(function(self, ...)
+        local m = getnamecallmethod()
+        if self == hum then
+            if m == "ChangeState" and select(1, ...) == Enum.HumanoidStateType.Dead then return end
+            if m == "SetStateEnabled" then
+                local st, en = ...
+                if st == Enum.HumanoidStateType.Dead and en == true then return end
             end
+            if m == "Destroy" then return end
         end
-    end
+        if self == char and m == "BreakJoints" then return end
+        return oldNC(self, ...)
+    end)
+    
+    mt.__newindex = newcclosure(function(self, k, v)
+        if self == hum then
+            if k == "Health" and type(v) == "number" and v <= 0 then return end
+            if k == "MaxHealth" and type(v) == "number" and v < hum.MaxHealth then return end
+            if k == "BreakJointsOnDeath" and v == true then return end
+            if k == "Parent" and v == nil then return end
+        end
+        return oldNI(self, k, v)
+    end)
+    
+    setreadonly(mt, true)
 end
 
--- Apply network settings for desync
-local function applyNetworkSettings()
-    local fenv = getfenv()
+local function enableInvisibility()
+    if not player.Character or player.Character.Humanoid.Health <= 0 then return false end
     
-    pcall(function() fenv.setfflag("GameNetPVHeaderRotationalVelocityZeroCutoffExponent", "-5000") end)
-    pcall(function() fenv.setfflag("LargeReplicatorWrite5", "true") end)
-    pcall(function() fenv.setfflag("LargeReplicatorEnabled9", "true") end)
-    pcall(function() fenv.setfflag("AngularVelociryLimit", "360") end)
-    pcall(function() fenv.setfflag("TimestepArbiterVelocityCriteriaThresholdTwoDt", "2147483646") end)
-    pcall(function() fenv.setfflag("S2PhysicsSenderRate", "15000") end)
-    pcall(function() fenv.setfflag("DisableDPIScale", "true") end)
-    pcall(function() fenv.setfflag("MaxDataPacketPerSend", "2147483647") end)
-    pcall(function() fenv.setfflag("ServerMaxBandwith", "52") end)
-    pcall(function() fenv.setfflag("PhysicsSenderMaxBandwidthBps", "20000") end)
-    pcall(function() fenv.setfflag("MaxTimestepMultiplierBuoyancy", "2147483647") end)
-    pcall(function() fenv.setfflag("SimOwnedNOUCountThresholdMillionth", "2147483647") end)
-    pcall(function() fenv.setfflag("MaxMissedWorldStepsRemembered", "-2147483648") end)
-    pcall(function() fenv.setfflag("CheckPVDifferencesForInterpolationMinVelThresholdStudsPerSecHundredth", "1") end)
-    pcall(function() fenv.setfflag("StreamJobNOUVolumeLengthCap", "2147483647") end)
-    pcall(function() fenv.setfflag("DebugSendDistInSteps", "-2147483648") end)
-    pcall(function() fenv.setfflag("MaxTimestepMultiplierAcceleration", "2147483647") end)
-    pcall(function() fenv.setfflag("LargeReplicatorRead5", "true") end)
-    pcall(function() fenv.setfflag("SimExplicitlyCappedTimestepMultiplier", "2147483646") end)
-    pcall(function() fenv.setfflag("GameNetDontSendRedundantNumTimes", "1") end)
-    pcall(function() fenv.setfflag("CheckPVLinearVelocityIntegrateVsDeltaPositionThresholdPercent", "1") end)
-    pcall(function() fenv.setfflag("CheckPVCachedRotVelThresholdPercent", "10") end)
-    pcall(function() fenv.setfflag("LargeReplicatorSerializeRead3", "true") end)
-    pcall(function() fenv.setfflag("ReplicationFocusNouExtentsSizeCutoffForPauseStuds", "2147483647") end)
-    pcall(function() fenv.setfflag("NextGenReplicatorEnabledWrite4", "true") end)
-    pcall(function() fenv.setfflag("CheckPVDifferencesForInterpolationMinRotVelThresholdRadsPerSecHundredth", "1") end)
-    pcall(function() fenv.setfflag("GameNetDontSendRedundantDeltaPositionMillionth", "1") end)
-    pcall(function() fenv.setfflag("InterpolationFrameVelocityThresholdMillionth", "5") end)
-    pcall(function() fenv.setfflag("StreamJobNOUVolumeCap", "2147483647") end)
-    pcall(function() fenv.setfflag("InterpolationFrameRotVelocityThresholdMillionth", "5") end)
-    pcall(function() fenv.setfflag("WorldStepMax", "30") end)
-    pcall(function() fenv.setfflag("TimestepArbiterHumanoidLinearVelThreshold", "1") end)
-    pcall(function() fenv.setfflag("InterpolationFramePositionThresholdMillionth", "5") end)
-    pcall(function() fenv.setfflag("TimestepArbiterHumanoidTurningVelThreshold", "1") end)
-    pcall(function() fenv.setfflag("MaxTimestepMultiplierContstraint", "2147483647") end)
-    pcall(function() fenv.setfflag("GameNetPVHeaderLinearVelocityZeroCutoffExponent", "-5000") end)
-    pcall(function() fenv.setfflag("CheckPVCachedVelThresholdPercent", "10") end)
-    pcall(function() fenv.setfflag("TimestepArbiterOmegaThou", "1073741823") end)
-    pcall(function() fenv.setfflag("MaxAcceptableUpdateDelay", "1") end)
-    pcall(function() fenv.setfflag("LargeReplicatorSerializeWrite4", "true") end)
-end
-
--- Main respawn desync function
-local function respawnDesync()
-    local character = LocalPlayer.Character
-    if not character then return end
+    removeFolders()
     
-    stopAllAnimations(character)
-    applyNetworkSettings()
-    
-    local humanoid = character:FindFirstChildWhichIsA("Humanoid")
-    if humanoid then
-        humanoid:ChangeState(Enum.HumanoidStateType.Dead)
-        character:ClearAllChildren()
-        
-        local tempModel = Instance.new("Model")
-        tempModel.Parent = workspace
-        LocalPlayer.Character = tempModel
-        
+    local success = doClone()
+    if success then
         task.wait(0.1)
+        animationTrickery()
         
-        LocalPlayer.Character = character
-        tempModel:Destroy()
-        
-        task.wait(0.05)
-        if character and character.Parent then
-            local newHumanoid = character:FindFirstChildWhichIsA("Humanoid")
-            if newHumanoid then
-                newHumanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        connection = RunService.PreSimulation:Connect(function(dt)
+            if player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 and oldRoot then
+                local root = player.Character.PrimaryPart or player.Character:FindFirstChild("HumanoidRootPart")
+                if root then
+                    local cf = root.CFrame - Vector3.new(0, player.Character.Humanoid.HipHeight + (root.Size.Y / 2) - 1 + 0.3, 0)
+                    oldRoot.CFrame = cf * CFrame.Angles(math.rad(219), 0, 0)
+                    oldRoot.Velocity = root.Velocity
+                    oldRoot.CanCollide = false
+                end
             end
-        end
+        end)
+        table.insert(connections.SemiInvisible, connection)
+        
+        characterConnection = player.CharacterAdded:Connect(function(newChar)
+            if isInvisible then
+                if animTrack then animTrack:Stop(); animTrack:Destroy(); animTrack = nil end
+                if connection then connection:Disconnect() end
+                revertClone()
+                removeFolders()
+                isInvisible = false
+                for _, conn in ipairs(connections.SemiInvisible) do if conn then conn:Disconnect() end end
+                connections.SemiInvisible = {}
+            end
+        end)
+        table.insert(connections.SemiInvisible, characterConnection)
+        
+        return true
+    end
+    return false
+end
+
+local function disableInvisibility()
+    if animTrack then 
+        animTrack:Stop()
+        animTrack:Destroy()
+        animTrack = nil
     end
     
-    -- Initialize ESP after desync
-    task.wait(0.5)
-    initializeESP()
+    if connection then connection:Disconnect() end
+    if characterConnection then characterConnection:Disconnect() end
+    
+    revertClone()
+    removeFolders()
 end
 
 -- ==================== NEW FUNCTIONS ====================
@@ -1795,8 +1813,8 @@ tpSound.Volume = 1
 tpSound.Looped = false
 tpSound.Parent = SoundService
 
--- Toggle Button 1 - Perm Desync
-local toggleButton = createToggleButton(mainFrame, "PermDesync", "Perm Desync", UDim2.new(0.5, -80, 0, 20), UDim2.new(0, 160, 0, 32))
+-- Toggle Button 1 - Semi Invisible (DIUBAH DARI Perm Desync)
+local toggleButton = createToggleButton(mainFrame, "SemiInvisible", "Semi Invisible", UDim2.new(0.5, -80, 0, 20), UDim2.new(0, 160, 0, 32))
 local isToggled = false
 
 toggleButton.MouseButton1Click:Connect(function()
@@ -1812,8 +1830,8 @@ toggleButton.MouseButton1Click:Connect(function()
         
         -- Send the notification
         StarterGui:SetCore("SendNotification", {
-            Title = "Desync";
-            Text = "Desync Successfull";
+            Title = "Semi Invisible";
+            Text = "Invisibility Activated";
             Duration = 5;
         })
         
@@ -1822,8 +1840,11 @@ toggleButton.MouseButton1Click:Connect(function()
             initializeESPFolder()
         end
         
-        -- Start respawn desync
-        respawnDesync()
+        -- Start invisibility
+        if enableInvisibility() then
+            isInvisible = true
+            respawnDesyncEnabled = true
+        end
         
         -- Start ESP update loop
         if not respawnDesyncConnection then
@@ -1833,12 +1854,14 @@ toggleButton.MouseButton1Click:Connect(function()
                 end
             end)
         end
-        
-        respawnDesyncEnabled = true
     else
+        -- Disable invisibility
+        disableInvisibility()
+        isInvisible = false
+        respawnDesyncEnabled = false
+        
         -- Deactivate ESP
         deactivateESP()
-        respawnDesyncEnabled = false
     end
 end)
 
@@ -2071,6 +2094,16 @@ LocalPlayer.CharacterAdded:Connect(function()
         toggleInfJump(false)
     end
     
+    -- Reset Semi Invisible on respawn
+    if isToggled then
+        isToggled = false
+        setToggleState(toggleButton, isToggled)
+        disableInvisibility()
+        isInvisible = false
+        for _, conn in ipairs(connections.SemiInvisible) do if conn then conn:Disconnect() end end
+        connections.SemiInvisible = {}
+    end
+    
     -- Reinitialize ESP if needed
     if respawnDesyncEnabled then
         task.wait(1)
@@ -2084,9 +2117,31 @@ player.CharacterRemoving:Connect(function()
     end
 end)
 
+-- Initialize Semi Invisible system
+player.CharacterAdded:Wait()
+task.wait(0.5)
+
+removeFolders()
+setupGodmode()
+
 -- Cleanup on respawn
 LocalPlayer.CharacterAdded:Connect(function()
-    stopVelocity()
+    if isInvisible then
+        disableInvisibility()
+    end
+    
+    for _, conn in ipairs(connections.SemiInvisible) do 
+        if conn then conn:Disconnect() end 
+    end
+    connections.SemiInvisible = {}
+    
+    local newChar = player.Character or player.CharacterAdded:Wait()
+    newChar:WaitForChild("Humanoid")
+    newChar:WaitForChild("HumanoidRootPart")
+    task.wait(0.5)
+    
+    removeFolders()
+    setupGodmode()
 end)
 
 -- ==================== INITIALIZATION ====================
