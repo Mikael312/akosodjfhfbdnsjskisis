@@ -1644,8 +1644,8 @@ screenGui.Parent = game.CoreGui
 
 -- Main Frame (Rounded Rectangle - Vertical Block) - DIUBAH SAIZ
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 180, 0, 320) -- DITAMBAH SAIZ
-mainFrame.Position = UDim2.new(1, -290, 0.5, -160) -- DIALIH KE ATAS
+mainFrame.Size = UDim2.new(0, 180, 0, 280) -- DITUKAR BALIK KE 280
+mainFrame.Position = UDim2.new(1, -290, 0.5, -140) -- DITUKAR BALIK KE -140
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -1812,8 +1812,8 @@ local function flashButton(button)
     button.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
     stroke.Color = Color3.fromRGB(255, 150, 150)
     
-    -- Wait for 0.3 seconds
-    task.wait(0.3)
+    -- Wait for 0.1 seconds
+    task.wait(0.1)
     
     -- Restore original colors safely
     pcall(function()
