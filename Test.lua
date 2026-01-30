@@ -1839,18 +1839,35 @@ tpSound.Looped = false
 tpSound.Parent = SoundService
 
 -- ==================== NEW SWITCH STYLE BUTTONS ====================
--- Fps Devourer Button (DIUBAH KEDUDUKAN & GAYA)
-local devourerButton = createSwitchButton(mainFrame, "FpsDevourer", "Fps Devourer", UDim2.new(0.5, -80, 0, -40), UDim2.new(0, 160, 0, 32))
-devourerButton.MouseButton1Click:Connect(function()
-    flashButton(devourerButton)
-    fpsDevourer()
+-- Variable untuk switch antara Instant Clone dan Fps Devourer
+local isInstantCloneMode = true -- Default: Instant Clone
+
+-- Main button untuk Instant Clone/Fps Devourer
+local mainSwitchButton = createToggleButton(mainFrame, "MainSwitch", "Instant Clone", UDim2.new(0.5, -80, 0, -40), UDim2.new(0, 125, 0, 32))
+
+-- Switch button untuk tukar mod
+local switchModeButton = createSwitchButton(mainFrame, "SwitchMode", "⇄", UDim2.new(0.5, 50, 0, -40), UDim2.new(0, 30, 0, 32))
+
+-- Fungsi untuk switch mod
+switchModeButton.MouseButton1Click:Connect(function()
+    isInstantCloneMode = not isInstantCloneMode
+    
+    if isInstantCloneMode then
+        mainSwitchButton.Text = "Instant Clone"
+    else
+        mainSwitchButton.Text = "Fps Devourer"
+    end
 end)
 
--- Instant Clone Button (DIUBAH DARI TP)
-local instantCloneButton = createSwitchButton(mainFrame, "InstantClone", "Instant Clone", UDim2.new(0.5, -80, 0, -5), UDim2.new(0, 160, 0, 32))
-instantCloneButton.MouseButton1Click:Connect(function()
-    flashButton(instantCloneButton)
-    performQuantumDesync()
+-- Fungsi untuk main button
+mainSwitchButton.MouseButton1Click:Connect(function()
+    flashButton(mainSwitchButton)
+    
+    if isInstantCloneMode then
+        performQuantumDesync()
+    else
+        fpsDevourer()
+    end
 end)
 
 -- Toggle Button 1 - Semi Invisible (DIUBAH DARI "Perm Desync")
