@@ -118,7 +118,7 @@ local function startFloorGrab()
     floorGrabPart.Size = Vector3.new(6, 0.5, 6)
     floorGrabPart.Anchored = true
     floorGrabPart.CanCollide = true
-    floorGrabPart.Transparency = 0
+    floorGrabPart.Transparency = 1
     floorGrabPart.Material = Enum.Material.Plastic
     floorGrabPart.Color = Color3.fromRGB(255, 200, 0)
     floorGrabPart.Parent = workspace
