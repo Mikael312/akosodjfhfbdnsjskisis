@@ -1,12 +1,3 @@
---[[
-    SIMPLE ARCADE UI 🎮 (UPDATED)
-    Rounded rectangle, draggable, arcade style
-    WITH NEW DEVOURER UI DESIGN (IMPROVED)
-    WITH NEW SEMI INVISIBLE (REPLACING RESPAWN DESYNC + SERVER POSITION ESP)
-    WITH NEW FLY/TP TO BEST FEATURE (FIXED MODULES & LOGIC)
-    WITH IMPROVED INFINITE JUMP + LOW GRAVITY (NEW)
-    WITH NEW FLY V2 FEATURE
-]]
 
 -- ==================== SERVICES ====================
 local Players = game:GetService("Players")
@@ -92,10 +83,144 @@ pcall(function()
     MutationsModule = require(ReplicatedStorage.Datas.Mutations)
 end)
 
+-- ====================================================--
+--  FUNGSI UNTUK MENCipta BUTANG TOGGLE (REKA BENTUK BAHARU)
+-- ====================================================--
+local function createToggleButton(parent, name, text, position, size)
+    -- Mencipta TextButton utama
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Size = size or UDim2.new(0, 160, 0, 32) -- Saiz default disesuaikan
+    button.Position = position
+    button.BackgroundColor3 = Color3.fromRGB(80, 0, 0) -- Warna latar belakang OFF (Merah Gelap)
+    button.BorderSizePixel = 0
+    button.Text = text
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 13
+    button.Font = Enum.Font.Arcade -- DITUKAR BALIK KE ARCADE
+    button.AutoButtonColor = false -- Mematikan kesan butang default
+    button.Parent = parent
+    
+    -- Mencipta bucu bulat (Rounded Corners)
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = button
+    
+    -- Mencipta garis luar (Outline)
+    local btnStroke = Instance.new("UIStroke")
+    btnStroke.Color = Color3.fromRGB(150, 0, 0) -- Warna garis luar OFF (Merah Sederhana)
+    btnStroke.Thickness = 0.5 -- Ketebalan garis luar OFF
+    btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    btnStroke.Parent = button
+    
+    return button
+end
+
+-- ====================================================--
+--  FUNGSI UNTUK MENGUBAH KEADAAN (ON/OFF)
+-- ====================================================--
+local function setToggleState(button, enabled)
+    local btnStroke = button:FindFirstChildOfClass("UIStroke")
+    
+    if enabled then
+        -- --- KEADAAN "ON" --- --
+        button.BackgroundColor3 = Color3.fromRGB(200, 30, 30) -- Warna latar belakang ON (Merah Cerah)
+        if btnStroke then
+            btnStroke.Color = Color3.fromRGB(255, 60, 60) -- Warna garis luar ON (Merah Terang)
+            btnStroke.Thickness = 1.0 -- Ketebalan garis luar ON (Lebih Tebal)
+        end
+    else
+        -- --- KEADAAN "OFF" --- --
+        button.BackgroundColor3 = Color3.fromRGB(80, 0, 0) -- Warna latar belakang OFF (Merah Gelap)
+        if btnStroke then
+            btnStroke.Color = Color3.fromRGB(150, 0, 0) -- Warna garis luar OFF (Merah Sederhana)
+            btnStroke.Thickness = 0.5 -- Ketebalan garis luar OFF (Nipis)
+        end
+    end
+end
+
+-- ====================================================--
+--  FUNGSI UNTUK MENCipta BUTANG SWITCH (REKA BENTUK BAHARU)
+-- ====================================================--
+local function createSwitchButton(parent, name, text, position, size)
+    -- Mencipta TextButton utama
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Size = size or UDim2.new(0, 30, 0, 32)
+    button.Position = position
+    button.BackgroundColor3 = Color3.fromRGB(50, 50, 55) -- Warna latar belakang OFF (Kelabu Gelap)
+    button.BorderSizePixel = 0
+    button.Text = text
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 18
+    button.Font = Enum.Font.Arcade -- DITUKAR BALIK KE ARCADE
+    button.AutoButtonColor = false -- Mematikan kesan butang default
+    button.Parent = parent
+    
+    -- Mencipta bucu bulat (Rounded Corners)
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.Parent = button
+    
+    -- Mencipta garis luar (Outline)
+    local btnStroke = Instance.new("UIStroke")
+    btnStroke.Color = Color3.fromRGB(80, 80, 80) -- Warna garis luar OFF (Kelabu)
+    btnStroke.Thickness = 0.5 -- Ketebalan garis luar OFF
+    btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    btnStroke.Parent = button
+    
+    return button
+end
+
+-- ====================================================--
+--  FUNGSI UNTUK MENGUBAH KEADAAN SWITCH (ON/OFF)
+-- ====================================================--
+local function setSwitchState(button, enabled)
+    local btnStroke = button:FindFirstChildOfClass("UIStroke")
+    
+    if enabled then
+        -- --- KEADAAN "ON" --- --
+        button.BackgroundColor3 = Color3.fromRGB(200, 30, 30) -- Warna latar belakang ON (Merah Cerah)
+        if btnStroke then
+            btnStroke.Color = Color3.fromRGB(255, 60, 60) -- Warna garis luar ON (Merah Terang)
+            btnStroke.Thickness = 1.0 -- Ketebalan garis luar ON (Lebih Tebal)
+        end
+    else
+        -- --- KEADAAN "OFF" --- --
+        button.BackgroundColor3 = Color3.fromRGB(50, 50, 55) -- Warna latar belakang OFF (Kelabu Gelap)
+        if btnStroke then
+            btnStroke.Color = Color3.fromRGB(80, 80, 80) -- Warna garis luar OFF (Kelabu)
+            btnStroke.Thickness = 0.5 -- Ketebalan garis luar OFF (Nipis)
+        end
+    end
+end
+
+-- ====================================================--
+--  FUNGSI UNTUK KELIPKAN BUTANG (FLASH EFFECT)
+-- ====================================================--
+local function flashButton(button)
+    local stroke = button:FindFirstChildWhichIsA("UIStroke")
+    if not stroke then return end
+
+    local originalBgColor = button.BackgroundColor3
+    local originalStrokeColor = stroke.Color
+    
+    -- Set to bright red
+    button.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    stroke.Color = Color3.fromRGB(255, 150, 150)
+    
+    -- Wait for 0.1 seconds
+    task.wait(0.1)
+    
+    -- Restore original colors safely
+    pcall(function()
+        button.BackgroundColor3 = originalBgColor
+        stroke.Color = originalStrokeColor
+    end)
+end
+
 -- ==================== STEAL FLOOR FUNCTIONS ====================
--- ========================================
--- UPDATE HUMANOID ROOT PART
--- ========================================
+
 local function updateHumanoidRootPart()
     local character = LocalPlayer.Character
     if character then
@@ -1701,143 +1826,6 @@ local gradientTweenInfo = TweenInfo.new(
 )
 
 TweenService:Create(uiGradient, gradientTweenInfo, {Rotation = 360}):Play()
--- >>>> TAMBAHAN ANIMASI GRADIEN TAMAT
-
--- ====================================================--
---  FUNGSI UNTUK MENCipta BUTANG TOGGLE (REKA BENTUK BAHARU)
--- ====================================================--
-local function createToggleButton(parent, name, text, position, size)
-    -- Mencipta TextButton utama
-    local button = Instance.new("TextButton")
-    button.Name = name
-    button.Size = size or UDim2.new(0, 160, 0, 32) -- Saiz default disesuaikan
-    button.Position = position
-    button.BackgroundColor3 = Color3.fromRGB(80, 0, 0) -- Warna latar belakang OFF (Merah Gelap)
-    button.BorderSizePixel = 0
-    button.Text = text
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = 13
-    button.Font = Enum.Font.Arcade -- DITUKAR BALIK KE ARCADE
-    button.AutoButtonColor = false -- Mematikan kesan butang default
-    button.Parent = parent
-    
-    -- Mencipta bucu bulat (Rounded Corners)
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
-    btnCorner.Parent = button
-    
-    -- Mencipta garis luar (Outline)
-    local btnStroke = Instance.new("UIStroke")
-    btnStroke.Color = Color3.fromRGB(150, 0, 0) -- Warna garis luar OFF (Merah Sederhana)
-    btnStroke.Thickness = 0.5 -- Ketebalan garis luar OFF
-    btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    btnStroke.Parent = button
-    
-    return button
-end
-
--- ====================================================--
---  FUNGSI UNTUK MENGUBAH KEADAAN (ON/OFF)
--- ====================================================--
-local function setToggleState(button, enabled)
-    local btnStroke = button:FindFirstChildOfClass("UIStroke")
-    
-    if enabled then
-        -- --- KEADAAN "ON" --- --
-        button.BackgroundColor3 = Color3.fromRGB(200, 30, 30) -- Warna latar belakang ON (Merah Cerah)
-        if btnStroke then
-            btnStroke.Color = Color3.fromRGB(255, 60, 60) -- Warna garis luar ON (Merah Terang)
-            btnStroke.Thickness = 1.0 -- Ketebalan garis luar ON (Lebih Tebal)
-        end
-    else
-        -- --- KEADAAN "OFF" --- --
-        button.BackgroundColor3 = Color3.fromRGB(80, 0, 0) -- Warna latar belakang OFF (Merah Gelap)
-        if btnStroke then
-            btnStroke.Color = Color3.fromRGB(150, 0, 0) -- Warna garis luar OFF (Merah Sederhana)
-            btnStroke.Thickness = 0.5 -- Ketebalan garis luar OFF (Nipis)
-        end
-    end
-end
-
--- ====================================================--
---  FUNGSI UNTUK MENCipta BUTANG SWITCH (REKA BENTUK BAHARU)
--- ====================================================--
-local function createSwitchButton(parent, name, text, position, size)
-    -- Mencipta TextButton utama
-    local button = Instance.new("TextButton")
-    button.Name = name
-    button.Size = size or UDim2.new(0, 30, 0, 32)
-    button.Position = position
-    button.BackgroundColor3 = Color3.fromRGB(50, 50, 55) -- Warna latar belakang OFF (Kelabu Gelap)
-    button.BorderSizePixel = 0
-    button.Text = text
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = 18
-    button.Font = Enum.Font.Arcade -- DITUKAR BALIK KE ARCADE
-    button.AutoButtonColor = false -- Mematikan kesan butang default
-    button.Parent = parent
-    
-    -- Mencipta bucu bulat (Rounded Corners)
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
-    btnCorner.Parent = button
-    
-    -- Mencipta garis luar (Outline)
-    local btnStroke = Instance.new("UIStroke")
-    btnStroke.Color = Color3.fromRGB(80, 80, 80) -- Warna garis luar OFF (Kelabu)
-    btnStroke.Thickness = 0.5 -- Ketebalan garis luar OFF
-    btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    btnStroke.Parent = button
-    
-    return button
-end
-
--- ====================================================--
---  FUNGSI UNTUK MENGUBAH KEADAAN SWITCH (ON/OFF)
--- ====================================================--
-local function setSwitchState(button, enabled)
-    local btnStroke = button:FindFirstChildOfClass("UIStroke")
-    
-    if enabled then
-        -- --- KEADAAN "ON" --- --
-        button.BackgroundColor3 = Color3.fromRGB(200, 30, 30) -- Warna latar belakang ON (Merah Cerah)
-        if btnStroke then
-            btnStroke.Color = Color3.fromRGB(255, 60, 60) -- Warna garis luar ON (Merah Terang)
-            btnStroke.Thickness = 1.0 -- Ketebalan garis luar ON (Lebih Tebal)
-        end
-    else
-        -- --- KEADAAN "OFF" --- --
-        button.BackgroundColor3 = Color3.fromRGB(50, 50, 55) -- Warna latar belakang OFF (Kelabu Gelap)
-        if btnStroke then
-            btnStroke.Color = Color3.fromRGB(80, 80, 80) -- Warna garis luar OFF (Kelabu)
-            btnStroke.Thickness = 0.5 -- Ketebalan garis luar OFF (Nipis)
-        end
-    end
-end
-
--- ====================================================--
---  FUNGSI UNTUK KELIPKAN BUTANG (FLASH EFFECT)
--- ====================================================--
-local function flashButton(button)
-    local stroke = button:FindFirstChildWhichIsA("UIStroke")
-    if not stroke then return end
-
-    local originalBgColor = button.BackgroundColor3
-    local originalStrokeColor = stroke.Color
-    
-    -- Set to bright red
-    button.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    stroke.Color = Color3.fromRGB(255, 150, 150)
-    
-    -- Wait for 0.1 seconds
-    task.wait(0.1)
-    
-    -- Restore original colors safely
-    pcall(function()
-        button.BackgroundColor3 = originalBgColor
-        stroke.Color = originalStrokeColor
-    end)
-end
 
 -- Create Sound Object
 local desyncSound = Instance.new("Sound")
