@@ -1489,6 +1489,7 @@ local function getRoot(char)
 end
 
 local function NOFLY()
+local function NOFLY()
     if mfly1 then
         mfly1:Disconnect()
         mfly1 = nil
@@ -1516,8 +1517,17 @@ local function NOFLY()
     end
     
     FLYING = false
-    stopAutoGrapple() -- Pastikan ini dipanggil
-end
+    stopAutoGrapple()
+    
+    -- TAMBAHAN: Auto off toggle button (SAFETY FALLBACK)
+    if isToggled7 then
+        isToggled7 = false
+        -- Update button visual kalau function ada
+        pcall(function()
+            setToggleState(toggleButton7, isToggled7)
+        end)
+    end
+    end
 
 local function startVehicleFly()
     FLYING = true
@@ -1620,14 +1630,19 @@ local function startVehicleFly()
     startAutoGrapple()
     
     -- Check stealing attribute
-    stealCheckConnection = RunService.Heartbeat:Connect(function()
-        local isStealingNow = player:GetAttribute("Stealing")
+stealCheckConnection = RunService.Heartbeat:Connect(function()
+    local isStealingNow = player:GetAttribute("Stealing")
+    
+    if isStealingNow == true then
+        NOFLY()
         
-        if isStealingNow == true then
-            NOFLY()
+        -- AUTO OFF TOGGLE BUTTON (TAMBAHAN BARU)
+        if isToggled7 then
+            isToggled7 = false
+            setToggleState(toggleButton7, isToggled7)
         end
-    end)
-end
+    end
+end)
 
 -- ==================== UI CREATION ====================
 for _, gui in pairs(game.CoreGui:GetChildren()) do
