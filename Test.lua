@@ -1077,7 +1077,7 @@ local function velocityFlightToPet()
     
     isFlyingToBest = true
     
-    local baseSpeed = 200
+    local baseSpeed = 185
     
     velocityConnection = RunService.Heartbeat:Connect(function()
         if not isFlyingToBest then
