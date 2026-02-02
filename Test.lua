@@ -1,4 +1,3 @@
-
 -- ==================== SERVICES ====================
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1758,10 +1757,11 @@ local function startVehicleFly()
 stealCheckConnection = RunService.Heartbeat:Connect(function()
     local isStealingNow = player:GetAttribute("Stealing")
     
-    if isStealingNow == true then
-        NOFLY()  -- Ni dah handle auto-off toggle, tak perlu lagi
-    end
-end)
+        if isStealingNow == true then
+            NOFLY()  -- Cukup ni sahaja
+        end
+    end)
+end  -- <-- TAMBAH `end` YANG MISSING NI!
 
 -- ==================== UI CREATION ====================
 for _, gui in pairs(game.CoreGui:GetChildren()) do
