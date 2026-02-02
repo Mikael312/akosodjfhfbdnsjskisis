@@ -1759,15 +1759,7 @@ stealCheckConnection = RunService.Heartbeat:Connect(function()
     local isStealingNow = player:GetAttribute("Stealing")
     
     if isStealingNow == true then
-        NOFLY()
-        
-        -- AUTO OFF TOGGLE BUTTON (TAMBAHAN BARU)
-        if isToggled7 and toggleButton7 then
-            isToggled7 = false
-            pcall(function()
-                setToggleState(toggleButton7, isToggled7)
-            end)
-        end
+        NOFLY()  -- Ni dah handle auto-off toggle, tak perlu lagi
     end
 end)
 
