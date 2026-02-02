@@ -75,6 +75,8 @@ local mfly2 = nil
 local stealCheckConnection = nil
 local playerModule = nil
 local controlModule = nil
+local isToggled7 = false  -- <-- TAMBAH INI (DECLARE AWAL)
+local toggleButton7 = nil
 
 pcall(function()
     playerModule = require(player.PlayerScripts:WaitForChild("PlayerModule"))
@@ -1489,7 +1491,6 @@ local function getRoot(char)
 end
 
 local function NOFLY()
-local function NOFLY()
     if mfly1 then
         mfly1:Disconnect()
         mfly1 = nil
@@ -1520,14 +1521,13 @@ local function NOFLY()
     stopAutoGrapple()
     
     -- TAMBAHAN: Auto off toggle button (SAFETY FALLBACK)
-    if isToggled7 then
+ if isToggled7 and toggleButton7 then
         isToggled7 = false
-        -- Update button visual kalau function ada
         pcall(function()
             setToggleState(toggleButton7, isToggled7)
         end)
     end
-    end
+end
 
 local function startVehicleFly()
     FLYING = true
@@ -1637,9 +1637,11 @@ stealCheckConnection = RunService.Heartbeat:Connect(function()
         NOFLY()
         
         -- AUTO OFF TOGGLE BUTTON (TAMBAHAN BARU)
-        if isToggled7 then
+        if isToggled7 and toggleButton7 then
             isToggled7 = false
-            setToggleState(toggleButton7, isToggled7)
+            pcall(function()
+                setToggleState(toggleButton7, isToggled7)
+            end)
         end
     end
 end)
@@ -1999,8 +2001,8 @@ end)
 
 -- ==================== NEW FLY V2 TOGGLE BUTTON ====================
 -- Toggle Button 7 - Fly V2 (DIUBAH KEDUDUKAN)
-local toggleButton7 = createToggleButton(mainFrame, "FlyV2", "Fly V2", UDim2.new(0.5, -80, 0, 170), UDim2.new(0, 160, 0, 32))
-local isToggled7 = false
+toggleButton7 = createToggleButton(mainFrame, "FlyV2", "Fly V2", UDim2.new(0.5, -80, 0, 170), UDim2.new(0, 160, 0, 32))
+-- isToggled7 dah declare di bahagian VARIABLES, tak perlu declare lagi
 
 toggleButton7.MouseButton1Click:Connect(function()
     isToggled7 = not isToggled7
