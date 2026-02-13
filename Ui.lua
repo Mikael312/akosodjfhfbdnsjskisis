@@ -14,11 +14,12 @@ ConfigSystem.ConfigFile = "NightmareV1_Config.json"
 
 -- Default config
 ConfigSystem.DefaultConfig = {
-	InvisPanel = false,  -- ✅ ADD COMMA
+	InvisPanel = false,
 	InfJump = false,
 	Speed = false,
 	StealFloor = false,
-	InstaFloor = false
+	InstaFloor = false,
+	AntiLag = false  -- ✅ ADD THIS
 }
 
 -- Load config dari file
@@ -267,6 +268,253 @@ function showNotification(message)
 			removeNotification(notifData)
 		end
 	end)
+end
+
+-- ========== ANTI LAG SYSTEM ==========
+local CONFIG = {
+	ANTI_LAG_ENABLED = false
+}
+
+local ANTI_LAG = {}
+local antiLagRunning = false
+local antiLagConnections = {}
+local cleanedCharacters = {}
+
+local function destroyAllEquippableItems(character)
+    if not character then return end
+    if not CONFIG.ANTI_LAG_ENABLED then return end
+    
+    pcall(function()
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("Accessory") or child:IsA("Hat") then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("Shirt") or child:IsA("Pants") or child:IsA("ShirtGraphic") then
+                child:Destroy()
+            end
+        end
+        
+        local bodyColors = character:FindFirstChildOfClass("BodyColors")
+        if bodyColors then
+            bodyColors:Destroy()
+        end
+        
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("CharacterMesh") then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child.ClassName == "LayeredClothing" or child.ClassName == "WrapLayer" then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("BasePart") then
+                local mesh = child:FindFirstChildOfClass("SpecialMesh")
+                if mesh then
+                    mesh:Destroy()
+                end
+            end
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("ParticleEmitter") or child:IsA("Trail") or child:IsA("Beam") then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("PointLight") or child:IsA("SpotLight") or child:IsA("SurfaceLight") then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("Fire") or child:IsA("Smoke") or child:IsA("Sparkles") then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("Highlight") then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("Decal") or child:IsA("Texture") then
+                if not (child.Name == "face" and child.Parent and child.Parent.Name == "Head") then
+                    child:Destroy()
+                end
+            end
+        end
+    end)
+end
+
+local function destroyBackpackTools(player)
+    if not CONFIG.ANTI_LAG_ENABLED then return end
+    
+    pcall(function()
+        local backpack = player:FindFirstChild("Backpack")
+        if backpack then
+            for _, tool in ipairs(backpack:GetChildren()) do
+                if tool:IsA("Tool") then
+                    for _, desc in ipairs(tool:GetDescendants()) do
+                        if desc:IsA("ParticleEmitter") or desc:IsA("Trail") or desc:IsA("Beam") or
+                           desc:IsA("SpecialMesh") or desc:IsA("PointLight") or desc:IsA("SpotLight") or
+                           desc:IsA("Fire") or desc:IsA("Smoke") or desc:IsA("Sparkles") then
+                            desc:Destroy()
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function destroyEquippedTools(character)
+    if not character then return end
+    if not CONFIG.ANTI_LAG_ENABLED then return end
+    
+    pcall(function()
+        for _, tool in ipairs(character:GetChildren()) do
+            if tool:IsA("Tool") then
+                for _, desc in ipairs(tool:GetDescendants()) do
+                    if desc:IsA("ParticleEmitter") or desc:IsA("Trail") or desc:IsA("Beam") or
+                       desc:IsA("SpecialMesh") or desc:IsA("PointLight") or desc:IsA("SpotLight") or
+                       desc:IsA("Fire") or desc:IsA("Smoke") or desc:IsA("Sparkles") then
+                        desc:Destroy()
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function antiLagCleanCharacter(char)
+    if not char then return end
+    
+    destroyAllEquippableItems(char)
+    destroyEquippedTools(char)
+    cleanedCharacters[char] = true
+end
+
+local function antiLagDisconnectAll()
+    for _, conn in ipairs(antiLagConnections) do
+        if typeof(conn) == "RBXScriptConnection" then
+            conn:Disconnect()
+        end
+    end
+    antiLagConnections = {}
+    cleanedCharacters = {}
+end
+
+function ANTI_LAG.Enable()
+    if antiLagRunning then return end
+    antiLagRunning = true
+    CONFIG.ANTI_LAG_ENABLED = true
+    
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.Character then
+            antiLagCleanCharacter(plr.Character)
+            destroyBackpackTools(plr)
+        end
+        
+        if plr.Backpack then
+            table.insert(antiLagConnections, plr.Backpack.ChildAdded:Connect(function()
+                if antiLagRunning and CONFIG.ANTI_LAG_ENABLED then
+                    task.wait(0.1)
+                    destroyBackpackTools(plr)
+                end
+            end))
+        end
+    end
+    
+    table.insert(antiLagConnections, Players.PlayerAdded:Connect(function(plr)
+        table.insert(antiLagConnections, plr.CharacterAdded:Connect(function(char)
+            if not antiLagRunning then return end
+            task.wait(0.5)
+            antiLagCleanCharacter(char)
+            destroyBackpackTools(plr)
+            
+            table.insert(antiLagConnections, char.ChildAdded:Connect(function(child)
+                if not antiLagRunning or not CONFIG.ANTI_LAG_ENABLED then return end
+                task.wait(0.1)
+                
+                if child:IsA("Accessory") or child:IsA("Hat") or child:IsA("Shirt") or 
+                   child:IsA("Pants") or child:IsA("ShirtGraphic") then
+                    child:Destroy()
+                elseif child:IsA("Tool") then
+                    destroyEquippedTools(char)
+                end
+            end))
+        end))
+        
+        if plr.Character then
+            antiLagCleanCharacter(plr.Character)
+            destroyBackpackTools(plr)
+        end
+        
+        if plr.Backpack then
+            table.insert(antiLagConnections, plr.Backpack.ChildAdded:Connect(function()
+                if antiLagRunning and CONFIG.ANTI_LAG_ENABLED then
+                    task.wait(0.1)
+                    destroyBackpackTools(plr)
+                end
+            end))
+        end
+    end))
+    
+    for _, plr in ipairs(Players:GetPlayers()) do
+        table.insert(antiLagConnections, plr.CharacterAdded:Connect(function(char)
+            if antiLagRunning and CONFIG.ANTI_LAG_ENABLED then
+                task.wait(0.5)
+                antiLagCleanCharacter(char)
+                destroyBackpackTools(plr)
+                
+                table.insert(antiLagConnections, char.ChildAdded:Connect(function(child)
+                    if not antiLagRunning or not CONFIG.ANTI_LAG_ENABLED then return end
+                    task.wait(0.1)
+                    
+                    if child:IsA("Accessory") or child:IsA("Hat") or child:IsA("Shirt") or 
+                       child:IsA("Pants") or child:IsA("ShirtGraphic") then
+                        child:Destroy()
+                    elseif child:IsA("Tool") then
+                        destroyEquippedTools(char)
+                    end
+                end))
+            end
+        end))
+    end
+    
+    table.insert(antiLagConnections, task.spawn(function()
+        while antiLagRunning and CONFIG.ANTI_LAG_ENABLED do
+            task.wait(3)
+            
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr.Character and not cleanedCharacters[plr.Character] then
+                    antiLagCleanCharacter(plr.Character)
+                    destroyBackpackTools(plr)
+                end
+            end
+        end
+    end))
+    
+    showNotification("Anti Lag: Enabled")
+end
+
+function ANTI_LAG.Disable()
+    if not antiLagRunning then return end
+    antiLagRunning = false
+    CONFIG.ANTI_LAG_ENABLED = false
+    antiLagDisconnectAll()
+    showNotification("Anti Lag: Disabled")
 end
 
 -- Fungsi untuk melindungi GUI dari sync/detection
@@ -1198,6 +1446,127 @@ rejoinButton.MouseButton1Click:Connect(function()
     
     local TeleportService = game:GetService("TeleportService")
     TeleportService:Teleport(game.PlaceId, player)
+end)
+
+-- ========== ANTI LAG TOGGLE UNTUK MISC TAB ==========
+-- Buat Toggle Frame untuk Misc Tab
+local antiLagToggleFrame = Instance.new("Frame")
+antiLagToggleFrame.Name = "AntiLagToggle"
+antiLagToggleFrame.Size = UDim2.new(1, -20, 0, 35)
+antiLagToggleFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+antiLagToggleFrame.BackgroundTransparency = 0.25
+antiLagToggleFrame.BorderSizePixel = 0
+antiLagToggleFrame.ClipsDescendants = false
+antiLagToggleFrame.Parent = tabFrames["Misc"]
+
+-- Rounded Corner 5px
+local antiLagCorner = Instance.new("UICorner")
+antiLagCorner.CornerRadius = UDim.new(0, 5)
+antiLagCorner.Parent = antiLagToggleFrame
+
+-- Outline Gradient
+local antiLagStroke = Instance.new("UIStroke")
+antiLagStroke.Color = Color3.fromRGB(180, 0, 0)
+antiLagStroke.Thickness = 1.5
+antiLagStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+antiLagStroke.Parent = antiLagToggleFrame
+
+-- Gradient untuk Stroke
+local antiLagGradient = Instance.new("UIGradient")
+antiLagGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+antiLagGradient.Rotation = 0
+antiLagGradient.Parent = antiLagStroke
+
+-- Text Label "Anti Lag"
+local antiLagLabel = Instance.new("TextLabel")
+antiLagLabel.Name = "AntiLagLabel"
+antiLagLabel.Size = UDim2.new(0, 100, 1, 0)
+antiLagLabel.Position = UDim2.new(0, 10, 0, 0)
+antiLagLabel.BackgroundTransparency = 1
+antiLagLabel.Text = "Anti Lag"
+antiLagLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+antiLagLabel.Font = Enum.Font.GothamMedium
+antiLagLabel.TextSize = 12
+antiLagLabel.TextXAlignment = Enum.TextXAlignment.Left
+antiLagLabel.TextTruncate = Enum.TextTruncate.AtEnd
+antiLagLabel.Parent = antiLagToggleFrame
+
+-- Toggle Background
+local antiLagToggleBg = Instance.new("Frame")
+antiLagToggleBg.Name = "ToggleBg"
+antiLagToggleBg.Size = UDim2.new(0, 35, 0, 18)
+antiLagToggleBg.Position = UDim2.new(1, -45, 0.5, -9)
+antiLagToggleBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+antiLagToggleBg.BorderSizePixel = 0
+antiLagToggleBg.Parent = antiLagToggleFrame
+
+local antiLagToggleBgCorner = Instance.new("UICorner")
+antiLagToggleBgCorner.CornerRadius = UDim.new(1, 0)
+antiLagToggleBgCorner.Parent = antiLagToggleBg
+
+local antiLagToggleBgGradient = Instance.new("UIGradient")
+antiLagToggleBgGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+antiLagToggleBgGradient.Rotation = 0
+antiLagToggleBgGradient.Parent = antiLagToggleBg
+
+-- Toggle Circle
+local antiLagToggleCircle = Instance.new("Frame")
+antiLagToggleCircle.Name = "ToggleCircle"
+antiLagToggleCircle.Size = UDim2.new(0, 14, 0, 14)
+antiLagToggleCircle.Position = UDim2.new(0, 2, 0.5, -7)
+antiLagToggleCircle.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+antiLagToggleCircle.BorderSizePixel = 0
+antiLagToggleCircle.Parent = antiLagToggleBg
+
+local antiLagToggleCircleCorner = Instance.new("UICorner")
+antiLagToggleCircleCorner.CornerRadius = UDim.new(1, 0)
+antiLagToggleCircleCorner.Parent = antiLagToggleCircle
+
+-- Toggle Button
+local antiLagToggleButton = Instance.new("TextButton")
+antiLagToggleButton.Name = "ToggleButton"
+antiLagToggleButton.Size = UDim2.new(1, 0, 1, 0)
+antiLagToggleButton.Position = UDim2.new(0, 0, 0, 0)
+antiLagToggleButton.BackgroundTransparency = 1
+antiLagToggleButton.Text = ""
+antiLagToggleButton.Parent = antiLagToggleFrame
+
+-- Load config dan set toggle state
+local antiLagEnabled = currentConfig.AntiLag or false
+
+-- Update visual berdasarkan saved config
+if antiLagEnabled then
+	antiLagToggleCircle.Position = UDim2.new(1, -16, 0.5, -7)
+	ANTI_LAG.Enable()
+end
+
+-- Toggle Functionality dengan CONFIG SAVE
+antiLagToggleButton.MouseButton1Click:Connect(function()
+	antiLagEnabled = not antiLagEnabled
+	
+	local targetPos
+	if antiLagEnabled then
+		targetPos = UDim2.new(1, -16, 0.5, -7)
+		ANTI_LAG.Enable()
+	else
+		targetPos = UDim2.new(0, 2, 0.5, -7)
+		ANTI_LAG.Disable()
+	end
+	
+	-- Tween circle movement
+	local circleTween = TweenService:Create(antiLagToggleCircle, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = targetPos
+	})
+	circleTween:Play()
+	
+	-- SAVE TO CONFIG
+	ConfigSystem:UpdateSetting(currentConfig, "AntiLag", antiLagEnabled)
 end)
 
 -- Function untuk switch tab dengan animation
