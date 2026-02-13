@@ -15,11 +15,17 @@ ConfigSystem.ConfigFile = "NightmareV1_Config.json"
 -- Default config
 ConfigSystem.DefaultConfig = {
 	InvisPanel = false,
+	-- Quick Panel Toggles
 	InfJump = false,
 	Speed = false,
 	StealFloor = false,
 	InstaFloor = false,
-	AntiLag = false  -- ✅ ADD THIS
+	-- Misc Tab Toggles
+	AntiLag = false,
+	AntiDebuff = false,     -- ADD
+	AntiRagdoll = false,    -- ADD
+	XrayBase = false,       -- ADD
+	Optimizer = false       -- ADD
 }
 
 -- Load config dari file
@@ -603,7 +609,7 @@ end
 
 -- ========== SPEED SYSTEM ==========
 local speedConn
-local baseSpeed = 27
+local baseSpeed = 28
 local speedEnabled = false
 
 local function GetCharacter()
@@ -661,6 +667,640 @@ local function toggleSpeed(enabled)
     else
         stopSpeedControl()
     end
+end
+
+-- ========== ANTI DEBUFF SYSTEM ==========
+local antiBeeEnabled = false
+local antiBoogieEnabled = false
+local isEventHandlerActive = false
+local unifiedConnection = nil
+local originalConnections = {}
+local heartbeatConnection = nil
+local animationPlayedConnection = nil
+local BOOGIE_ANIMATION_ID = "109061983885712"
+
+local function updateUseItemEventHandler()
+    local success, Event = pcall(function()
+        return require(ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Net")):RemoteEvent("UseItem")
+    end)
+    
+    if not success or not Event then
+        warn("Could not find UseItem event. Anti-Debuff feature will not work.")
+        return
+    end
+    
+    if not antiBeeEnabled and not antiBoogieEnabled then
+        if isEventHandlerActive then
+            if unifiedConnection then
+                unifiedConnection:Disconnect()
+                unifiedConnection = nil
+            end
+            for _, conn in pairs(originalConnections) do
+                pcall(function()
+                    conn:Enable()
+                end)
+            end
+            originalConnections = {}
+            isEventHandlerActive = false
+        end
+        return
+    end
+    
+    if (antiBeeEnabled or antiBoogieEnabled) and not isEventHandlerActive then
+        for i, v in pairs(getconnections(Event.OnClientEvent)) do
+            table.insert(originalConnections, v)
+            pcall(function()
+                v:Disable()
+            end)
+        end
+        
+        unifiedConnection = Event.OnClientEvent:Connect(function(Action, ...)
+            if antiBeeEnabled and Action == "Bee Attack" then
+                return
+            end
+            if antiBoogieEnabled and Action == "Boogie" then
+                return
+            end
+        end)
+        isEventHandlerActive = true
+    end
+end
+
+local function setupInstantAnimationBlocker()
+    local character = player.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    if not humanoid then return end
+    
+    local animator = humanoid:FindFirstChildOfClass("Animator")
+    if not animator then return end
+    
+    if animationPlayedConnection then animationPlayedConnection:Disconnect() end
+    
+    animationPlayedConnection = animator.AnimationPlayed:Connect(function(track)
+        if track and track.Animation then
+            if tostring(track.Animation.AnimationId):gsub("%D", "") == BOOGIE_ANIMATION_ID then
+                track:Stop(0)
+                track:Destroy()
+            end
+        end
+    end)
+end
+
+local function enableContinuousMonitoring()
+    if heartbeatConnection then heartbeatConnection:Disconnect() end
+    local lastCheck = 0
+    
+    heartbeatConnection = RunService.Heartbeat:Connect(function()
+        local now = tick()
+        if now - lastCheck < 0.03 then return end
+        lastCheck = now
+        
+        pcall(function()
+            if Lighting:FindFirstChild("DiscoEffect") then
+                Lighting.DiscoEffect:Destroy()
+            end
+            for _, v in pairs(Lighting:GetChildren()) do
+                if v:IsA("BlurEffect") then
+                    v:Destroy()
+                end
+            end
+            
+            local camera = workspace.CurrentCamera
+            if camera and camera.FieldOfView > 70 and camera.FieldOfView <= 80 then
+                camera.FieldOfView = 70
+            end
+            
+            local boogieScript = player.PlayerScripts:FindFirstChild("Boogie", true)
+            if boogieScript then
+                local boom = boogieScript:FindFirstChild("BOOM")
+                if boom and boom:IsA("Sound") and boom.Playing then
+                    boom:Stop()
+                end
+            end
+        end)
+    end)
+end
+
+local function toggleAntiBee(state)
+    antiBeeEnabled = state
+    updateUseItemEventHandler()
+end
+
+local function toggleAntiBoogie(state)
+    antiBoogieEnabled = state
+    if antiBoogieEnabled then
+        setupInstantAnimationBlocker()
+        enableContinuousMonitoring()
+    else
+        if animationPlayedConnection then
+            animationPlayedConnection:Disconnect()
+            animationPlayedConnection = nil
+        end
+        if heartbeatConnection then
+            heartbeatConnection:Disconnect()
+            heartbeatConnection = nil
+        end
+    end
+    updateUseItemEventHandler()
+end
+
+local function toggleAntiDebuff(state)
+    toggleAntiBee(state)
+    toggleAntiBoogie(state)
+end
+
+-- ========== ANTI RAGDOLL SYSTEM ==========
+local antiRagdollEnabled = false
+local humanoidWatchConnection, ragdollTimer
+local ragdollActive = false
+local ragdollConnections = {}
+local cachedCharData = {}
+local constraintLoopActive = false
+
+local function stopRagdoll()
+    if not ragdollActive then return end
+    
+    ragdollActive = false
+    local char = player.Character
+    if not char then return end
+    
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local root = char:FindFirstChild("HumanoidRootPart")
+    
+    if not hum or not root then return end
+    
+    hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+    hum.PlatformStand = false
+    
+    root.CanCollide = true
+    if root.Anchored then root.Anchored = false end
+    
+    for _, part in char:GetChildren() do
+        if part:IsA("BasePart") then
+            for _, c in part:GetChildren() do
+                if c:IsA("BallSocketConstraint") or c:IsA("HingeConstraint") then
+                    c:Destroy()
+                end
+            end
+            local motor = part:FindFirstChildWhichIsA("Motor6D")
+            if motor then
+                motor.Enabled = true
+            end
+        end
+    end
+    
+    root.Velocity = Vector3.new(0, math.min(root.Velocity.Y, 0), 0)
+    root.RotVelocity = Vector3.new(0, 0, 0)
+    workspace.CurrentCamera.CameraSubject = hum
+end
+
+local function startRagdollTimer()
+    if ragdollTimer then ragdollTimer:Disconnect() end
+    
+    ragdollActive = true
+    ragdollTimer = RunService.Heartbeat:Connect(function()
+        ragdollTimer:Disconnect()
+        ragdollTimer = nil
+        stopRagdoll()
+    end)
+end
+
+local function watchHumanoidStates(char)
+    local hum = char:WaitForChild("Humanoid")
+    
+    if humanoidWatchConnection then humanoidWatchConnection:Disconnect() end
+    
+    humanoidWatchConnection = hum.StateChanged:Connect(function(_, newState)
+        if not antiRagdollEnabled then return end
+        
+        if newState == Enum.HumanoidStateType.FallingDown or 
+           newState == Enum.HumanoidStateType.Ragdoll or 
+           newState == Enum.HumanoidStateType.Physics then
+            if not ragdollActive then
+                hum.PlatformStand = true
+                startRagdollTimer()
+            end
+        elseif newState == Enum.HumanoidStateType.GettingUp or 
+               newState == Enum.HumanoidStateType.Running or 
+               newState == Enum.HumanoidStateType.RunningNoPhysics then
+            hum.PlatformStand = false
+            if ragdollActive then
+                stopRagdoll()
+            end
+        end
+    end)
+end
+
+local function cacheCharacterData()
+    local char = player.Character
+    if not char then return false end
+    
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local root = char:FindFirstChild("HumanoidRootPart")
+    
+    if not hum or not root then return false end
+    
+    cachedCharData = {
+        character = char,
+        humanoid = hum,
+        root = root,
+    }
+    return true
+end
+
+local function disconnectAllRagdollConnections()
+    for _, conn in ipairs(ragdollConnections) do
+        if typeof(conn) == "RBXScriptConnection" then
+            pcall(function() conn:Disconnect() end)
+        end
+    end
+    ragdollConnections = {}
+end
+
+local function isRagdolled()
+    if not cachedCharData.humanoid then return false end
+    local hum = cachedCharData.humanoid
+    local state = hum:GetState()
+    
+    local ragdollStates = {
+        [Enum.HumanoidStateType.Physics] = true,
+        [Enum.HumanoidStateType.Ragdoll] = true,
+        [Enum.HumanoidStateType.FallingDown] = true
+    }
+    
+    if ragdollStates[state] then return true end
+    
+    local endTime = player:GetAttribute("RagdollEndTime")
+    if endTime then
+        local now = workspace:GetServerTimeNow()
+        if (endTime - now) > 0 then return true end
+    end
+    return false
+end
+
+local function removeRagdollConstraints()
+    if not cachedCharData.character then return end
+    for _, descendant in ipairs(cachedCharData.character:GetDescendants()) do
+        if descendant:IsA("BallSocketConstraint") or 
+           (descendant:IsA("Attachment") and descendant.Name:find("RagdollAttachment")) then
+            pcall(function() descendant:Destroy() end)
+        end
+    end
+end
+
+local function forceExitRagdoll()
+    if not cachedCharData.humanoid or not cachedCharData.root then return end
+    local hum = cachedCharData.humanoid
+    local root = cachedCharData.root
+    
+    pcall(function()
+        local now = workspace:GetServerTimeNow()
+        player:SetAttribute("RagdollEndTime", now)
+    end)
+    
+    if hum.Health > 0 then
+        hum:ChangeState(Enum.HumanoidStateType.Running)
+    end
+    
+    root.Anchored = false
+    root.AssemblyLinearVelocity = Vector3.zero
+    root.AssemblyAngularVelocity = Vector3.zero
+    hum.PlatformStand = false
+end
+
+local function constraintRemovalLoop()
+    while constraintLoopActive and cachedCharData.humanoid do
+        task.wait()
+        if isRagdolled() then
+            removeRagdollConstraints()
+            forceExitRagdoll()
+        end
+    end
+end
+
+local function setupCameraBinding()
+    if not cachedCharData.humanoid then return end
+    local conn = RunService.RenderStepped:Connect(function()
+        if not constraintLoopActive then return end
+        local cam = workspace.CurrentCamera
+        if cam and cachedCharData.humanoid and cam.CameraSubject ~= cachedCharData.humanoid then
+            cam.CameraSubject = cachedCharData.humanoid
+        end
+    end)
+    table.insert(ragdollConnections, conn)
+end
+
+local function setupCharacter(char)
+    task.wait(0.5)
+    if not antiRagdollEnabled then return end
+    
+    ragdollActive = false
+    if ragdollTimer then ragdollTimer:Disconnect(); ragdollTimer = nil end
+    
+    char:WaitForChild("Humanoid")
+    char:WaitForChild("HumanoidRootPart")
+    watchHumanoidStates(char)
+    
+    if cacheCharacterData() then
+        setupCameraBinding()
+        task.spawn(constraintRemovalLoop)
+    end
+end
+
+local function enableAntiRagdoll()
+    antiRagdollEnabled = true
+    constraintLoopActive = true
+    
+    if player.Character then setupCharacter(player.Character) end
+    
+    local charConn = player.CharacterAdded:Connect(setupCharacter)
+    table.insert(ragdollConnections, charConn)
+end
+
+local function disableAntiRagdoll()
+    antiRagdollEnabled = false
+    constraintLoopActive = false
+    ragdollActive = false
+    
+    if ragdollTimer then ragdollTimer:Disconnect(); ragdollTimer = nil end
+    if humanoidWatchConnection then humanoidWatchConnection:Disconnect(); humanoidWatchConnection = nil end
+    
+    disconnectAllRagdollConnections()
+    cachedCharData = {}
+end
+
+-- ========== XRAY BASE SYSTEM ==========
+local xrayBaseEnabled = false
+local invisibleWallsLoaded = false
+local originalTransparency = {}
+local xrayBaseConnection = nil
+
+local function isBaseWall(obj)
+    if not obj:IsA("BasePart") then return false end
+    local n = obj.Name:lower()
+    local parent = obj.Parent and obj.Parent.Name:lower() or ""
+    return n:find("base") or parent:find("base")
+end
+
+local function tryApplyInvisibleWalls()
+    if not xrayBaseEnabled or invisibleWallsLoaded then return end
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots or #plots:GetChildren() == 0 then return end
+    
+    for _, plot in pairs(plots:GetChildren()) do
+        for _, obj in pairs(plot:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Anchored and obj.CanCollide and isBaseWall(obj) then
+                if not originalTransparency[obj] then
+                    originalTransparency[obj] = obj.LocalTransparencyModifier
+                    obj.LocalTransparencyModifier = 0.85
+                end
+            end
+        end
+    end
+    invisibleWallsLoaded = true
+end
+
+local function enableXrayBase()
+    if xrayBaseEnabled then return end
+    xrayBaseEnabled = true
+    invisibleWallsLoaded = false
+    
+    task.spawn(function()
+        task.wait(0.5)
+        tryApplyInvisibleWalls()
+    end)
+    
+    xrayBaseConnection = workspace.DescendantAdded:Connect(function(obj)
+        if not xrayBaseEnabled then return end
+        task.wait(0.1)
+        if isBaseWall(obj) and obj:IsA("BasePart") and obj.Anchored and obj.CanCollide then
+            if not originalTransparency[obj] then
+                originalTransparency[obj] = obj.LocalTransparencyModifier
+                obj.LocalTransparencyModifier = 0.85
+            end
+        end
+    end)
+end
+
+local function disableXrayBase()
+    if not xrayBaseEnabled then return end
+    xrayBaseEnabled = false
+    invisibleWallsLoaded = false
+    
+    if xrayBaseConnection then xrayBaseConnection:Disconnect(); xrayBaseConnection = nil end
+    
+    for obj, value in pairs(originalTransparency) do
+        if obj and obj.Parent then
+            pcall(function() obj.LocalTransparencyModifier = value end)
+        end
+    end
+    originalTransparency = {}
+end
+
+-- ========== FPS BOOST / OPTIMIZER SYSTEM ==========
+local fpsBoostEnabled = false
+local optimizerThreads = {}
+local optimizerConnections = {}
+local originalSettings = {}
+
+local PERFORMANCE_FFLAGS = {
+    ["DFIntTaskSchedulerTargetFps"] = 999,
+    ["FFlagDebugGraphicsPreferVulkan"] = true,
+    ["FFlagDebugGraphicsDisableDirect3D11"] = true,
+    ["DFFlagDebugRenderForceTechnologyVoxel"] = true,
+    ["FFlagDisablePostFx"] = true,
+    ["FIntRenderShadowIntensity"] = 0,
+    ["DFIntTextureCompositorActiveJobs"] = 1,
+    ["DFIntDebugFRMQualityLevelOverride"] = 1,
+}
+
+local function addThread(func)
+    local t = task.spawn(func)
+    table.insert(optimizerThreads, t)
+    return t
+end
+
+local function addConnection(conn)
+    table.insert(optimizerConnections, conn)
+    return conn
+end
+
+local function storeOriginalSettings()
+    pcall(function()
+        originalSettings = {
+            streamingEnabled = workspace.StreamingEnabled,
+            streamingMinRadius = workspace.StreamingMinRadius,
+            streamingTargetRadius = workspace.StreamingTargetRadius,
+            qualityLevel = settings().Rendering.QualityLevel,
+            meshPartDetailLevel = settings().Rendering.MeshPartDetailLevel,
+            globalShadows = Lighting.GlobalShadows,
+            brightness = Lighting.Brightness,
+            fogEnd = Lighting.FogEnd,
+            technology = Lighting.Technology,
+            decoration = workspace.Terrain.Decoration,
+            waterWaveSize = workspace.Terrain.WaterWaveSize,
+            waterWaveSpeed = workspace.Terrain.WaterWaveSpeed,
+            waterReflectance = workspace.Terrain.WaterReflectance,
+            waterTransparency = workspace.Terrain.WaterTransparency,
+        }
+    end)
+end
+
+local function applyFFlags()
+    for flag, value in pairs(PERFORMANCE_FFLAGS) do
+        pcall(function()
+            setfflag(flag, tostring(value))
+        end)
+    end
+end
+
+local function nukeVisualEffects()
+    pcall(function()
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            pcall(function()
+                if obj:IsA("ParticleEmitter") then
+                    obj.Enabled = false; obj:Destroy()
+                elseif obj:IsA("Trail") then
+                    obj.Enabled = false; obj:Destroy()
+                elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then
+                    obj.Enabled = false; obj:Destroy()
+                elseif obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+                    obj.Enabled = false; obj:Destroy()
+                elseif obj:IsA("BasePart") then
+                    obj.CastShadow = false
+                    obj.Material = Enum.Material.Plastic
+                end
+            end)
+        end
+    end)
+end
+
+local function optimizeCharacter(char)
+    if not char then return end
+    task.spawn(function()
+        task.wait(0.5)
+        pcall(function()
+            for _, part in ipairs(char:GetDescendants()) do
+                pcall(function()
+                    if part:IsA("BasePart") then
+                        part.CastShadow = false
+                        part.Material = Enum.Material.Plastic
+                        part.Reflectance = 0
+                    elseif part:IsA("ParticleEmitter") or part:IsA("Trail") then
+                        part:Destroy()
+                    elseif part:IsA("PointLight") or part:IsA("SpotLight") or part:IsA("SurfaceLight") then
+                        part:Destroy()
+                    end
+                end)
+            end
+        end)
+    end)
+end
+
+local function enableFpsBoost()
+    if fpsBoostEnabled then return end
+    fpsBoostEnabled = true
+    
+    getgenv().OPTIMIZER_ACTIVE = true
+    storeOriginalSettings()
+    
+    pcall(applyFFlags)
+    
+    pcall(function()
+        workspace.StreamingEnabled = true
+        workspace.StreamingMinRadius = 64
+        workspace.StreamingTargetRadius = 256
+    end)
+    
+    pcall(function()
+        local renderSettings = settings().Rendering
+        renderSettings.QualityLevel = Enum.QualityLevel.Level01
+        renderSettings.MeshPartDetailLevel = Enum.MeshPartDetailLevel.Level01
+        
+        Lighting.GlobalShadows = false
+        Lighting.Brightness = 3
+        Lighting.FogEnd = 9e9
+        Lighting.Technology = Enum.Technology.Legacy
+        
+        for _, effect in ipairs(Lighting:GetChildren()) do
+            if effect:IsA("PostEffect") then
+                pcall(function() effect.Enabled = false; effect:Destroy() end)
+            end
+        end
+    end)
+    
+    pcall(function()
+        workspace.Terrain.WaterWaveSize = 0
+        workspace.Terrain.WaterWaveSpeed = 0
+        workspace.Terrain.WaterReflectance = 0
+        workspace.Terrain.WaterTransparency = 1
+        workspace.Terrain.Decoration = false
+    end)
+    
+    addThread(function() task.wait(1); nukeVisualEffects() end)
+    
+    addConnection(workspace.DescendantAdded:Connect(function(obj)
+        if not getgenv().OPTIMIZER_ACTIVE then return end
+        pcall(function()
+            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or
+               obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") or
+               obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+                obj:Destroy()
+            elseif obj:IsA("BasePart") then
+                obj.CastShadow = false
+                obj.Material = Enum.Material.Plastic
+            end
+        end)
+    end))
+    
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character then optimizeCharacter(p.Character) end
+        addConnection(p.CharacterAdded:Connect(function(char)
+            if getgenv().OPTIMIZER_ACTIVE then optimizeCharacter(char) end
+        end))
+    end
+    
+    addConnection(Players.PlayerAdded:Connect(function(p)
+        addConnection(p.CharacterAdded:Connect(function(char)
+            if getgenv().OPTIMIZER_ACTIVE then optimizeCharacter(char) end
+        end))
+    end))
+    
+    pcall(function() setfpscap(999) end)
+end
+
+local function disableFpsBoost()
+    if not fpsBoostEnabled then return end
+    fpsBoostEnabled = false
+    getgenv().OPTIMIZER_ACTIVE = false
+    
+    for _, thread in ipairs(optimizerThreads) do pcall(function() task.cancel(thread) end) end
+    optimizerThreads = {}
+    
+    for _, conn in ipairs(optimizerConnections) do pcall(function() conn:Disconnect() end) end
+    optimizerConnections = {}
+    
+    pcall(function()
+        workspace.StreamingEnabled = originalSettings.streamingEnabled or true
+        workspace.StreamingMinRadius = originalSettings.streamingMinRadius or 64
+        workspace.StreamingTargetRadius = originalSettings.streamingTargetRadius or 1024
+        
+        settings().Rendering.QualityLevel = originalSettings.qualityLevel or Enum.QualityLevel.Automatic
+        settings().Rendering.MeshPartDetailLevel = originalSettings.meshPartDetailLevel or Enum.MeshPartDetailLevel.DistanceBased
+        
+        Lighting.GlobalShadows = originalSettings.globalShadows ~= false
+        Lighting.Brightness = originalSettings.brightness or 1
+        Lighting.FogEnd = originalSettings.fogEnd or 100000
+        Lighting.Technology = originalSettings.technology or Enum.Technology.ShadowMap
+        
+        workspace.Terrain.WaterWaveSize = originalSettings.waterWaveSize or 0.15
+        workspace.Terrain.WaterWaveSpeed = originalSettings.waterWaveSpeed or 10
+        workspace.Terrain.WaterReflectance = originalSettings.waterReflectance or 1
+        workspace.Terrain.WaterTransparency = originalSettings.waterTransparency or 0.3
+        workspace.Terrain.Decoration = originalSettings.decoration ~= false
+    end)
 end
 
 -- Fungsi untuk melindungi GUI dari sync/detection
@@ -1713,6 +2353,430 @@ antiLagToggleButton.MouseButton1Click:Connect(function()
 	
 	-- SAVE TO CONFIG
 	ConfigSystem:UpdateSetting(currentConfig, "AntiLag", antiLagEnabled)
+end)
+
+-- ========== ANTI DEBUFF TOGGLE ==========
+local antiDebuffToggleFrame = Instance.new("Frame")
+antiDebuffToggleFrame.Name = "AntiDebuffToggle"
+antiDebuffToggleFrame.Size = UDim2.new(1, -20, 0, 35)
+antiDebuffToggleFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+antiDebuffToggleFrame.BackgroundTransparency = 0.25
+antiDebuffToggleFrame.BorderSizePixel = 0
+antiDebuffToggleFrame.ClipsDescendants = false
+antiDebuffToggleFrame.Parent = tabFrames["Misc"]
+
+local antiDebuffCorner = Instance.new("UICorner")
+antiDebuffCorner.CornerRadius = UDim.new(0, 5)
+antiDebuffCorner.Parent = antiDebuffToggleFrame
+
+local antiDebuffStroke = Instance.new("UIStroke")
+antiDebuffStroke.Color = Color3.fromRGB(180, 0, 0)
+antiDebuffStroke.Thickness = 1.5
+antiDebuffStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+antiDebuffStroke.Parent = antiDebuffToggleFrame
+
+local antiDebuffGradient = Instance.new("UIGradient")
+antiDebuffGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+antiDebuffGradient.Rotation = 0
+antiDebuffGradient.Parent = antiDebuffStroke
+
+local antiDebuffLabel = Instance.new("TextLabel")
+antiDebuffLabel.Size = UDim2.new(0, 100, 1, 0)
+antiDebuffLabel.Position = UDim2.new(0, 10, 0, 0)
+antiDebuffLabel.BackgroundTransparency = 1
+antiDebuffLabel.Text = "Anti Debuff"
+antiDebuffLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+antiDebuffLabel.Font = Enum.Font.GothamMedium
+antiDebuffLabel.TextSize = 12
+antiDebuffLabel.TextXAlignment = Enum.TextXAlignment.Left
+antiDebuffLabel.TextTruncate = Enum.TextTruncate.AtEnd
+antiDebuffLabel.Parent = antiDebuffToggleFrame
+
+local antiDebuffToggleBg = Instance.new("Frame")
+antiDebuffToggleBg.Size = UDim2.new(0, 35, 0, 18)
+antiDebuffToggleBg.Position = UDim2.new(1, -45, 0.5, -9)
+antiDebuffToggleBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+antiDebuffToggleBg.BorderSizePixel = 0
+antiDebuffToggleBg.Parent = antiDebuffToggleFrame
+
+local antiDebuffToggleBgCorner = Instance.new("UICorner")
+antiDebuffToggleBgCorner.CornerRadius = UDim.new(1, 0)
+antiDebuffToggleBgCorner.Parent = antiDebuffToggleBg
+
+local antiDebuffToggleBgGradient = Instance.new("UIGradient")
+antiDebuffToggleBgGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+antiDebuffToggleBgGradient.Rotation = 0
+antiDebuffToggleBgGradient.Parent = antiDebuffToggleBg
+
+local antiDebuffToggleCircle = Instance.new("Frame")
+antiDebuffToggleCircle.Size = UDim2.new(0, 14, 0, 14)
+antiDebuffToggleCircle.Position = UDim2.new(0, 2, 0.5, -7)
+antiDebuffToggleCircle.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+antiDebuffToggleCircle.BorderSizePixel = 0
+antiDebuffToggleCircle.Parent = antiDebuffToggleBg
+
+local antiDebuffToggleCircleCorner = Instance.new("UICorner")
+antiDebuffToggleCircleCorner.CornerRadius = UDim.new(1, 0)
+antiDebuffToggleCircleCorner.Parent = antiDebuffToggleCircle
+
+local antiDebuffToggleButton = Instance.new("TextButton")
+antiDebuffToggleButton.Size = UDim2.new(1, 0, 1, 0)
+antiDebuffToggleButton.Position = UDim2.new(0, 0, 0, 0)
+antiDebuffToggleButton.BackgroundTransparency = 1
+antiDebuffToggleButton.Text = ""
+antiDebuffToggleButton.Parent = antiDebuffToggleFrame
+
+local antiDebuffEnabled = currentConfig.AntiDebuff or false
+
+if antiDebuffEnabled then
+	antiDebuffToggleCircle.Position = UDim2.new(1, -16, 0.5, -7)
+	toggleAntiDebuff(true)
+end
+
+antiDebuffToggleButton.MouseButton1Click:Connect(function()
+	antiDebuffEnabled = not antiDebuffEnabled
+	
+	local targetPos
+	if antiDebuffEnabled then
+		targetPos = UDim2.new(1, -16, 0.5, -7)
+		toggleAntiDebuff(true)
+		showNotification("Anti Debuff: Enabled")
+	else
+		targetPos = UDim2.new(0, 2, 0.5, -7)
+		toggleAntiDebuff(false)
+		showNotification("Anti Debuff: Disabled")
+	end
+	
+	local circleTween = TweenService:Create(antiDebuffToggleCircle, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = targetPos
+	})
+	circleTween:Play()
+	
+	ConfigSystem:UpdateSetting(currentConfig, "AntiDebuff", antiDebuffEnabled)
+end)
+
+-- ========== ANTI RAGDOLL TOGGLE ==========
+local antiRagdollToggleFrame = Instance.new("Frame")
+antiRagdollToggleFrame.Name = "AntiRagdollToggle"
+antiRagdollToggleFrame.Size = UDim2.new(1, -20, 0, 35)
+antiRagdollToggleFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+antiRagdollToggleFrame.BackgroundTransparency = 0.25
+antiRagdollToggleFrame.BorderSizePixel = 0
+antiRagdollToggleFrame.ClipsDescendants = false
+antiRagdollToggleFrame.Parent = tabFrames["Misc"]
+
+local antiRagdollCorner = Instance.new("UICorner")
+antiRagdollCorner.CornerRadius = UDim.new(0, 5)
+antiRagdollCorner.Parent = antiRagdollToggleFrame
+
+local antiRagdollStroke = Instance.new("UIStroke")
+antiRagdollStroke.Color = Color3.fromRGB(180, 0, 0)
+antiRagdollStroke.Thickness = 1.5
+antiRagdollStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+antiRagdollStroke.Parent = antiRagdollToggleFrame
+
+local antiRagdollGradient = Instance.new("UIGradient")
+antiRagdollGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+antiRagdollGradient.Rotation = 0
+antiRagdollGradient.Parent = antiRagdollStroke
+
+local antiRagdollLabel = Instance.new("TextLabel")
+antiRagdollLabel.Size = UDim2.new(0, 100, 1, 0)
+antiRagdollLabel.Position = UDim2.new(0, 10, 0, 0)
+antiRagdollLabel.BackgroundTransparency = 1
+antiRagdollLabel.Text = "Anti Ragdoll"
+antiRagdollLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+antiRagdollLabel.Font = Enum.Font.GothamMedium
+antiRagdollLabel.TextSize = 12
+antiRagdollLabel.TextXAlignment = Enum.TextXAlignment.Left
+antiRagdollLabel.TextTruncate = Enum.TextTruncate.AtEnd
+antiRagdollLabel.Parent = antiRagdollToggleFrame
+
+local antiRagdollToggleBg = Instance.new("Frame")
+antiRagdollToggleBg.Size = UDim2.new(0, 35, 0, 18)
+antiRagdollToggleBg.Position = UDim2.new(1, -45, 0.5, -9)
+antiRagdollToggleBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+antiRagdollToggleBg.BorderSizePixel = 0
+antiRagdollToggleBg.Parent = antiRagdollToggleFrame
+
+local antiRagdollToggleBgCorner = Instance.new("UICorner")
+antiRagdollToggleBgCorner.CornerRadius = UDim.new(1, 0)
+antiRagdollToggleBgCorner.Parent = antiRagdollToggleBg
+
+local antiRagdollToggleBgGradient = Instance.new("UIGradient")
+antiRagdollToggleBgGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+antiRagdollToggleBgGradient.Rotation = 0
+antiRagdollToggleBgGradient.Parent = antiRagdollToggleBg
+
+local antiRagdollToggleCircle = Instance.new("Frame")
+antiRagdollToggleCircle.Size = UDim2.new(0, 14, 0, 14)
+antiRagdollToggleCircle.Position = UDim2.new(0, 2, 0.5, -7)
+antiRagdollToggleCircle.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+antiRagdollToggleCircle.BorderSizePixel = 0
+antiRagdollToggleCircle.Parent = antiRagdollToggleBg
+
+local antiRagdollToggleCircleCorner = Instance.new("UICorner")
+antiRagdollToggleCircleCorner.CornerRadius = UDim.new(1, 0)
+antiRagdollToggleCircleCorner.Parent = antiRagdollToggleCircle
+
+local antiRagdollToggleButton = Instance.new("TextButton")
+antiRagdollToggleButton.Size = UDim2.new(1, 0, 1, 0)
+antiRagdollToggleButton.Position = UDim2.new(0, 0, 0, 0)
+antiRagdollToggleButton.BackgroundTransparency = 1
+antiRagdollToggleButton.Text = ""
+antiRagdollToggleButton.Parent = antiRagdollToggleFrame
+
+local antiRagdollEnabledState = currentConfig.AntiRagdoll or false
+
+if antiRagdollEnabledState then
+	antiRagdollToggleCircle.Position = UDim2.new(1, -16, 0.5, -7)
+	enableAntiRagdoll()
+end
+
+antiRagdollToggleButton.MouseButton1Click:Connect(function()
+	antiRagdollEnabledState = not antiRagdollEnabledState
+	
+	local targetPos
+	if antiRagdollEnabledState then
+		targetPos = UDim2.new(1, -16, 0.5, -7)
+		enableAntiRagdoll()
+		showNotification("Anti Ragdoll: Enabled")
+	else
+		targetPos = UDim2.new(0, 2, 0.5, -7)
+		disableAntiRagdoll()
+		showNotification("Anti Ragdoll: Disabled")
+	end
+	
+	local circleTween = TweenService:Create(antiRagdollToggleCircle, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = targetPos
+	})
+	circleTween:Play()
+	
+	ConfigSystem:UpdateSetting(currentConfig, "AntiRagdoll", antiRagdollEnabledState)
+end)
+
+-- ========== XRAY BASE TOGGLE ==========
+local xrayBaseToggleFrame = Instance.new("Frame")
+xrayBaseToggleFrame.Name = "XrayBaseToggle"
+xrayBaseToggleFrame.Size = UDim2.new(1, -20, 0, 35)
+xrayBaseToggleFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+xrayBaseToggleFrame.BackgroundTransparency = 0.25
+xrayBaseToggleFrame.BorderSizePixel = 0
+xrayBaseToggleFrame.ClipsDescendants = false
+xrayBaseToggleFrame.Parent = tabFrames["Misc"]
+
+local xrayBaseCorner = Instance.new("UICorner")
+xrayBaseCorner.CornerRadius = UDim.new(0, 5)
+xrayBaseCorner.Parent = xrayBaseToggleFrame
+
+local xrayBaseStroke = Instance.new("UIStroke")
+xrayBaseStroke.Color = Color3.fromRGB(180, 0, 0)
+xrayBaseStroke.Thickness = 1.5
+xrayBaseStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+xrayBaseStroke.Parent = xrayBaseToggleFrame
+
+local xrayBaseGradient = Instance.new("UIGradient")
+xrayBaseGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+xrayBaseGradient.Rotation = 0
+xrayBaseGradient.Parent = xrayBaseStroke
+
+local xrayBaseLabel = Instance.new("TextLabel")
+xrayBaseLabel.Size = UDim2.new(0, 100, 1, 0)
+xrayBaseLabel.Position = UDim2.new(0, 10, 0, 0)
+xrayBaseLabel.BackgroundTransparency = 1
+xrayBaseLabel.Text = "Xray Base"
+xrayBaseLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+xrayBaseLabel.Font = Enum.Font.GothamMedium
+xrayBaseLabel.TextSize = 12
+xrayBaseLabel.TextXAlignment = Enum.TextXAlignment.Left
+xrayBaseLabel.TextTruncate = Enum.TextTruncate.AtEnd
+xrayBaseLabel.Parent = xrayBaseToggleFrame
+
+local xrayBaseToggleBg = Instance.new("Frame")
+xrayBaseToggleBg.Size = UDim2.new(0, 35, 0, 18)
+xrayBaseToggleBg.Position = UDim2.new(1, -45, 0.5, -9)
+xrayBaseToggleBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+xrayBaseToggleBg.BorderSizePixel = 0
+xrayBaseToggleBg.Parent = xrayBaseToggleFrame
+
+local xrayBaseToggleBgCorner = Instance.new("UICorner")
+xrayBaseToggleBgCorner.CornerRadius = UDim.new(1, 0)
+xrayBaseToggleBgCorner.Parent = xrayBaseToggleBg
+
+local xrayBaseToggleBgGradient = Instance.new("UIGradient")
+xrayBaseToggleBgGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+xrayBaseToggleBgGradient.Rotation = 0
+xrayBaseToggleBgGradient.Parent = xrayBaseToggleBg
+
+local xrayBaseToggleCircle = Instance.new("Frame")
+xrayBaseToggleCircle.Size = UDim2.new(0, 14, 0, 14)
+xrayBaseToggleCircle.Position = UDim2.new(0, 2, 0.5, -7)
+xrayBaseToggleCircle.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+xrayBaseToggleCircle.BorderSizePixel = 0
+xrayBaseToggleCircle.Parent = xrayBaseToggleBg
+
+local xrayBaseToggleCircleCorner = Instance.new("UICorner")
+xrayBaseToggleCircleCorner.CornerRadius = UDim.new(1, 0)
+xrayBaseToggleCircleCorner.Parent = xrayBaseToggleCircle
+
+local xrayBaseToggleButton = Instance.new("TextButton")
+xrayBaseToggleButton.Size = UDim2.new(1, 0, 1, 0)
+xrayBaseToggleButton.Position = UDim2.new(0, 0, 0, 0)
+xrayBaseToggleButton.BackgroundTransparency = 1
+xrayBaseToggleButton.Text = ""
+xrayBaseToggleButton.Parent = xrayBaseToggleFrame
+
+local xrayBaseEnabledState = currentConfig.XrayBase or false
+
+if xrayBaseEnabledState then
+	xrayBaseToggleCircle.Position = UDim2.new(1, -16, 0.5, -7)
+	enableXrayBase()
+end
+
+xrayBaseToggleButton.MouseButton1Click:Connect(function()
+	xrayBaseEnabledState = not xrayBaseEnabledState
+	
+	local targetPos
+	if xrayBaseEnabledState then
+		targetPos = UDim2.new(1, -16, 0.5, -7)
+		enableXrayBase()
+		showNotification("Xray Base: Enabled")
+	else
+		targetPos = UDim2.new(0, 2, 0.5, -7)
+		disableXrayBase()
+		showNotification("Xray Base: Disabled")
+	end
+	
+	local circleTween = TweenService:Create(xrayBaseToggleCircle, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = targetPos
+	})
+	circleTween:Play()
+	
+	ConfigSystem:UpdateSetting(currentConfig, "XrayBase", xrayBaseEnabledState)
+end)
+
+-- ========== OPTIMIZER TOGGLE ==========
+local optimizerToggleFrame = Instance.new("Frame")
+optimizerToggleFrame.Name = "OptimizerToggle"
+optimizerToggleFrame.Size = UDim2.new(1, -20, 0, 35)
+optimizerToggleFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+optimizerToggleFrame.BackgroundTransparency = 0.25
+optimizerToggleFrame.BorderSizePixel = 0
+optimizerToggleFrame.ClipsDescendants = false
+optimizerToggleFrame.Parent = tabFrames["Misc"]
+
+local optimizerCorner = Instance.new("UICorner")
+optimizerCorner.CornerRadius = UDim.new(0, 5)
+optimizerCorner.Parent = optimizerToggleFrame
+
+local optimizerStroke = Instance.new("UIStroke")
+optimizerStroke.Color = Color3.fromRGB(180, 0, 0)
+optimizerStroke.Thickness = 1.5
+optimizerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+optimizerStroke.Parent = optimizerToggleFrame
+
+local optimizerGradient = Instance.new("UIGradient")
+optimizerGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+optimizerGradient.Rotation = 0
+optimizerGradient.Parent = optimizerStroke
+
+local optimizerLabel = Instance.new("TextLabel")
+optimizerLabel.Size = UDim2.new(0, 100, 1, 0)
+optimizerLabel.Position = UDim2.new(0, 10, 0, 0)
+optimizerLabel.BackgroundTransparency = 1
+optimizerLabel.Text = "Optimizer"
+optimizerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+optimizerLabel.Font = Enum.Font.GothamMedium
+optimizerLabel.TextSize = 12
+optimizerLabel.TextXAlignment = Enum.TextXAlignment.Left
+optimizerLabel.TextTruncate = Enum.TextTruncate.AtEnd
+optimizerLabel.Parent = optimizerToggleFrame
+
+local optimizerToggleBg = Instance.new("Frame")
+optimizerToggleBg.Size = UDim2.new(0, 35, 0, 18)
+optimizerToggleBg.Position = UDim2.new(1, -45, 0.5, -9)
+optimizerToggleBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+optimizerToggleBg.BorderSizePixel = 0
+optimizerToggleBg.Parent = optimizerToggleFrame
+
+local optimizerToggleBgCorner = Instance.new("UICorner")
+optimizerToggleBgCorner.CornerRadius = UDim.new(1, 0)
+optimizerToggleBgCorner.Parent = optimizerToggleBg
+
+local optimizerToggleBgGradient = Instance.new("UIGradient")
+optimizerToggleBgGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+optimizerToggleBgGradient.Rotation = 0
+optimizerToggleBgGradient.Parent = optimizerToggleBg
+
+local optimizerToggleCircle = Instance.new("Frame")
+optimizerToggleCircle.Size = UDim2.new(0, 14, 0, 14)
+optimizerToggleCircle.Position = UDim2.new(0, 2, 0.5, -7)
+optimizerToggleCircle.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+optimizerToggleCircle.BorderSizePixel = 0
+optimizerToggleCircle.Parent = optimizerToggleBg
+
+local optimizerToggleCircleCorner = Instance.new("UICorner")
+optimizerToggleCircleCorner.CornerRadius = UDim.new(1, 0)
+optimizerToggleCircleCorner.Parent = optimizerToggleCircle
+
+local optimizerToggleButton = Instance.new("TextButton")
+optimizerToggleButton.Size = UDim2.new(1, 0, 1, 0)
+optimizerToggleButton.Position = UDim2.new(0, 0, 0, 0)
+optimizerToggleButton.BackgroundTransparency = 1
+optimizerToggleButton.Text = ""
+optimizerToggleButton.Parent = optimizerToggleFrame
+
+local optimizerEnabledState = currentConfig.Optimizer or false
+
+if optimizerEnabledState then
+	optimizerToggleCircle.Position = UDim2.new(1, -16, 0.5, -7)
+	enableFpsBoost()
+end
+
+optimizerToggleButton.MouseButton1Click:Connect(function()
+	optimizerEnabledState = not optimizerEnabledState
+	
+	local targetPos
+	if optimizerEnabledState then
+		targetPos = UDim2.new(1, -16, 0.5, -7)
+		enableFpsBoost()
+		showNotification("Optimizer: Enabled")
+	else
+		targetPos = UDim2.new(0, 2, 0.5, -7)
+		disableFpsBoost()
+		showNotification("Optimizer: Disabled")
+	end
+	
+	local circleTween = TweenService:Create(optimizerToggleCircle, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = targetPos
+	})
+	circleTween:Play()
+	
+	ConfigSystem:UpdateSetting(currentConfig, "Optimizer", optimizerEnabledState)
 end)
 
 -- Function untuk switch tab dengan animation
