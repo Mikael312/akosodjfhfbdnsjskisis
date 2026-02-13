@@ -517,6 +517,152 @@ function ANTI_LAG.Disable()
     showNotification("Anti Lag: Disabled")
 end
 
+-- ========== INF JUMP SYSTEM ==========
+local infiniteJumpEnabled = false
+local lowGravityEnabled = false
+local jumpRequestConnection = nil
+local bodyForce = nil
+local lowGravityForce = 50
+local defaultGravity = workspace.Gravity
+
+local function doJump()
+    local char = player.Character
+    if not char then return end
+    
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local rootPart = char:FindFirstChild("HumanoidRootPart")
+    
+    if hum and hum.Health > 0 and rootPart then
+        rootPart.Velocity = Vector3.new(rootPart.Velocity.X, 50, rootPart.Velocity.Z)
+    end
+end
+
+local function setupJumpRequest()
+    if jumpRequestConnection then
+        jumpRequestConnection:Disconnect()
+        jumpRequestConnection = nil
+    end
+    
+    jumpRequestConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
+        if infiniteJumpEnabled then
+            doJump()
+        end
+    end)
+end
+
+local function initializeJumpForCharacter(char)
+    local hum = char:WaitForChild("Humanoid")
+    setupJumpRequest()
+    
+    char.ChildAdded:Connect(function(child)
+        if child:IsA("Humanoid") then
+            setupJumpRequest()
+        end
+    end)
+end
+
+local function updateGravity()
+    if lowGravityEnabled then
+        local character = player.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            if bodyForce then
+                bodyForce:Destroy()
+            end
+            bodyForce = Instance.new("BodyForce")
+            bodyForce.Name = "LowGravityForce"
+            bodyForce.Parent = character.HumanoidRootPart
+            local force = (defaultGravity - lowGravityForce) * character.HumanoidRootPart:GetMass()
+            bodyForce.Force = Vector3.new(0, force, 0)
+        end
+    else
+        if bodyForce then
+            bodyForce:Destroy()
+            bodyForce = nil
+        end
+    end
+end
+
+local function toggleInfJump(enabled)
+    infiniteJumpEnabled = enabled
+    lowGravityEnabled = enabled
+    
+    if enabled then
+        local char = player.Character
+        if char then
+            initializeJumpForCharacter(char)
+        end
+        updateGravity()
+    else
+        if jumpRequestConnection then
+            jumpRequestConnection:Disconnect()
+            jumpRequestConnection = nil
+        end
+        updateGravity()
+    end
+end
+
+-- ========== SPEED SYSTEM ==========
+local speedConn
+local baseSpeed = 27
+local speedEnabled = false
+
+local function GetCharacter()
+    local Char = player.Character or player.CharacterAdded:Wait()
+    local HRP = Char:WaitForChild("HumanoidRootPart")
+    local Hum = Char:FindFirstChildOfClass("Humanoid")
+    return Char, HRP, Hum
+end
+
+local function getMovementInput()
+    local Char, HRP, Hum = GetCharacter()
+    if not Char or not HRP or not Hum then return Vector3.new(0,0,0) end
+    local moveVector = Hum.MoveDirection
+    if moveVector.Magnitude > 0.1 then
+        return Vector3.new(moveVector.X, 0, moveVector.Z).Unit
+    end
+    return Vector3.new(0,0,0)
+end
+
+local function startSpeedControl()
+    if speedConn then return end
+    speedConn = RunService.Heartbeat:Connect(function()
+        local Char, HRP, Hum = GetCharacter()
+        if not Char or not HRP or not Hum then return end
+        
+        local inputDirection = getMovementInput()
+        
+        if inputDirection.Magnitude > 0 then
+            HRP.AssemblyLinearVelocity = Vector3.new(
+                inputDirection.X * baseSpeed,
+                HRP.AssemblyLinearVelocity.Y,
+                inputDirection.Z * baseSpeed
+            )
+        else
+            HRP.AssemblyLinearVelocity = Vector3.new(0, HRP.AssemblyLinearVelocity.Y, 0)
+        end
+    end)
+end
+
+local function stopSpeedControl()
+    if speedConn then 
+        speedConn:Disconnect() 
+        speedConn = nil 
+    end
+    local _, HRP = GetCharacter()
+    if HRP then 
+        HRP.AssemblyLinearVelocity = Vector3.new(0, HRP.AssemblyLinearVelocity.Y, 0) 
+    end
+end
+
+local function toggleSpeed(enabled)
+    speedEnabled = enabled
+    if speedEnabled then
+        startSpeedControl()
+    else
+        stopSpeedControl()
+    end
+end
+
 -- Fungsi untuk melindungi GUI dari sync/detection
 local function protectGui(gui)
     if gethui then
@@ -2090,8 +2236,8 @@ quickPanelCenterDivider.BackgroundTransparency = 0.45
 quickPanelCenterDivider.BorderSizePixel = 0
 quickPanelCenterDivider.Parent = quickPanelFrame
 
--- FUNGSI UNTUK MEMBUAT TOGGLE (LEBAR DITAMBAH) DENGAN CONFIG SAVE
-local function createQuickToggle(name, configKey, yPosition)
+-- FUNGSI UNTUK MEMBUAT TOGGLE (LEBAR DITAMBAH) DENGAN CONFIG SAVE DAN CALLBACKS
+local function createQuickToggle(name, configKey, yPosition, onToggle)
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Size = UDim2.new(0, 133, 0, 30)
     toggleFrame.Position = UDim2.new(0, 11, 0, yPosition)
@@ -2160,6 +2306,10 @@ local function createQuickToggle(name, configKey, yPosition)
     if toggleEnabled then
         toggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
         toggleCircle.Position = UDim2.new(0, 20, 0.5, -6)
+        -- Call the function on startup if enabled
+        if onToggle then
+            onToggle(true)
+        end
     end
 
     toggleButton.MouseButton1Click:Connect(function()
@@ -2177,6 +2327,11 @@ local function createQuickToggle(name, configKey, yPosition)
             showNotification(name .. ": Disabled")
         end
         
+        -- Call the callback function
+        if onToggle then
+            onToggle(toggleEnabled)
+        end
+        
         -- SAVE TO CONFIG
         ConfigSystem:UpdateSetting(currentConfig, configKey, toggleEnabled)
     end)
@@ -2184,11 +2339,22 @@ local function createQuickToggle(name, configKey, yPosition)
     return toggleFrame
 end
 
--- BUAT SEMUA TOGGLE (SPACING DITAMBAH) DENGAN CONFIG KEYS
-createQuickToggle("Inf Jump", "InfJump", 10)
-createQuickToggle("Speed", "Speed", 48)
-createQuickToggle("Steal Floor", "StealFloor", 86)
-createQuickToggle("Insta Floor", "InstaFloor", 124)
+-- BUAT SEMUA TOGGLE (SPACING DITAMBAH) DENGAN CONFIG KEYS DAN CALLBACKS
+createQuickToggle("Inf Jump", "InfJump", 10, function(enabled)
+    toggleInfJump(enabled)
+end)
+
+createQuickToggle("Speed", "Speed", 48, function(enabled)
+    toggleSpeed(enabled)
+end)
+
+createQuickToggle("Steal Floor", "StealFloor", 86, function(enabled)
+    -- TODO: Add Steal Floor functionality
+end)
+
+createQuickToggle("Insta Floor", "InstaFloor", 124, function(enabled)
+    -- TODO: Add Insta Floor functionality
+end)
 
 -- BUAT BUTTON "TP TO BEST" DI SEBELAH KANAN DIVIDER TENGAH (LEBAR DITAMBAH)
 local quickPanelActionButton = Instance.new("TextButton")
