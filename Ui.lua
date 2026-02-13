@@ -1845,7 +1845,34 @@ quickPanelActionStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 quickPanelActionStroke.Parent = quickPanelActionButton
 
 quickPanelActionButton.MouseButton1Click:Connect(function()
-    showNotification("Tp to Best clicked!")
+    showNotification("Tp to Best")
+end)
+
+-- BUAT BUTTON "TP TO PRIORITY" DI SEBELAH KANAN (BAWAH TP TO BEST)
+local quickPanelPriorityButton = Instance.new("TextButton")
+quickPanelPriorityButton.Size = UDim2.new(0, 133, 0, 30)
+quickPanelPriorityButton.Position = UDim2.new(0.5, 7, 0, 48)  -- Y position 48 (bawah Tp to Best)
+quickPanelPriorityButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+quickPanelPriorityButton.BackgroundTransparency = 0.45
+quickPanelPriorityButton.BorderSizePixel = 0
+quickPanelPriorityButton.Text = "Tp to Priority"
+quickPanelPriorityButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+quickPanelPriorityButton.TextSize = 12
+quickPanelPriorityButton.Font = Enum.Font.Gotham
+quickPanelPriorityButton.Parent = quickPanelContent
+
+local quickPanelPriorityCorner = Instance.new("UICorner")
+quickPanelPriorityCorner.CornerRadius = UDim.new(0, 6)
+quickPanelPriorityCorner.Parent = quickPanelPriorityButton
+
+local quickPanelPriorityStroke = Instance.new("UIStroke")
+quickPanelPriorityStroke.Color = Color3.fromRGB(139, 0, 0)
+quickPanelPriorityStroke.Thickness = 1.0
+quickPanelPriorityStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+quickPanelPriorityStroke.Parent = quickPanelPriorityButton
+
+quickPanelPriorityButton.MouseButton1Click:Connect(function()
+    showNotification("Tp to Priority")
 end)
 
 -- Variable untuk track status minimize
