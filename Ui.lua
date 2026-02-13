@@ -686,6 +686,37 @@ function AUTO_RETRY.Disable()
 	showNotification("Auto Retry: Disabled")
 end
 
+-- DEFINE SingleHop DULU (SEBELUM AttemptHop)
+function AUTO_RETRY.SingleHop()
+	local TeleportService = game:GetService("TeleportService")
+	
+	local success, result = pcall(function()
+		local servers = HttpService:JSONDecode(
+			game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
+		)
+		
+		-- Cari server yang ada space
+		for _, server in pairs(servers.data) do
+			if server.id ~= game.JobId and server.playing < server.maxPlayers then
+				-- Server ada space, cuba teleport
+				TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, player)
+				return true
+			end
+		end
+		
+		-- Kalau semua server full
+		return false
+	end)
+	
+	if not success then
+		warn("Hop failed:", result)
+		return false
+	end
+	
+	return result
+end
+
+-- AttemptHop dipanggil LEPAS SingleHop dah defined
 function AUTO_RETRY.AttemptHop()
 	if not AUTO_RETRY.enabled then
 		-- Kalau auto retry OFF, hop sekali je
@@ -724,35 +755,6 @@ function AUTO_RETRY.AttemptHop()
 			AUTO_RETRY.retrying = false
 		end
 	end)
-end
-
-function AUTO_RETRY.SingleHop()
-	local TeleportService = game:GetService("TeleportService")
-	
-	local success, result = pcall(function()
-		local servers = HttpService:JSONDecode(
-			game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
-		)
-		
-		-- Cari server yang ada space
-		for _, server in pairs(servers.data) do
-			if server.id ~= game.JobId and server.playing < server.maxPlayers then
-				-- Server ada space, cuba teleport
-				TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, player)
-				return true
-			end
-		end
-		
-		-- Kalau semua server full
-		return false
-	end)
-	
-	if not success then
-		warn("Hop failed:", result)
-		return false
-	end
-	
-	return result
 end
 
 -- Fungsi untuk melindungi GUI dari sync/detection
