@@ -21,7 +21,9 @@ ConfigSystem.DefaultConfig = {
 	StealFloor = false,
 	InstaFloor = false,
 	-- Misc Tab Toggles
-	AntiLag = false
+	AntiLag = false,
+	-- Server Tab Toggles
+	AutoRetry = false
 }
 
 -- Load config dari file
@@ -663,6 +665,94 @@ local function toggleSpeed(enabled)
     else
         stopSpeedControl()
     end
+end
+
+-- ========== AUTO RETRY SYSTEM ==========
+local AUTO_RETRY = {
+	enabled = false,
+	retrying = false,
+	maxRetries = 50,  -- Max 50 attempts
+	retryDelay = 2    -- 2 seconds delay between retries
+}
+
+function AUTO_RETRY.Enable()
+	AUTO_RETRY.enabled = true
+	showNotification("Auto Retry: Enabled")
+end
+
+function AUTO_RETRY.Disable()
+	AUTO_RETRY.enabled = false
+	AUTO_RETRY.retrying = false
+	showNotification("Auto Retry: Disabled")
+end
+
+function AUTO_RETRY.AttemptHop()
+	if not AUTO_RETRY.enabled then
+		-- Kalau auto retry OFF, hop sekali je
+		AUTO_RETRY.SingleHop()
+		return
+	end
+	
+	-- Kalau auto retry ON, start retry loop
+	AUTO_RETRY.retrying = true
+	showNotification("Auto Retry: Starting server hop...")
+	
+	task.spawn(function()
+		local attempts = 0
+		
+		while AUTO_RETRY.retrying and AUTO_RETRY.enabled and attempts < AUTO_RETRY.maxRetries do
+			attempts = attempts + 1
+			
+			local success = AUTO_RETRY.SingleHop()
+			
+			if success then
+				-- Kalau berjaya hop, stop retry
+				AUTO_RETRY.retrying = false
+				return
+			end
+			
+			-- Kalau gagal, tunggu sikit then retry
+			if AUTO_RETRY.retrying and AUTO_RETRY.enabled then
+				showNotification("Auto Retry: Attempt " .. attempts .. "/" .. AUTO_RETRY.maxRetries)
+				task.wait(AUTO_RETRY.retryDelay)
+			end
+		end
+		
+		-- Kalau dah exceed max retries
+		if attempts >= AUTO_RETRY.maxRetries then
+			showNotification("Auto Retry: Max attempts reached!")
+			AUTO_RETRY.retrying = false
+		end
+	end)
+end
+
+function AUTO_RETRY.SingleHop()
+	local TeleportService = game:GetService("TeleportService")
+	
+	local success, result = pcall(function()
+		local servers = HttpService:JSONDecode(
+			game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
+		)
+		
+		-- Cari server yang ada space
+		for _, server in pairs(servers.data) do
+			if server.id ~= game.JobId and server.playing < server.maxPlayers then
+				-- Server ada space, cuba teleport
+				TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, player)
+				return true
+			end
+		end
+		
+		-- Kalau semua server full
+		return false
+	end)
+	
+	if not success then
+		warn("Hop failed:", result)
+		return false
+	end
+	
+	return result
 end
 
 -- Fungsi untuk melindungi GUI dari sync/detection
@@ -1507,29 +1597,12 @@ hopIcon.Image = "rbxassetid://97462463002118"
 hopIcon.ScaleType = Enum.ScaleType.Fit
 hopIcon.Parent = hopButton
 
--- Hop Server Functionality
+-- Hop Server Functionality (DENGAN AUTO RETRY SUPPORT)
 hopButton.MouseButton1Click:Connect(function()
-    showNotification("Server hopping...")
+    showNotification("Server Hopping...")
     
-    local TeleportService = game:GetService("TeleportService")
-    
-    local success, result = pcall(function()
-        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
-        
-        for _, server in pairs(servers.data) do
-            if server.id ~= game.JobId and server.playing < server.maxPlayers then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, player)
-                return
-            end
-        end
-        
-        showNotification("No available servers found!")
-    end)
-    
-    if not success then
-        warn("Failed to hop server:", result)
-        showNotification("Failed to hop server!")
-    end
+    -- Guna AUTO_RETRY system
+    AUTO_RETRY.AttemptHop()
 end)
 
 -- ========== REJOIN SERVER BUTTON (DESIGN SAMA SEPERTI JOIN SERVER) ==========
@@ -1715,6 +1788,126 @@ antiLagToggleButton.MouseButton1Click:Connect(function()
 	
 	-- SAVE TO CONFIG
 	ConfigSystem:UpdateSetting(currentConfig, "AntiLag", antiLagEnabled)
+end)
+
+-- ========== AUTO RETRY TOGGLE UNTUK SERVER TAB ==========
+local autoRetryToggleFrame = Instance.new("Frame")
+autoRetryToggleFrame.Name = "AutoRetryToggle"
+autoRetryToggleFrame.Size = UDim2.new(1, -20, 0, 35)
+autoRetryToggleFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+autoRetryToggleFrame.BackgroundTransparency = 0.25
+autoRetryToggleFrame.BorderSizePixel = 0
+autoRetryToggleFrame.ClipsDescendants = false
+autoRetryToggleFrame.Parent = tabFrames["Server"]
+
+-- Rounded Corner 5px
+local autoRetryCorner = Instance.new("UICorner")
+autoRetryCorner.CornerRadius = UDim.new(0, 5)
+autoRetryCorner.Parent = autoRetryToggleFrame
+
+-- Outline Gradient
+local autoRetryStroke = Instance.new("UIStroke")
+autoRetryStroke.Color = Color3.fromRGB(180, 0, 0)
+autoRetryStroke.Thickness = 1.5
+autoRetryStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+autoRetryStroke.Parent = autoRetryToggleFrame
+
+-- Gradient untuk Stroke
+local autoRetryGradient = Instance.new("UIGradient")
+autoRetryGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+autoRetryGradient.Rotation = 0
+autoRetryGradient.Parent = autoRetryStroke
+
+-- Text Label "Auto Retry"
+local autoRetryLabel = Instance.new("TextLabel")
+autoRetryLabel.Name = "AutoRetryLabel"
+autoRetryLabel.Size = UDim2.new(0, 100, 1, 0)
+autoRetryLabel.Position = UDim2.new(0, 10, 0, 0)
+autoRetryLabel.BackgroundTransparency = 1
+autoRetryLabel.Text = "Auto Retry"
+autoRetryLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+autoRetryLabel.Font = Enum.Font.GothamMedium
+autoRetryLabel.TextSize = 12
+autoRetryLabel.TextXAlignment = Enum.TextXAlignment.Left
+autoRetryLabel.TextTruncate = Enum.TextTruncate.AtEnd
+autoRetryLabel.Parent = autoRetryToggleFrame
+
+-- Toggle Background
+local autoRetryToggleBg = Instance.new("Frame")
+autoRetryToggleBg.Name = "ToggleBg"
+autoRetryToggleBg.Size = UDim2.new(0, 35, 0, 18)
+autoRetryToggleBg.Position = UDim2.new(1, -45, 0.5, -9)
+autoRetryToggleBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+autoRetryToggleBg.BorderSizePixel = 0
+autoRetryToggleBg.Parent = autoRetryToggleFrame
+
+local autoRetryToggleBgCorner = Instance.new("UICorner")
+autoRetryToggleBgCorner.CornerRadius = UDim.new(1, 0)
+autoRetryToggleBgCorner.Parent = autoRetryToggleBg
+
+local autoRetryToggleBgGradient = Instance.new("UIGradient")
+autoRetryToggleBgGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+autoRetryToggleBgGradient.Rotation = 0
+autoRetryToggleBgGradient.Parent = autoRetryToggleBg
+
+-- Toggle Circle
+local autoRetryToggleCircle = Instance.new("Frame")
+autoRetryToggleCircle.Name = "ToggleCircle"
+autoRetryToggleCircle.Size = UDim2.new(0, 14, 0, 14)
+autoRetryToggleCircle.Position = UDim2.new(0, 2, 0.5, -7)
+autoRetryToggleCircle.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+autoRetryToggleCircle.BorderSizePixel = 0
+autoRetryToggleCircle.Parent = autoRetryToggleBg
+
+local autoRetryToggleCircleCorner = Instance.new("UICorner")
+autoRetryToggleCircleCorner.CornerRadius = UDim.new(1, 0)
+autoRetryToggleCircleCorner.Parent = autoRetryToggleCircle
+
+-- Toggle Button
+local autoRetryToggleButton = Instance.new("TextButton")
+autoRetryToggleButton.Name = "ToggleButton"
+autoRetryToggleButton.Size = UDim2.new(1, 0, 1, 0)
+autoRetryToggleButton.Position = UDim2.new(0, 0, 0, 0)
+autoRetryToggleButton.BackgroundTransparency = 1
+autoRetryToggleButton.Text = ""
+autoRetryToggleButton.Parent = autoRetryToggleFrame
+
+-- Load config dan set toggle state
+local autoRetryEnabled = currentConfig.AutoRetry or false
+
+-- Update visual berdasarkan saved config
+if autoRetryEnabled then
+	autoRetryToggleCircle.Position = UDim2.new(1, -16, 0.5, -7)
+	AUTO_RETRY.Enable()
+end
+
+-- Toggle Functionality dengan CONFIG SAVE
+autoRetryToggleButton.MouseButton1Click:Connect(function()
+	autoRetryEnabled = not autoRetryEnabled
+	
+	local targetPos
+	if autoRetryEnabled then
+		targetPos = UDim2.new(1, -16, 0.5, -7)
+		AUTO_RETRY.Enable()
+	else
+		targetPos = UDim2.new(0, 2, 0.5, -7)
+		AUTO_RETRY.Disable()
+	end
+	
+	-- Tween circle movement
+	local circleTween = TweenService:Create(autoRetryToggleCircle, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = targetPos
+	})
+	circleTween:Play()
+	
+	-- SAVE TO CONFIG
+	ConfigSystem:UpdateSetting(currentConfig, "AutoRetry", autoRetryEnabled)
 end)
 
 -- Function untuk switch tab dengan animation
