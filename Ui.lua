@@ -14,7 +14,7 @@ ConfigSystem.ConfigFile = "NightmareV1_Config.json"
 
 -- Default config
 ConfigSystem.DefaultConfig = {
-	InvisPanel = false
+	InvisPanel = false,  -- ✅ ADD COMMA
 	InfJump = false,
 	Speed = false,
 	StealFloor = false,
@@ -1815,11 +1815,11 @@ local function createQuickToggle(name, configKey, yPosition)
     return toggleFrame
 end
 
--- BUAT SEMUA TOGGLE (SPACING DITAMBAH)
-createQuickToggle("Inf Jump", 10)
-createQuickToggle("Speed", 48)       -- SPACING dari 44 jadi 48 (38px gap)
-createQuickToggle("Steal Floor", 86)  -- TEXT DIPERBAIKI, spacing 38px
-createQuickToggle("Insta Floor", 124) -- spacing 38px
+-- BUAT SEMUA TOGGLE (SPACING DITAMBAH) DENGAN CONFIG KEYS
+createQuickToggle("Inf Jump", "InfJump", 10)
+createQuickToggle("Speed", "Speed", 48)
+createQuickToggle("Steal Floor", "StealFloor", 86)
+createQuickToggle("Insta Floor", "InstaFloor", 124)
 
 -- BUAT BUTTON "TP TO BEST" DI SEBELAH KANAN DIVIDER TENGAH (LEBAR DITAMBAH)
 local quickPanelActionButton = Instance.new("TextButton")
