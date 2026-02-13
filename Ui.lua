@@ -893,7 +893,7 @@ divider.BorderSizePixel = 0
 divider.Parent = mainFrame
 
 -- Tab Names (TUKAR "Keybind" ke "Priority")
-local tabNames = {"Stealer", "Duel", "Misc", "Server", "Priority"}
+local tabNames = {"Stealer", "Visual", "Misc", "Server", "Priority"}
 local tabButtons = {}
 local tabFrames = {}
 local tabIndicators = {}
