@@ -1599,12 +1599,29 @@ hopIcon.Image = "rbxassetid://97462463002118"
 hopIcon.ScaleType = Enum.ScaleType.Fit
 hopIcon.Parent = hopButton
 
--- Hop Server Functionality (DENGAN AUTO RETRY SUPPORT)
+-- Hop Server Functionality (SIMPLE VERSION - NO AUTO RETRY)
 hopButton.MouseButton1Click:Connect(function()
-    showNotification("Server Hopping...")
+    showNotification("Server hopping...")
     
-    -- Guna AUTO_RETRY system
-    AUTO_RETRY.AttemptHop()
+    local TeleportService = game:GetService("TeleportService")
+    
+    local success, result = pcall(function()
+        local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
+        
+        for _, server in pairs(servers.data) do
+            if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, player)
+                return
+            end
+        end
+        
+        showNotification("No available servers found!")
+    end)
+    
+    if not success then
+        warn("Failed to hop server:", result)
+        showNotification("Failed to hop server!")
+    end
 end)
 
 -- ========== REJOIN SERVER BUTTON (DESIGN SAMA SEPERTI JOIN SERVER) ==========
