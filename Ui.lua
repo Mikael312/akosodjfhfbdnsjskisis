@@ -12,7 +12,6 @@ local ConfigSystem = {}
 
 ConfigSystem.ConfigFile = "NightmareV1_Config.json"
 
--- Default config
 ConfigSystem.DefaultConfig = {
 	InvisPanel = false,
 	-- Quick Panel Toggles
@@ -21,7 +20,9 @@ ConfigSystem.DefaultConfig = {
 	StealFloor = false,
 	InstaFloor = false,
 	-- Misc Tab Toggles
-	AntiLag = false
+	AntiLag = false,
+	-- Visual Tab Toggles
+	EspPlayer = false  -- TAMBAH INI
 }
 
 -- Load config dari file
@@ -662,6 +663,187 @@ local function toggleSpeed(enabled)
         startSpeedControl()
     else
         stopSpeedControl()
+    end
+end
+
+-- ========== ESP PLAYER SYSTEM ==========
+local espPlayersEnabled = false
+local espObjects = {}
+local updateConnection = nil
+local eventConnections = {}
+
+local function getEquippedItem(character)
+    local tool = character:FindFirstChildOfClass("Tool")
+    if tool then
+        return tool.Name
+    end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    if humanoid then
+        for _, child in pairs(character:GetChildren()) do
+            if child:IsA("Tool") then
+                return child.Name
+            end
+        end
+    end
+    
+    return "None"
+end
+
+local function createESP(targetPlayer)
+    if targetPlayer == player then return end
+    
+    if not targetPlayer.Character then
+        targetPlayer.CharacterAdded:Connect(function()
+            if espPlayersEnabled then
+                task.wait(1)
+                createESP(targetPlayer)
+            end
+        end)
+        return
+    end
+    
+    local character = targetPlayer.Character
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "PlayerESP"
+    highlight.Adornee = character
+    highlight.FillColor = Color3.fromRGB(0, 255, 255)
+    highlight.OutlineColor = Color3.fromRGB(0, 200, 255)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = character
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESPInfo"
+    billboard.Adornee = rootPart
+    billboard.Size = UDim2.new(0, 200, 0, 40)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = character
+    
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0, 20)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = targetPlayer.Name
+    nameLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+    nameLabel.TextStrokeTransparency = 0.5
+    nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextSize = 14
+    nameLabel.Parent = billboard
+    
+    local itemLabel = Instance.new("TextLabel")
+    itemLabel.Size = UDim2.new(1, 0, 0, 18)
+    itemLabel.Position = UDim2.new(0, 0, 0, 22)
+    itemLabel.BackgroundTransparency = 1
+    itemLabel.Text = "Item: None"
+    itemLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+    itemLabel.TextStrokeTransparency = 0.5
+    itemLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    itemLabel.Font = Enum.Font.Gotham
+    itemLabel.TextSize = 12
+    itemLabel.Parent = billboard
+    
+    espObjects[targetPlayer] = {
+        highlight = highlight,
+        billboard = billboard,
+        itemLabel = itemLabel,
+        character = character
+    }
+end
+
+local function removeESP(targetPlayer)
+    if espObjects[targetPlayer] then
+        if espObjects[targetPlayer].highlight then
+            espObjects[targetPlayer].highlight:Destroy()
+        end
+        if espObjects[targetPlayer].billboard then
+            espObjects[targetPlayer].billboard:Destroy()
+        end
+        espObjects[targetPlayer] = nil
+    end
+end
+
+local function updateESP()
+    if not espPlayersEnabled then return end
+    
+    for targetPlayer, espData in pairs(espObjects) do
+        if targetPlayer and targetPlayer.Parent and espData.character and espData.character.Parent then
+            local character = espData.character
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            
+            if rootPart then
+                local equippedItem = getEquippedItem(character)
+                espData.itemLabel.Text = "Item: " .. equippedItem
+                
+                if equippedItem ~= "None" then
+                    espData.itemLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+                else
+                    espData.itemLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+                end
+            else
+                removeESP(targetPlayer)
+            end
+        else
+            removeESP(targetPlayer)
+        end
+    end
+end
+
+local function enableESPPlayers()
+    if espPlayersEnabled then return end
+    espPlayersEnabled = true
+    
+    for _, targetPlayer in pairs(Players:GetPlayers()) do
+        if targetPlayer ~= player then
+            task.spawn(function() createESP(targetPlayer) end)
+        end
+    end
+    
+    local addedConn = Players.PlayerAdded:Connect(function(targetPlayer)
+        if espPlayersEnabled then
+            createESP(targetPlayer)
+        end
+    end)
+    table.insert(eventConnections, addedConn)
+    
+    local removingConn = Players.PlayerRemoving:Connect(function(targetPlayer)
+        removeESP(targetPlayer)
+    end)
+    table.insert(eventConnections, removingConn)
+    
+    updateConnection = RunService.RenderStepped:Connect(updateESP)
+end
+
+local function disableESPPlayers()
+    if not espPlayersEnabled then return end
+    espPlayersEnabled = false
+    
+    if updateConnection then
+        updateConnection:Disconnect()
+        updateConnection = nil
+    end
+    
+    for _, conn in pairs(eventConnections) do
+        if conn then conn:Disconnect() end
+    end
+    eventConnections = {}
+    
+    for targetPlayer, _ in pairs(espObjects) do
+        removeESP(targetPlayer)
+    end
+    espObjects = {}
+end
+
+local function toggleEspPlayers(state)
+    if state then
+        enableESPPlayers()
+    else
+        disableESPPlayers()
     end
 end
 
@@ -1715,6 +1897,116 @@ antiLagToggleButton.MouseButton1Click:Connect(function()
 	
 	-- SAVE TO CONFIG
 	ConfigSystem:UpdateSetting(currentConfig, "AntiLag", antiLagEnabled)
+end)
+
+-- ========== ESP PLAYER TOGGLE UNTUK VISUAL TAB ==========
+local espPlayerToggleFrame = Instance.new("Frame")
+espPlayerToggleFrame.Name = "EspPlayerToggle"
+espPlayerToggleFrame.Size = UDim2.new(1, -20, 0, 35)
+espPlayerToggleFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+espPlayerToggleFrame.BackgroundTransparency = 0.25
+espPlayerToggleFrame.BorderSizePixel = 0
+espPlayerToggleFrame.ClipsDescendants = false
+espPlayerToggleFrame.Parent = tabFrames["Visual"]
+
+local espPlayerCorner = Instance.new("UICorner")
+espPlayerCorner.CornerRadius = UDim.new(0, 5)
+espPlayerCorner.Parent = espPlayerToggleFrame
+
+local espPlayerStroke = Instance.new("UIStroke")
+espPlayerStroke.Color = Color3.fromRGB(180, 0, 0)
+espPlayerStroke.Thickness = 1.5
+espPlayerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+espPlayerStroke.Parent = espPlayerToggleFrame
+
+local espPlayerGradient = Instance.new("UIGradient")
+espPlayerGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+espPlayerGradient.Rotation = 0
+espPlayerGradient.Parent = espPlayerStroke
+
+local espPlayerLabel = Instance.new("TextLabel")
+espPlayerLabel.Name = "EspPlayerLabel"
+espPlayerLabel.Size = UDim2.new(0, 100, 1, 0)
+espPlayerLabel.Position = UDim2.new(0, 10, 0, 0)
+espPlayerLabel.BackgroundTransparency = 1
+espPlayerLabel.Text = "Esp Player"
+espPlayerLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+espPlayerLabel.Font = Enum.Font.GothamMedium
+espPlayerLabel.TextSize = 12
+espPlayerLabel.TextXAlignment = Enum.TextXAlignment.Left
+espPlayerLabel.TextTruncate = Enum.TextTruncate.AtEnd
+espPlayerLabel.Parent = espPlayerToggleFrame
+
+local espPlayerToggleBg = Instance.new("Frame")
+espPlayerToggleBg.Name = "ToggleBg"
+espPlayerToggleBg.Size = UDim2.new(0, 35, 0, 18)
+espPlayerToggleBg.Position = UDim2.new(1, -45, 0.5, -9)
+espPlayerToggleBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+espPlayerToggleBg.BorderSizePixel = 0
+espPlayerToggleBg.Parent = espPlayerToggleFrame
+
+local espPlayerToggleBgCorner = Instance.new("UICorner")
+espPlayerToggleBgCorner.CornerRadius = UDim.new(1, 0)
+espPlayerToggleBgCorner.Parent = espPlayerToggleBg
+
+local espPlayerToggleBgGradient = Instance.new("UIGradient")
+espPlayerToggleBgGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 50)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0))
+}
+espPlayerToggleBgGradient.Rotation = 0
+espPlayerToggleBgGradient.Parent = espPlayerToggleBg
+
+local espPlayerToggleCircle = Instance.new("Frame")
+espPlayerToggleCircle.Name = "ToggleCircle"
+espPlayerToggleCircle.Size = UDim2.new(0, 14, 0, 14)
+espPlayerToggleCircle.Position = UDim2.new(0, 2, 0.5, -7)
+espPlayerToggleCircle.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+espPlayerToggleCircle.BorderSizePixel = 0
+espPlayerToggleCircle.Parent = espPlayerToggleBg
+
+local espPlayerToggleCircleCorner = Instance.new("UICorner")
+espPlayerToggleCircleCorner.CornerRadius = UDim.new(1, 0)
+espPlayerToggleCircleCorner.Parent = espPlayerToggleCircle
+
+local espPlayerToggleButton = Instance.new("TextButton")
+espPlayerToggleButton.Name = "ToggleButton"
+espPlayerToggleButton.Size = UDim2.new(1, 0, 1, 0)
+espPlayerToggleButton.Position = UDim2.new(0, 0, 0, 0)
+espPlayerToggleButton.BackgroundTransparency = 1
+espPlayerToggleButton.Text = ""
+espPlayerToggleButton.Parent = espPlayerToggleFrame
+
+local espPlayerEnabled = currentConfig.EspPlayer or false
+
+if espPlayerEnabled then
+	espPlayerToggleCircle.Position = UDim2.new(1, -16, 0.5, -7)
+	toggleEspPlayers(true)
+end
+
+espPlayerToggleButton.MouseButton1Click:Connect(function()
+	espPlayerEnabled = not espPlayerEnabled
+	
+	local targetPos
+	if espPlayerEnabled then
+		targetPos = UDim2.new(1, -16, 0.5, -7)
+		toggleEspPlayers(true)
+		showNotification("Esp Player: Enabled")
+	else
+		targetPos = UDim2.new(0, 2, 0.5, -7)
+		toggleEspPlayers(false)
+		showNotification("Esp Player: Disabled")
+	end
+	
+	local circleTween = TweenService:Create(espPlayerToggleCircle, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = targetPos
+	})
+	circleTween:Play()
+	
+	ConfigSystem:UpdateSetting(currentConfig, "EspPlayer", espPlayerEnabled)
 end)
 
 -- Function untuk switch tab dengan animation
