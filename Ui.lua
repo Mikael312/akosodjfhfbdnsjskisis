@@ -5,6 +5,8 @@ local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 local SoundService = game:GetService("SoundService")
 local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")  
 local player = Players.LocalPlayer
 
 -- ========== CONFIG SYSTEM ==========
