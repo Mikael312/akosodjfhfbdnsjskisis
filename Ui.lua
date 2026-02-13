@@ -15,6 +15,10 @@ ConfigSystem.ConfigFile = "NightmareV1_Config.json"
 -- Default config
 ConfigSystem.DefaultConfig = {
 	InvisPanel = false
+	InfJump = false,
+	Speed = false,
+	StealFloor = false,
+	InstaFloor = false
 }
 
 -- Load config dari file
@@ -1717,10 +1721,10 @@ quickPanelCenterDivider.BackgroundTransparency = 0.45
 quickPanelCenterDivider.BorderSizePixel = 0
 quickPanelCenterDivider.Parent = quickPanelFrame
 
--- FUNGSI UNTUK MEMBUAT TOGGLE (LEBAR DITAMBAH)
-local function createQuickToggle(name, yPosition)
+-- FUNGSI UNTUK MEMBUAT TOGGLE (LEBAR DITAMBAH) DENGAN CONFIG SAVE
+local function createQuickToggle(name, configKey, yPosition)
     local toggleFrame = Instance.new("Frame")
-    toggleFrame.Size = UDim2.new(0, 133, 0, 30)  -- LEBAR dari 125 jadi 133
+    toggleFrame.Size = UDim2.new(0, 133, 0, 30)
     toggleFrame.Position = UDim2.new(0, 11, 0, yPosition)
     toggleFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     toggleFrame.BackgroundTransparency = 0.45
@@ -1747,7 +1751,7 @@ local function createQuickToggle(name, yPosition)
     toggleGradient.Parent = toggleFrameStroke
 
     local toggleText = Instance.new("TextLabel")
-    toggleText.Size = UDim2.new(0, 80, 1, 0)  -- Lebar ditambah
+    toggleText.Size = UDim2.new(0, 80, 1, 0)
     toggleText.Position = UDim2.new(0, 8, 0, 0)
     toggleText.BackgroundTransparency = 1
     toggleText.Text = name
@@ -1780,7 +1784,14 @@ local function createQuickToggle(name, yPosition)
     circleCorner.CornerRadius = UDim.new(1, 0)
     circleCorner.Parent = toggleCircle
 
-    local toggleEnabled = false
+    -- Load saved state from config
+    local toggleEnabled = currentConfig[configKey] or false
+    
+    -- Set initial visual state
+    if toggleEnabled then
+        toggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        toggleCircle.Position = UDim2.new(0, 20, 0.5, -6)
+    end
 
     toggleButton.MouseButton1Click:Connect(function()
         toggleEnabled = not toggleEnabled
@@ -1796,6 +1807,9 @@ local function createQuickToggle(name, yPosition)
             TweenService:Create(toggleCircle, tweenInfo, {Position = UDim2.new(0, 2, 0.5, -6)}):Play()
             showNotification(name .. ": Disabled")
         end
+        
+        -- SAVE TO CONFIG
+        ConfigSystem:UpdateSetting(currentConfig, configKey, toggleEnabled)
     end)
     
     return toggleFrame
