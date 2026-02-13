@@ -686,7 +686,7 @@ function AUTO_RETRY.Disable()
 	showNotification("Auto Retry: Disabled")
 end
 
--- DEFINE SingleHop DULU (SEBELUM AttemptHop)
+-- ✅ DEFINE SingleHop DULU (SEBELUM AttemptHop yang guna dia)
 function AUTO_RETRY.SingleHop()
 	local TeleportService = game:GetService("TeleportService")
 	
@@ -716,7 +716,7 @@ function AUTO_RETRY.SingleHop()
 	return result
 end
 
--- AttemptHop dipanggil LEPAS SingleHop dah defined
+-- ✅ AttemptHop dipanggil LEPAS SingleHop dah defined
 function AUTO_RETRY.AttemptHop()
 	if not AUTO_RETRY.enabled then
 		-- Kalau auto retry OFF, hop sekali je
