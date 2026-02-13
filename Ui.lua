@@ -1468,7 +1468,7 @@ function AUTO_RETRY.SingleHop()
 	local success, result = pcall(function()
 		local servers = HttpService:JSONDecode(
 			game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
-			)	
+		   )	
 			
 		for _, server in pairs(servers.data) do
 			if server.id ~= game.JobId and server.playing < server.maxPlayers then
