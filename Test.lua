@@ -1,512 +1,193 @@
+-- LOAD LIBRARY DARI GITHUB
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Mikael312/N1ghtmare.gg/refs/heads/main/NightmareHub.lua"))()
+
+-- INITIALIZE QUICK PANEL & MAIN HUB
+local QuickPanel = Library.QuickPanel:New()
+local MainHub = Library.MainHub:New()
+
 -- ==================== SERVICES ====================
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local PathfindingService = game:GetService("PathfindingService")
-local Workspace = game:GetService("Workspace")
-local StarterGui = game:GetService("StarterGui") -- Service for notifications
-local SoundService = game:GetService("SoundService") -- Service for sounds
-local HttpService = game:GetService("HttpService")
-local Lighting = game:GetService("Lighting")
-local UserSettings = game:GetService("UserSettings")
-local CoreGui = game:GetService("CoreGui")
+local S = {
+    Players = game:GetService("Players"),
+    UserInputService = game:GetService("UserInputService"),
+    RunService = game:GetService("RunService"),
+    Workspace = game:GetService("Workspace"),
+    Lighting = game:GetService("Lighting")
+}
+local player = S.Players.LocalPlayer
 
 -- ==================== VARIABLES ====================
-local player = Players.LocalPlayer
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-
--- ==================== STEAL FLOOR VARIABLES ====================
-local allFeaturesEnabled = false
-
--- Floor Grab
-local floorGrabPart = nil
-local floorGrabConnection = nil
-local humanoidRootPart = nil
-
--- X-Ray Base
-local originalTransparency = {}
-
--- Auto Laser
-local autoLaserThread = nil
-local laserCapeEquipped = false
-
--- ==================== SEMI INVISIBLE VARIABLES ====================
-local ESPFolder = nil
-local fakePosESP = nil
-local serverPosition = nil
-local semiInvisibleEnabled = false
-
--- ==================== FLY/TP TO BEST VARIABLES ====================
-local isFlyingToBest = false
-local velocityConnection = nil
-
--- ==================== INFINITE JUMP + LOW GRAVITY VARIABLES (NEW) ====================
 local infiniteJumpEnabled = false
 local lowGravityEnabled = false
 local jumpRequestConnection = nil
 local bodyForce = nil
 local lowGravityForce = 50
-local defaultGravity = workspace.Gravity
+local defaultGravity = S.Workspace.Gravity
 
--- ==================== FLY V2 VARIABLES ====================
-local autoGrappleConnection = nil
-local FLYING = false
-local vehicleflyspeed = 2.0
-local velocityHandlerName = "VelocityHandler"
-local alignHandlerName = "AlignHandler"
-local attachmentName = "FlyAttachment"
-local v3zero = Vector3.new(0, 0, 0)
-local v3inf = Vector3.new(9e9, 9e9, 9e9)
-local mfly1 = nil
-local mfly2 = nil
-local stealCheckConnection = nil
-local playerModule = nil
-local controlModule = nil
-local isToggled7 = false  -- <-- TAMBAH INI (DECLARE AWAL)
-local toggleButton7 = nil
-
-pcall(function()
-    playerModule = require(player.PlayerScripts:WaitForChild("PlayerModule"))
-    controlModule = playerModule:GetControls()
-end)
-
--- ==================== MODULE DATA FOR BEST PET DETECTION (CORRECTED) ====================
-local AnimalsModule, TraitsModule, MutationsModule
-
-pcall(function()
-    AnimalsModule = require(ReplicatedStorage.Datas.Animals)
-    TraitsModule = require(ReplicatedStorage.Datas.Traits)
-    MutationsModule = require(ReplicatedStorage.Datas.Mutations)
-end)
-
--- ====================================================--
---  FUNGSI UNTUK MENCipta BUTANG TOGGLE (REKA BENTUK BAHARU)
--- ====================================================--
-local function createToggleButton(parent, name, text, position, size)
-    -- Mencipta TextButton utama
-    local button = Instance.new("TextButton")
-    button.Name = name
-    button.Size = size or UDim2.new(0, 160, 0, 32) -- Saiz default disesuaikan
-    button.Position = position
-    button.BackgroundColor3 = Color3.fromRGB(80, 0, 0) -- Warna latar belakang OFF (Merah Gelap)
-    button.BorderSizePixel = 0
-    button.Text = text
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = 13
-    button.Font = Enum.Font.Arcade -- DITUKAR BALIK KE ARCADE
-    button.AutoButtonColor = false -- Mematikan kesan butang default
-    button.Parent = parent
-    
-    -- Mencipta bucu bulat (Rounded Corners)
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
-    btnCorner.Parent = button
-    
-    -- Mencipta garis luar (Outline)
-    local btnStroke = Instance.new("UIStroke")
-    btnStroke.Color = Color3.fromRGB(150, 0, 0) -- Warna garis luar OFF (Merah Sederhana)
-    btnStroke.Thickness = 0.5 -- Ketebalan garis luar OFF
-    btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    btnStroke.Parent = button
-    
-    return button
-end
-
--- ====================================================--
---  FUNGSI UNTUK MENGUBAH KEADAAN (ON/OFF)
--- ====================================================--
-local function setToggleState(button, enabled)
-    local btnStroke = button:FindFirstChildOfClass("UIStroke")
-    
-    if enabled then
-        -- --- KEADAAN "ON" --- --
-        button.BackgroundColor3 = Color3.fromRGB(200, 30, 30) -- Warna latar belakang ON (Merah Cerah)
-        if btnStroke then
-            btnStroke.Color = Color3.fromRGB(255, 60, 60) -- Warna garis luar ON (Merah Terang)
-            btnStroke.Thickness = 1.0 -- Ketebalan garis luar ON (Lebih Tebal)
-        end
-    else
-        -- --- KEADAAN "OFF" --- --
-        button.BackgroundColor3 = Color3.fromRGB(80, 0, 0) -- Warna latar belakang OFF (Merah Gelap)
-        if btnStroke then
-            btnStroke.Color = Color3.fromRGB(150, 0, 0) -- Warna garis luar OFF (Merah Sederhana)
-            btnStroke.Thickness = 0.5 -- Ketebalan garis luar OFF (Nipis)
-        end
-    end
-end
-
--- ====================================================--
---  FUNGSI UNTUK MENCipta BUTANG SWITCH (REKA BENTUK BAHARU)
--- ====================================================--
-local function createSwitchButton(parent, name, text, position, size)
-    -- Mencipta TextButton utama
-    local button = Instance.new("TextButton")
-    button.Name = name
-    button.Size = size or UDim2.new(0, 30, 0, 32)
-    button.Position = position
-    button.BackgroundColor3 = Color3.fromRGB(50, 50, 55) -- Warna latar belakang OFF (Kelabu Gelap)
-    button.BorderSizePixel = 0
-    button.Text = text
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = 18
-    button.Font = Enum.Font.Arcade -- DITUKAR BALIK KE ARCADE
-    button.AutoButtonColor = false -- Mematikan kesan butang default
-    button.Parent = parent
-    
-    -- Mencipta bucu bulat (Rounded Corners)
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
-    btnCorner.Parent = button
-    
-    -- Mencipta garis luar (Outline)
-    local btnStroke = Instance.new("UIStroke")
-    btnStroke.Color = Color3.fromRGB(80, 80, 80) -- Warna garis luar OFF (Kelabu)
-    btnStroke.Thickness = 0.5 -- Ketebalan garis luar OFF
-    btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    btnStroke.Parent = button
-    
-    return button
-end
-
--- ====================================================--
---  FUNGSI UNTUK MENGUBAH KEADAAN SWITCH (ON/OFF)
--- ====================================================--
-local function setSwitchState(button, enabled)
-    local btnStroke = button:FindFirstChildOfClass("UIStroke")
-    
-    if enabled then
-        -- --- KEADAAN "ON" --- --
-        button.BackgroundColor3 = Color3.fromRGB(200, 30, 30) -- Warna latar belakang ON (Merah Cerah)
-        if btnStroke then
-            btnStroke.Color = Color3.fromRGB(255, 60, 60) -- Warna garis luar ON (Merah Terang)
-            btnStroke.Thickness = 1.0 -- Ketebalan garis luar ON (Lebih Tebal)
-        end
-    else
-        -- --- KEADAAN "OFF" --- --
-        button.BackgroundColor3 = Color3.fromRGB(50, 50, 55) -- Warna latar belakang OFF (Kelabu Gelap)
-        if btnStroke then
-            btnStroke.Color = Color3.fromRGB(80, 80, 80) -- Warna garis luar OFF (Kelabu)
-            btnStroke.Thickness = 0.5 -- Ketebalan garis luar OFF (Nipis)
-        end
-    end
-end
-
--- ====================================================--
---  FUNGSI UNTUK KELIPKAN BUTANG (FLASH EFFECT)
--- ====================================================--
-local function flashButton(button)
-    local stroke = button:FindFirstChildWhichIsA("UIStroke")
-    if not stroke then return end
-
-    local originalBgColor = button.BackgroundColor3
-    local originalStrokeColor = stroke.Color
-    
-    -- Set to bright red
-    button.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    stroke.Color = Color3.fromRGB(255, 150, 150)
-    
-    -- Wait for 0.1 seconds
-    task.wait(0.1)
-    
-    -- Restore original colors safely
-    pcall(function()
-        button.BackgroundColor3 = originalBgColor
-        stroke.Color = originalStrokeColor
-    end)
-end
-
--- ==================== STEAL FLOOR FUNCTIONS ====================
-
-local function updateHumanoidRootPart()
-    local character = LocalPlayer.Character
-    if character then
-        humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    end
-end
-
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(0.5)
-    updateHumanoidRootPart()
-end)
-
-updateHumanoidRootPart()
-
--- ========================================
--- FLOOR GRAB FUNCTIONS
--- ========================================
-local function startFloorGrab()
-    if floorGrabPart then return end
-    
-    floorGrabPart = Instance.new("Part")
-    floorGrabPart.Size = Vector3.new(6, 0.5, 6)
-    floorGrabPart.Anchored = true
-    floorGrabPart.CanCollide = true
-    floorGrabPart.Transparency = 0
-    floorGrabPart.Material = Enum.Material.Plastic
-    floorGrabPart.Color = Color3.fromRGB(80, 0, 0)
-    floorGrabPart.Parent = workspace
-    
-    floorGrabConnection = RunService.Heartbeat:Connect(function()
-        if humanoidRootPart then
-            local position = humanoidRootPart.Position
-            local yOffset = (humanoidRootPart.Size.Y / 2) + 0.25
-            floorGrabPart.Position = Vector3.new(position.X, position.Y - yOffset, position.Z)
-        end
-    end)
-end
-
-local function stopFloorGrab()
-    if floorGrabConnection then
-        floorGrabConnection:Disconnect()
-        floorGrabConnection = nil
-    end
-    
-    if floorGrabPart then
-        floorGrabPart:Destroy()
-        floorGrabPart = nil
-    end
-end
-
--- ========================================
--- X-RAY BASE FUNCTIONS
--- ========================================
-local function saveOriginalTransparency()
-    originalTransparency = {}
-    local plots = workspace:FindFirstChild("Plots")
-    if plots then
-        for _, plot in pairs(plots:GetChildren()) do
-            for _, part in pairs(plot:GetDescendants()) do
-                if part:IsA("BasePart") and (part.Name:lower():find("base plot") or part.Name:lower():find("base") or part.Name:lower():find("plot")) then
-                    originalTransparency[part] = part.Transparency
-                end
-            end
-        end
-    end
-end
-
-local function applyTransparency()
-    local plots = workspace:FindFirstChild("Plots")
-    if plots then
-        for _, plot in pairs(plots:GetChildren()) do
-            for _, part in pairs(plot:GetDescendants()) do
-                if part:IsA("BasePart") and (part.Name:lower():find("base plot") or part.Name:lower():find("base") or part.Name:lower():find("plot")) then
-                    if originalTransparency[part] == nil then
-                        originalTransparency[part] = part.Transparency
-                    end
-                    part.Transparency = 0.5
-                end
-            end
-        end
-    end
-end
-
-local function restoreTransparency()
-    local plots = workspace:FindFirstChild("Plots")
-    if plots then
-        for _, plot in pairs(plots:GetChildren()) do
-            for _, part in pairs(plot:GetDescendants()) do
-                if part:IsA("BasePart") and (part.Name:lower():find("base plot") or part.Name:lower():find("base") or part.Name:lower():find("plot")) then
-                    if originalTransparency[part] ~= nil then
-                        part.Transparency = originalTransparency[part]
-                    end
-                end
-            end
-        end
-    end
-end
-
-local function startXrayBase()
-    saveOriginalTransparency()
-    applyTransparency()
-end
-
-local function stopXrayBase()
-    restoreTransparency()
-end
-
--- Monitor new plots
-local plots = workspace:FindFirstChild("Plots")
-if plots then
-    plots.ChildAdded:Connect(function(newPlot)
-        task.wait(0.5)
-        if allFeaturesEnabled then
-            for _, part in pairs(newPlot:GetDescendants()) do
-                if part:IsA("BasePart") and (part.Name:lower():find("base plot") or part.Name:lower():find("base") or part.Name:lower():find("plot")) then
-                    originalTransparency[part] = part.Transparency
-                    part.Transparency = 0.5
-                end
-            end
-        end
-    end)
-end
-
--- ========================================
--- AUTO LASER FUNCTIONS
--- ========================================
-local function autoEquipLaserCape()
-    local character = LocalPlayer.Character
-    if not character then return false end
-    
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return false end
-    
-    -- Check if already equipped
-    local currentTool = character:FindFirstChild("Laser Cape")
-    if currentTool then
-        laserCapeEquipped = true
-        return true
-    end
-    
-    -- Find in backpack
-    local backpack = LocalPlayer:WaitForChild("Backpack")
-    local laserCape = backpack:FindFirstChild("Laser Cape")
-    
-    if laserCape then
-        -- Equip the Laser Cape
-        humanoid:EquipTool(laserCape)
-        task.wait(0.3)
-        laserCapeEquipped = true
-        return true
-    else
-        return false
-    end
-end
-
-local function getLaserRemote()
-    local remote = nil
-    pcall(function()
-        if ReplicatedStorage:FindFirstChild("Packages") and ReplicatedStorage.Packages:FindFirstChild("Net") then
-            remote = ReplicatedStorage.Packages.Net:FindFirstChild("RE/UseItem") or ReplicatedStorage.Packages.Net:FindFirstChild("RE"):FindFirstChild("UseItem")
-        end
-        if not remote then
-            remote = ReplicatedStorage:FindFirstChild("RE/UseItem") or ReplicatedStorage:FindFirstChild("UseItem")
-        end
-    end)
-    return remote
-end
-
-local function isValidTarget(player)
-    if not player or not player.Character or player == LocalPlayer then return false end
-    local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-    if not hrp or not humanoid then return false end
-    if humanoid.Health <=0 then return false end
-    return true
-end
-
-local function findNearestPlayer()
-    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return nil end
-    local myPos = LocalPlayer.Character.HumanoidRootPart.Position
-    local nearest = nil
-    local nearestDist = math.huge
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        if isValidTarget(player) then
-            local targetHRP = player.Character:FindFirstChild("HumanoidRootPart")
-            if targetHRP then
-                local distance = (Vector3.new(targetHRP.Position.X, 0, targetHRP.Position.Z) - Vector3.new(myPos.X, 0, myPos.Z)).Magnitude
-                if distance < nearestDist then
-                    nearestDist = distance
-                    nearest = player
-                end
-            end
-        end
-    end
-    
-    return nearest
-end
-
-local function safeFire(targetPlayer)
-    if not targetPlayer or not targetPlayer.Character then return end
-    local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not targetHRP then return end
-    
-    local remote = getLaserRemote()
-    if remote and remote.FireServer then
-        pcall(function()
-            local args = {
-                [1] = targetHRP.Position,
-                [2] = targetHRP
-            }
-            remote:FireServer(unpack(args))
-        end)
-    end
-end
-
-local function autoLaserWorker()
-    while allFeaturesEnabled do
-        local target = findNearestPlayer()
-        if target then
-            safeFire(target)
-        end
-        
-        local startTime = tick()
-        while tick() - startTime < 0.6 do
-            if not allFeaturesEnabled then break end
-            RunService.Heartbeat:Wait()
-        end
-    end
-end
-
-local function startAutoLaser()
-    -- Auto-equip Laser Cape first
-    if not autoEquipLaserCape() then
-        return
-    end
-    
-    if autoLaserThread then
-        task.cancel(autoLaserThread)
-    end
-    autoLaserThread = task.spawn(autoLaserWorker)
-end
-
-local function stopAutoLaser()
-    if autoLaserThread then
-        task.cancel(autoLaserThread)
-        autoLaserThread = nil
-    end
-    
-    laserCapeEquipped = false
-    
-    -- Unequip Laser Cape
-    local character = LocalPlayer.Character
-    if character then
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid:UnequipTools()
-        end
-    end
-end
-
--- ========================================
--- MASTER TOGGLE FUNCTION
--- ========================================
-local function toggleAllFeatures(enabled)
-    allFeaturesEnabled = enabled
-    
-    if allFeaturesEnabled then
-        -- Start all features
-        startFloorGrab()
-        startXrayBase()
-        startAutoLaser()
-    else
-        -- Stop all features
-        stopFloorGrab()
-        stopXrayBase()
-        stopAutoLaser()
-    end
-end
-
--- SPEED BOOSTER SYSTEM
+-- Speed variables
 local speedConn
-local baseSpeed = 27
+local baseSpeed = 28
 local speedEnabled = false
 
+-- ESP variables
+local espPlayersEnabled = false
+local espObjects = {}
+local updateConnection = nil
+local eventConnections = {}
+
+-- Timer ESP variables
+local timerEspEnabled = false
+local timerEspConnections = {}
+
+-- Esp Base Line variables
+local baseLineEnabled = false
+local baseLineConnection = nil
+local baseBeamPart = nil
+local baseTargetPart = nil
+local baseBeam = nil
+
+-- Anti Ragdoll variables
+local antiRagdollEnabled = false
+local humanoidWatchConnection, ragdollTimer
+local ragdollActive = false
+local ragdollConnections = {}
+local cachedCharData = {}
+local constraintLoopActive = false
+
+-- Xray Base variables
+local xrayBaseEnabled = false
+local invisibleWallsLoaded = false
+local originalTransparency = {}
+local xrayBaseConnection = nil
+
+-- Optimizer variables
+local fpsBoostEnabled = false
+local optimizerThreads = {}
+local optimizerConnections = {}
+local originalSettings = {}
+
+local PERFORMANCE_FFLAGS = {
+    ["DFIntTaskSchedulerTargetFps"] = 999, ["FFlagDebugGraphicsPreferVulkan"] = true,
+    ["FFlagDebugGraphicsDisableDirect3D11"] = true, ["DFFlagDebugRenderForceTechnologyVoxel"] = true,
+    ["FFlagDisablePostFx"] = true, ["FIntRenderShadowIntensity"] = 0,
+    ["DFIntDebugFRMQualityLevelOverride"] = 1, ["DFIntTextureQualityOverride"] = 1,
+    ["DFIntTexturePoolSizeMB"] = 64, ["FFlagDebugDisableParticleRendering"] = false,
+    ["DFIntParticleMaxCount"] = 100
+}
+
+-- Anti Lag variables
+local antiLagRunning = false
+local antiLagConnections = {}
+local cleanedCharacters = {}
+
+-- Anti Debuff V2 variables
+local antiDebuffEnabled = false
+local animationPlayedConnection = nil
+local BOOGIE_ANIMATION_ID = "109061983885712"
+local antiBeeDiscoConnections = {}
+local originalMoveFunction = nil
+local controlsProtected = false
+local BAD_LIGHTING_NAMES = {
+    Blue = true,
+    DiscoEffect = true,
+    BeeBlur = true,
+    ColorCorrection = true,
+}
+
+local FOV_MANAGER = {
+    activeCount = 0,
+    conn = nil,
+    forcedFOV = 70,
+}
+
+-- No Anim During Steal variables
+local noAnimDuringStealEnabled = false
+local animDisableConn = nil
+local originalAnimIds = {}
+local animateScript = nil
+
+local ANIM_TYPES = {
+    "walk", "run", "jump", "fall"
+}
+-- ==================== INF JUMP FUNCTIONS ====================
+local function doJump()
+    local char = player.Character
+    if not char then return end
+    
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local rootPart = char:FindFirstChild("HumanoidRootPart")
+    
+    if hum and hum.Health > 0 and rootPart then
+        rootPart.Velocity = Vector3.new(rootPart.Velocity.X, 50, rootPart.Velocity.Z)
+    end
+end
+
+local function setupJumpRequest()
+    if jumpRequestConnection then
+        jumpRequestConnection:Disconnect()
+        jumpRequestConnection = nil
+    end
+    
+    jumpRequestConnection = S.UserInputService.JumpRequest:Connect(function()
+        if infiniteJumpEnabled then
+            doJump()
+        end
+    end)
+end
+
+local function initializeJumpForCharacter(char)
+    local hum = char:WaitForChild("Humanoid")
+    setupJumpRequest()
+    
+    char.ChildAdded:Connect(function(child)
+        if child:IsA("Humanoid") then
+            setupJumpRequest()
+        end
+    end)
+end
+
+local function updateGravity()
+    if lowGravityEnabled then
+        local character = player.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            if bodyForce then
+                bodyForce:Destroy()
+            end
+            bodyForce = Instance.new("BodyForce")
+            bodyForce.Name = "LowGravityForce"
+            bodyForce.Parent = character.HumanoidRootPart
+            local force = (defaultGravity - lowGravityForce) * character.HumanoidRootPart:GetMass()
+            bodyForce.Force = Vector3.new(0, force, 0)
+        end
+    else
+        if bodyForce then
+            bodyForce:Destroy()
+            bodyForce = nil
+        end
+    end
+end
+
+local function toggleInfJump(enabled)
+    infiniteJumpEnabled = enabled
+    lowGravityEnabled = enabled
+    
+    if enabled then
+        local char = player.Character
+        if char then
+            initializeJumpForCharacter(char)
+        end
+        updateGravity()
+    else
+        if jumpRequestConnection then
+            jumpRequestConnection:Disconnect()
+            jumpRequestConnection = nil
+        end
+        updateGravity()
+    end
+end
+
+-- ==================== SPEED FUNCTIONS ====================
 local function GetCharacter()
-    local Char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local Char = player.Character or player.CharacterAdded:Wait()
     local HRP = Char:WaitForChild("HumanoidRootPart")
     local Hum = Char:FindFirstChildOfClass("Humanoid")
     return Char, HRP, Hum
@@ -524,7 +205,7 @@ end
 
 local function startSpeedControl()
     if speedConn then return end
-    speedConn = RunService.Heartbeat:Connect(function()
+    speedConn = S.RunService.Heartbeat:Connect(function()
         local Char, HRP, Hum = GetCharacter()
         if not Char or not HRP or not Hum then return end
         
@@ -555,1546 +236,1467 @@ end
 
 local function toggleSpeed(enabled)
     speedEnabled = enabled
-    if speedEnabled then
+    if enabled then
         startSpeedControl()
     else
         stopSpeedControl()
     end
 end
 
--- ==================== IMPROVED INFINITE JUMP + LOW GRAVITY (NEW) ====================
--- ========================================
--- Infinite Jump Function (NEW)
--- ========================================
+-- ==================== ESP FUNCTIONS ====================
+local function getEquippedItem(character)
+    local tool = character:FindFirstChildOfClass("Tool")
+    if tool then
+        return tool.Name
+    end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    if humanoid then
+        for _, child in pairs(character:GetChildren()) do
+            if child:IsA("Tool") then
+                return child.Name
+            end
+        end
+    end
+    
+    return "None"
+end
 
-local function doJump()
+local function createESP(targetPlayer)
+    if targetPlayer == player then return end
+    
+    if not targetPlayer.Character then
+        targetPlayer.CharacterAdded:Connect(function()
+            if espPlayersEnabled then
+                task.wait(1)
+                createESP(targetPlayer)
+            end
+        end)
+        return
+    end
+    
+    local character = targetPlayer.Character
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "PlayerESP"
+    highlight.Adornee = character
+    highlight.FillColor = Color3.fromRGB(200, 0, 0)
+    highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = character
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESPInfo"
+    billboard.Adornee = rootPart
+    billboard.Size = UDim2.new(0, 200, 0, 40)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = character
+    
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0, 20)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = targetPlayer.Name
+    nameLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+    nameLabel.TextStrokeTransparency = 0.5
+    nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextSize = 14
+    nameLabel.Parent = billboard
+    
+    local itemLabel = Instance.new("TextLabel")
+    itemLabel.Size = UDim2.new(1, 0, 0, 18)
+    itemLabel.Position = UDim2.new(0, 0, 0, 22)
+    itemLabel.BackgroundTransparency = 1
+    itemLabel.Text = "Item: None"
+    itemLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+    itemLabel.TextStrokeTransparency = 0.5
+    itemLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    itemLabel.Font = Enum.Font.Gotham
+    itemLabel.TextSize = 12
+    itemLabel.Parent = billboard
+    
+    espObjects[targetPlayer] = {
+        highlight = highlight,
+        billboard = billboard,
+        itemLabel = itemLabel,
+        character = character
+    }
+end
+
+local function removeESP(targetPlayer)
+    if espObjects[targetPlayer] then
+        if espObjects[targetPlayer].highlight then
+            espObjects[targetPlayer].highlight:Destroy()
+        end
+        if espObjects[targetPlayer].billboard then
+            espObjects[targetPlayer].billboard:Destroy()
+        end
+        espObjects[targetPlayer] = nil
+    end
+end
+
+local function updateESP()
+    if not espPlayersEnabled then return end
+    
+    for targetPlayer, espData in pairs(espObjects) do
+        if targetPlayer and targetPlayer.Parent and espData.character and espData.character.Parent then
+            local character = espData.character
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            
+            if rootPart then
+                local equippedItem = getEquippedItem(character)
+                espData.itemLabel.Text = "Item: " .. equippedItem
+                
+                if equippedItem ~= "None" then
+                    espData.itemLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+                else
+                    espData.itemLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+                end
+            else
+                removeESP(targetPlayer)
+            end
+        else
+            removeESP(targetPlayer)
+        end
+    end
+end
+
+local function enableESPPlayers()
+    if espPlayersEnabled then return end
+    espPlayersEnabled = true
+    
+    for _, targetPlayer in pairs(S.Players:GetPlayers()) do
+        if targetPlayer ~= player then
+            task.spawn(function() createESP(targetPlayer) end)
+        end
+    end
+    
+    local addedConn = S.Players.PlayerAdded:Connect(function(targetPlayer)
+        if espPlayersEnabled then
+            createESP(targetPlayer)
+        end
+    end)
+    table.insert(eventConnections, addedConn)
+    
+    local removingConn = S.Players.PlayerRemoving:Connect(function(targetPlayer)
+        removeESP(targetPlayer)
+    end)
+    table.insert(eventConnections, removingConn)
+    
+    updateConnection = S.RunService.RenderStepped:Connect(updateESP)
+end
+
+local function disableESPPlayers()
+    if not espPlayersEnabled then return end
+    espPlayersEnabled = false
+    
+    if updateConnection then
+        updateConnection:Disconnect()
+        updateConnection = nil
+    end
+    
+    for _, conn in pairs(eventConnections) do
+        if conn then conn:Disconnect() end
+    end
+    eventConnections = {}
+    
+    for targetPlayer, _ in pairs(espObjects) do
+        removeESP(targetPlayer)
+    end
+    espObjects = {}
+end
+
+local function toggleEspPlayers(state)
+    if state then
+        enableESPPlayers()
+    else
+        disableESPPlayers()
+    end
+end
+
+-- ==================== TIMER ESP FUNCTIONS ====================
+local function updateBillboard(mainPart, contentText, shouldShow, isUnlocked)
+    local existing = mainPart:FindFirstChild("RemainingTimeGui")
+    if shouldShow then
+        if not existing then
+            local gui = Instance.new("BillboardGui")
+            gui.Name = "RemainingTimeGui"
+            gui.Adornee = mainPart
+            gui.Size = UDim2.new(0, 110, 0, 25)
+            gui.StudsOffset = Vector3.new(0, 5, 0)
+            gui.AlwaysOnTop = true
+            gui.Parent = mainPart
+
+            local label = Instance.new("TextLabel")
+            label.Name = "Text"
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.TextScaled = true
+            label.TextColor3 = isUnlocked and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(255, 255, 255)
+            label.TextStrokeTransparency = 0.2
+            label.Font = Enum.Font.GothamBold
+            label.Text = contentText
+            label.Parent = gui
+        else
+            local label = existing:FindFirstChild("Text")
+            if label then
+                label.Text = contentText
+                label.TextColor3 = isUnlocked and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(255, 255, 255)
+            end
+        end
+    else
+        if existing then
+            existing:Destroy()
+        end
+    end
+end
+
+local function findLowestValidRemainingTime(purchases)
+    local lowest = nil
+    local lowestY = nil
+
+    for _, purchase in pairs(purchases:GetChildren()) do
+        local main = purchase:FindFirstChild("Main")
+        local gui = main and main:FindFirstChild("BillboardGui")
+        local remTime = gui and gui:FindFirstChild("RemainingTime")
+        local locked = gui and gui:FindFirstChild("Locked")
+
+        if main and remTime and locked and remTime:IsA("TextLabel") and locked:IsA("GuiObject") then
+            local y = main.Position.Y
+            if not lowestY or y < lowestY then
+                lowest = {remTime = remTime, locked = locked, main = main}
+                lowestY = y
+            end
+        end
+    end
+
+    return lowest
+end
+
+local function scanAndConnect()
+    for _, plot in pairs(S.Workspace:FindFirstChild("Plots"):GetChildren()) do
+        local purchases = plot:FindFirstChild("Purchases")
+        if purchases then
+            local selected = findLowestValidRemainingTime(purchases)
+
+            for _, purchase in pairs(purchases:GetChildren()) do
+                local main = purchase:FindFirstChild("Main")
+                local gui = main and main:FindFirstChild("BillboardGui")
+                local remTime = gui and gui:FindFirstChild("RemainingTime")
+                local locked = gui and gui:FindFirstChild("Locked")
+
+                if main and remTime and locked and remTime:IsA("TextLabel") and locked:IsA("GuiObject") then
+                    local isTarget = selected and remTime == selected.remTime
+                    
+                    local isUnlocked = not locked.Visible
+                    local displayText = isUnlocked and "Unlocked" or remTime.Text
+                    
+                    updateBillboard(main, displayText, isTarget, isUnlocked)
+
+                    local key = remTime:GetDebugId()
+                    if isTarget and not timerEspConnections[key] then
+                        local function refresh()
+                            local stillTarget = (findLowestValidRemainingTime(purchases) or {}).remTime == remTime
+                            local isUnlocked = not locked.Visible
+                            local displayText = isUnlocked and "Unlocked" or remTime.Text
+                            updateBillboard(main, displayText, stillTarget, isUnlocked)
+                        end
+
+                        local conn1 = remTime:GetPropertyChangedSignal("Text"):Connect(refresh)
+                        local conn2 = locked:GetPropertyChangedSignal("Visible"):Connect(refresh)
+                        timerEspConnections[key] = {conn1, conn2}
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function enableTimerESP()
+    if timerEspEnabled then return end
+    timerEspEnabled = true
+
+    task.spawn(function()
+        while timerEspEnabled do
+            pcall(scanAndConnect)
+            task.wait(5)
+        end
+    end)
+end
+
+local function disableTimerESP()
+    if not timerEspEnabled then return end
+    timerEspEnabled = false
+
+    for _, plot in pairs(S.Workspace:FindFirstChild("Plots"):GetChildren()) do
+        local purchases = plot:FindFirstChild("Purchases")
+        if purchases then
+            for _, purchase in pairs(purchases:GetChildren()) do
+                local main = purchase:FindFirstChild("Main")
+                if main then
+                    local gui = main:FindFirstChild("RemainingTimeGui")
+                    if gui then
+                        gui:Destroy()
+                    end
+                end
+            end
+        end
+    end
+
+    for _, connections in pairs(timerEspConnections) do
+        for _, connection in ipairs(connections) do
+            connection:Disconnect()
+        end
+    end
+    timerEspConnections = {}
+end
+
+local function toggleTimerESP(state)
+    if state then
+        enableTimerESP()
+    else
+        disableTimerESP()
+    end
+end
+
+-- ==================== ESP BASE LINE FUNCTIONS ====================
+local function FindDelivery()
+    local plots = S.Workspace:WaitForChild("Plots", 5)
+    if not plots then return nil end
+    
+    for _, plot in pairs(plots:GetChildren()) do
+        local sign = plot:FindFirstChild("PlotSign")
+        if sign then
+            local yourBase = sign:FindFirstChild("YourBase")
+            if yourBase and yourBase.Enabled then
+                local hitbox = plot:FindFirstChild("DeliveryHitbox")
+                if hitbox then 
+                    return hitbox 
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function createPlotLine()
+    local Character = player.Character
+    if not Character then return false end
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not RootPart then return false end
+
+    local deliveryHitbox = FindDelivery()
+    if not deliveryHitbox then return false end
+
+    local targetPosition = deliveryHitbox.Position
+
+    baseTargetPart = Instance.new("Part")
+    baseTargetPart.Name = "PlotLineTarget"
+    baseTargetPart.Size = Vector3.new(0.1, 0.1, 0.1)
+    baseTargetPart.Position = targetPosition
+    baseTargetPart.Anchored = true
+    baseTargetPart.CanCollide = false
+    baseTargetPart.Transparency = 1
+    baseTargetPart.Parent = S.Workspace
+
+    baseBeamPart = Instance.new("Part")
+    baseBeamPart.Name = "PlotLineBeam"
+    baseBeamPart.Size = Vector3.new(0.1, 0.1, 0.1)
+    baseBeamPart.Transparency = 1
+    baseBeamPart.CanCollide = false
+    baseBeamPart.Parent = S.Workspace
+
+    local att0 = Instance.new("Attachment")
+    att0.Name = "Att0"
+    att0.Parent = baseBeamPart
+
+    local att1 = Instance.new("Attachment")
+    att1.Name = "Att1"
+    att1.Parent = baseTargetPart
+
+    baseBeam = Instance.new("Beam")
+    baseBeam.Name = "PlotLineBeam"
+    baseBeam.Attachment0 = att0
+    baseBeam.Attachment1 = att1
+    baseBeam.FaceCamera = true
+    baseBeam.Width0 = 0.3
+    baseBeam.Width1 = 0.3
+    baseBeam.Color = ColorSequence.new(Color3.fromRGB(100, 0, 0))
+    baseBeam.Transparency = NumberSequence.new(0)
+    baseBeam.LightEmission = 0.5
+    baseBeam.Parent = baseBeamPart
+
+    local pulseTime = 0
+    local animateConnection
+    animateConnection = S.RunService.Heartbeat:Connect(function(dt)
+        if baseBeam and baseBeam.Parent then
+            pulseTime = pulseTime + dt
+            local pulse = (math.sin(pulseTime * 2) + 1) / 2
+            local r = 100 + (155 * pulse)
+            baseBeam.Color = ColorSequence.new(Color3.fromRGB(r, 0, 0))
+        else
+            if animateConnection then animateConnection:Disconnect() end
+        end
+    end)
+
+    baseLineConnection = S.RunService.Heartbeat:Connect(function()
+        local char = player.Character
+        if not char or not char.Parent then
+            stopPlotLine()
+            return
+        end
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if root and baseBeamPart and baseBeamPart.Parent then
+            baseBeamPart.CFrame = root.CFrame
+        end
+    end)
+
+    return true
+end
+
+local function stopPlotLine()
+    if baseLineConnection then baseLineConnection:Disconnect(); baseLineConnection = nil end
+    if baseBeamPart then baseBeamPart:Destroy(); baseBeamPart = nil end
+    if baseTargetPart then baseTargetPart:Destroy(); baseTargetPart = nil end
+    if baseBeam then baseBeam:Destroy(); baseBeam = nil end
+end
+
+local function enableBaseLine()
+    if baseLineEnabled then return end
+    baseLineEnabled = true
+    pcall(createPlotLine)
+end
+
+local function disableBaseLine()
+    if not baseLineEnabled then return end
+    baseLineEnabled = false
+    pcall(stopPlotLine)
+end
+
+local function toggleBaseLine(state)
+    if state then
+        enableBaseLine()
+    else
+        disableBaseLine()
+    end
+end
+
+-- [Skip Anti Ragdoll, Xray Base, Optimizer, Anti Lag, Anti Debuff functions - sama seperti sebelum ni]
+
+-- ==================== ANTI RAGDOLL FUNCTIONS ====================
+local function stopRagdoll()
+    if not ragdollActive then return end
+    ragdollActive = false
     local char = player.Character
     if not char then return end
     
     local hum = char:FindFirstChildOfClass("Humanoid")
-    local rootPart = char:FindFirstChild("HumanoidRootPart")
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not hum or not root then return end
     
-    if hum and hum.Health > 0 and rootPart then
-        rootPart.Velocity = Vector3.new(rootPart.Velocity.X, 50, rootPart.Velocity.Z)
+    hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+    hum.PlatformStand = false
+    root.CanCollide = true
+    if root.Anchored then root.Anchored = false end
+    
+    for _, part in char:GetChildren() do
+        if part:IsA("BasePart") then
+            for _, c in part:GetChildren() do
+                if c:IsA("BallSocketConstraint") or c:IsA("HingeConstraint") then c:Destroy() end
+            end
+            local motor = part:FindFirstChildWhichIsA("Motor6D")
+            if motor then motor.Enabled = true end
+        end
     end
+    root.Velocity = Vector3.new(0, math.min(root.Velocity.Y, 0), 0)
+    root.RotVelocity = Vector3.new(0, 0, 0)
+    S.Workspace.CurrentCamera.CameraSubject = hum
 end
 
-local function setupJumpRequest()
-    if jumpRequestConnection then
-        jumpRequestConnection:Disconnect()
-        jumpRequestConnection = nil
-    end
-    
-    jumpRequestConnection = UserInputService.JumpRequest:Connect(function()
-        if infiniteJumpEnabled then
-            doJump()
-        end
+local function startRagdollTimer()
+    if ragdollTimer then ragdollTimer:Disconnect() end
+    ragdollActive = true
+    ragdollTimer = S.RunService.Heartbeat:Connect(function()
+        ragdollTimer:Disconnect(); ragdollTimer = nil
+        stopRagdoll()
     end)
 end
 
-local function initializeJumpForCharacter(char)
+local function watchHumanoidStates(char)
     local hum = char:WaitForChild("Humanoid")
-    setupJumpRequest()
-    
-    char.ChildAdded:Connect(function(child)
-        if child:IsA("Humanoid") then
-            setupJumpRequest()
+    if humanoidWatchConnection then humanoidWatchConnection:Disconnect() end
+    humanoidWatchConnection = hum.StateChanged:Connect(function(_, newState)
+        if not antiRagdollEnabled then return end
+        if newState == Enum.HumanoidStateType.FallingDown or newState == Enum.HumanoidStateType.Ragdoll or newState == Enum.HumanoidStateType.Physics then
+            if not ragdollActive then hum.PlatformStand = true; startRagdollTimer() end
+        elseif newState == Enum.HumanoidStateType.GettingUp or newState == Enum.HumanoidStateType.Running or newState == Enum.HumanoidStateType.RunningNoPhysics then
+            hum.PlatformStand = false
+            if ragdollActive then stopRagdoll() end
         end
     end)
 end
 
--- ========================================
--- Low Gravity Function (NEW)
--- ========================================
-
-local function updateGravity()
-    if lowGravityEnabled then
-        local character = player.Character
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            if bodyForce then
-                bodyForce:Destroy()
-            end
-            bodyForce = Instance.new("BodyForce")
-            bodyForce.Name = "LowGravityForce"
-            bodyForce.Parent = character.HumanoidRootPart
-            local force = (defaultGravity - lowGravityForce) * character.HumanoidRootPart:GetMass()
-            bodyForce.Force = Vector3.new(0, force, 0)
-        end
-    else
-        if bodyForce then
-            bodyForce:Destroy()
-            bodyForce = nil
-        end
-    end
-end
-
--- ========================================
--- Toggle Logic (NEW)
--- ========================================
-
-local function toggleInfJump(enabled)
-    infiniteJumpEnabled = enabled
-    lowGravityEnabled = enabled
-    
-    if enabled then
-        -- Enable
-        -- Setup inf jump
-        local char = player.Character
-        if char then
-            initializeJumpForCharacter(char)
-        end
-        
-        -- Setup low gravity
-        updateGravity()
-    else
-        -- Disable
-        -- Disconnect jump
-        if jumpRequestConnection then
-            jumpRequestConnection:Disconnect()
-            jumpRequestConnection = nil
-        end
-        
-        -- Remove gravity
-        updateGravity()
-    end
-end
-
--- ==================== NEW FLY/TP TO BEST FUNCTIONS ====================
--- Load modules
-local AnimalsModule, TraitsModule, MutationsModule
-
-pcall(function()
-    AnimalsModule = require(ReplicatedStorage.Datas.Animals)
-    TraitsModule = require(ReplicatedStorage.Datas.Traits)
-    MutationsModule = require(ReplicatedStorage.Datas.Mutations)
-end)
-
--- Helper function to get trait multiplier
-local function getTraitMultiplier(model)
-    if not TraitsModule then return 0 end
-    
-    local traitJson = model:GetAttribute("Traits")
-    if not traitJson or traitJson == "" then
-        return 0
-    end
-
-    local traits = {}
-    local ok, decoded = pcall(function()
-        return HttpService:JSONDecode(traitJson)
-    end)
-
-    if ok and typeof(decoded) == "table" then
-        traits = decoded
-    else
-        for t in string.gmatch(traitJson, "[^,]+") do
-            table.insert(traits, t)
-        end
-    end
-
-    local mult = 0
-    for _, entry in pairs(traits) do
-        local name = typeof(entry) == "table" and entry.Name or tostring(entry)
-        name = name:gsub("^_Trait%.", "")
-
-        local trait = TraitsModule[name]
-        if trait and trait.MultiplierModifier then
-            mult += tonumber(trait.MultiplierModifier) or 0
-        end
-    end
-
-    return mult
-end
-
--- Helper function to get final generation
-local function getFinalGeneration(model)
-    if not AnimalsModule then return 0 end
-    
-    local animalData = AnimalsModule[model.Name]
-    if not animalData then return 0 end
-
-    local baseGen = tonumber(animalData.Generation) or tonumber(animalData.Price or 0)
-
-    local traitMult = getTraitMultiplier(model)
-
-    local mutationMult = 0
-    if MutationsModule then
-        local mutation = model:GetAttribute("Mutation")
-        if mutation and MutationsModule[mutation] then
-            mutationMult = tonumber(MutationsModule[mutation].Modifier or 0)
-        end
-    end
-
-    local final = baseGen * (1 + traitMult + mutationMult)
-    return math.max(1, math.round(final))
-end
-
--- Check if plot is player's plot
-local function isPlayerPlot(plot)
-    local plotSign = plot:FindFirstChild("PlotSign")
-    if plotSign then
-        local yourBase = plotSign:FindFirstChild("YourBase")
-        if yourBase and yourBase.Enabled then
-            return true
-        end
-    end
-    return false
-end
-
--- Unified function to find the best pet
-local function findTheAbsoluteBestPet()
-    local plots = Workspace:FindFirstChild("Plots")
-    if not plots then return nil end
-    
-    local highest = {value = 0}
-    
-    -- Try using the module-based system
-    if AnimalsModule then
-        for _, plot in pairs(plots:GetChildren()) do
-            if not isPlayerPlot(plot) then
-                for _, obj in pairs(plot:GetDescendants()) do
-                    if obj:IsA("Model") and AnimalsModule[obj.Name] then
-                        pcall(function()
-                            local gen = getFinalGeneration(obj)
-                            
-                            if gen > 0 and gen > highest.value then
-                                local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-                                
-                                if root then
-                                    highest = {
-                                        plot = plot,
-                                        plotName = plot.Name,
-                                        petName = obj.Name,
-                                        generation = gen,
-                                        model = obj,
-                                        value = gen,
-                                        position = root.Position,
-                                        cframe = root.CFrame
-                                    }
-                                end
-                            end
-                        end)
-                    end
-                end
-            end
-        end
-        
-        if highest.value > 0 then
-            return highest
-        end
-    end
-    
-    -- Fallback to old text-based system
-    for _, plot in pairs(plots:GetChildren()) do
-        if not isPlayerPlot(plot) then
-            for _, obj in pairs(plot:GetDescendants()) do
-                if obj:IsA("TextLabel") then
-                    local txt = obj.Text or ""
-                    
-                    if txt:find("/") and txt:lower():find("s") then
-                        pcall(function()
-                            local nameLabel = nil
-                            local parent = obj.Parent
-                            
-                            if parent then
-                                nameLabel = parent:FindFirstChild("DisplayName")
-                                
-                                if not nameLabel and parent.Parent then
-                                    nameLabel = parent.Parent:FindFirstChild("DisplayName")
-                                end
-                            end
-                            
-                            if not nameLabel or nameLabel.Text == "" or txt == "" or txt == "N/A" then
-                                return
-                            end
-                            
-                            local petName = nameLabel.Text
-                            local genText = txt
-                            
-                            local value = nil
-                            if genText:find("T/s") then
-                                value = tonumber(genText:match("(%d+%.?%d*)T/s")) * 1e12
-                            elseif genText:find("B/s") then
-                                value = tonumber(genText:match("(%d+%.?%d*)B/s")) * 1e9
-                            elseif genText:find("M/s") then
-                                value = tonumber(genText:match("(%d+%.?%d*)M/s")) * 1e6
-                            elseif genText:find("K/s") then
-                                value = tonumber(genText:match("(%d+%.?%d*)K/s")) * 1e3
-                            else
-                                value = tonumber(genText:match("(%d+%.?%d*)/s")) or 0
-                            end
-                            
-                            if value and value > 0 and value > highest.value then
-                                local model = obj:FindFirstAncestorOfClass('Model')
-                                
-                                if model then
-                                    local part = model.PrimaryPart or model:FindFirstChildWhichIsA('BasePart')
-                                    
-                                    if part then
-                                        highest = {
-                                            plot = plot,
-                                            plotName = plot.Name,
-                                            petName = petName,
-                                            generation = value,
-                                            model = model,
-                                            value = value,
-                                            position = part.Position,
-                                            cframe = part.CFrame
-                                        }
-                                    end
-                                end
-                            end
-                        end)
-                    end
-                end
-            end
-        end
-    end
-    
-    return highest.value > 0 and highest or nil
-end
-
--- Auto-equip Grapple Hook
-local function autoEquipGrapple()
-    local success, result = pcall(function()
-        local character = LocalPlayer.Character
-        if not character then return false end
-        
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if not (humanoid and humanoid.Health > 0) then return false end
-        
-        humanoid:UnequipTools()
-        
-        local backpack = LocalPlayer:WaitForChild("Backpack")
-        local grapple = backpack:FindFirstChild("Grapple Hook")
-        
-        if grapple then
-            grapple.Parent = character
-            humanoid:EquipTool(grapple)
-            return true
-        end
-        
-        return false
-    end)
-    
-    return success and result
-end
-
--- Fire Grapple Hook
-local UseItemRemote = ReplicatedStorage:WaitForChild("Packages")
-    :WaitForChild("Net")
-    :WaitForChild("RE/UseItem")
-
-local function fireGrapple()
-    pcall(function()
-        local args = {1.9832406361897787}
-        UseItemRemote:FireServer(unpack(args))
-    end)
-end
-
--- Equip Flying Carpet
-local function equipFlyingCarpet()
-    local success, result = pcall(function()
-        local character = LocalPlayer.Character
-        if not character then return false end
-        
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if not (humanoid and humanoid.Health > 0) then return false end
-        
-        humanoid:UnequipTools()
-        
-        local backpack = LocalPlayer:WaitForChild("Backpack")
-        local carpet = backpack:FindFirstChild("Flying Carpet") or 
-                      backpack:FindFirstChild("FlyingCarpet") or
-                      backpack:FindFirstChild("flying carpet") or
-                      backpack:FindFirstChild("flyingcarpet")
-        
-        if carpet then
-            carpet.Parent = character
-            humanoid:EquipTool(carpet)
-            return true
-        end
-        
-        local equippedCarpet = character:FindFirstChild("Flying Carpet") or 
-                               character:FindFirstChild("FlyingCarpet") or
-                               character:FindFirstChild("flying carpet") or
-                               character:FindFirstChild("flyingcarpet")
-        
-        if equippedCarpet and equippedCarpet:IsA("Tool") then
-            humanoid:EquipTool(equippedCarpet)
-            return true
-        end
-        
-        return false
-    end)
-    
-    return success and result
-end
-
--- Find lowest PlotBlock in plot
-local function findLowestPlotBlock(plot)
-    local purchases = plot:FindFirstChild("Purchases")
-    if not purchases then return nil end
-    
-    local plotBlock = purchases:FindFirstChild("PlotBlock")
-    if not plotBlock then return nil end
-    
-    local lowestMain = nil
-    local lowestY = math.huge
-    
-    local function scanForMain(parent)
-        for _, child in ipairs(parent:GetChildren()) do
-            if child.Name == "Main" and child:IsA("BasePart") then
-                local y = child.Position.Y
-                if y < lowestY then
-                    lowestY = y
-                    lowestMain = child
-                end
-            end
-            scanForMain(child)
-        end
-    end
-    
-    scanForMain(plotBlock)
-    
-    return lowestMain
-end
-
--- Get PlotBlock bounds
-local function getPlotBlockBounds(plot)
-    local main = findLowestPlotBlock(plot)
-    if not main then return nil end
-    
-    local pos = main.Position
-    local size = main.Size
-    
-    local halfSizeX = size.X * 0.5
-    local halfSizeY = size.Y * 0.5
-    
-    return {
-        centerX = pos.X,
-        centerY = pos.Y,
-        centerZ = pos.Z,
-        halfSizeX = halfSizeX,
-        halfSizeY = halfSizeY,
-        minX = pos.X - halfSizeX,
-        maxX = pos.X + halfSizeX,
-        minY = pos.Y - halfSizeY,
-        maxY = pos.Y + halfSizeY,
-    }
-end
-
--- Get PlotBlock edge position
-local function getPlotBlockEdgePosition(plot, fromPos, petPos)
-    local info = getPlotBlockBounds(plot)
-    if not info then return nil end
-    
-    local MARGIN = 39.4
-    
-    local dirX = fromPos.X - info.centerX
-    
-    local targetX
-    if dirX > 0 then
-        targetX = info.maxX + MARGIN
-    else
-        targetX = info.minX - MARGIN
-    end
-    
-    local targetZ = info.centerZ
-    
-    local targetY
-    local animalY = petPos.Y
-    
-    if animalY > 10 then
-        targetY = 20
-    else
-        targetY = animalY + 2
-    end
-    
-    return Vector3.new(targetX, targetY, targetZ)
-end
-
--- Stop velocity
-local velocityConnection = nil
-local isFlyingToBest = false
-
-local function stopVelocity()
-    if velocityConnection then
-        velocityConnection:Disconnect()
-        velocityConnection = nil
-    end
-    isFlyingToBest = false
-end
-
--- Velocity flight to PlotBlock edge
-local function velocityFlightToPet()
-    local character = LocalPlayer.Character
-    if not character then 
-        return false
-    end
-    
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    local humanoid = character:FindFirstChild("Humanoid")
-    
-    if not hrp or not humanoid then 
-        return false
-    end
-    
-    local bestPet = findTheAbsoluteBestPet()
-    
-    if not bestPet then
-        return false
-    end
-    
-    local currentPos = hrp.Position
-    local targetPos = bestPet.position
-    local plot = bestPet.plot
-    
-    local finalPos = getPlotBlockEdgePosition(plot, currentPos, targetPos)
-    
-    if not finalPos then
-        local directionToPet = (targetPos - currentPos).Unit
-        local approachPos = targetPos - (directionToPet * 7)
-        
-        local animalY = targetPos.Y
-        if animalY > 10 then
-            approachPos = Vector3.new(approachPos.X, 20, approachPos.Z)
-        else
-            approachPos = Vector3.new(approachPos.X, animalY + 2, approachPos.Z)
-        end
-        finalPos = approachPos
-    end
-    
-    local grappleEquipped = autoEquipGrapple()
-    if not grappleEquipped then
-        return false
-    end
-    
-    task.wait(0.1)
-    
-    fireGrapple()
-    
-    task.wait(0.05)
-    
-    isFlyingToBest = true
-    
-    local baseSpeed = 185
-    
-    velocityConnection = RunService.Heartbeat:Connect(function()
-        if not isFlyingToBest then
-            if velocityConnection then velocityConnection:Disconnect() end
-            return
-        end
-        
-        local character = LocalPlayer.Character
-        if not character then
-            stopVelocity()
-            return
-        end
-        
-        local hrp = character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
-            stopVelocity()
-            return
-        end
-        
-        local distanceToTarget = (finalPos - hrp.Position).Magnitude
-        
-        if distanceToTarget <= 3 then
-            stopVelocity()
-            hrp.CFrame = CFrame.new(finalPos)
-            return
-        end
-        
-        local currentSpeed = baseSpeed
-        if distanceToTarget <= 20 then
-            local slowdownFactor = distanceToTarget / 20
-            currentSpeed = math.max(50, baseSpeed * slowdownFactor)
-        end
-        
-        local currentDirection = (finalPos - hrp.Position).Unit
-        local velocityVector = currentDirection * currentSpeed
-        
-        hrp.Velocity = velocityVector
-    end)
-    
+local function cacheCharacterData()
+    local char = player.Character
+    if not char then return false end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not hum or not root then return false end
+    cachedCharData = { character = char, humanoid = hum, root = root }
     return true
 end
 
--- Safe teleport to pet
-local function safeTeleportToPet()
-    local character = LocalPlayer.Character
-    if not character then 
-        return false
-    end
-    
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    local humanoid = character:FindFirstChild("Humanoid")
-    
-    if not hrp or not humanoid then 
-        return false
-    end
-    
-    local bestPet = findTheAbsoluteBestPet()
-    
-    if not bestPet then
-        return false
-    end
-    
-    local currentPos = hrp.Position
-    local targetPos = bestPet.position
-    local plot = bestPet.plot
-    
-    local state = humanoid:GetState()
-    if state ~= Enum.HumanoidStateType.Jumping and state ~= Enum.HumanoidStateType.Freefall then
-        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        task.wait(0.05)
-    end
-    
-    local targetUpwardSpeed = 179
-    local currentUpwardSpeed = 0
-    local smoothness = 0.25
-    local elapsed = 0
-    local maxDuration = 0.1
-    
-    velocityConnection = RunService.Heartbeat:Connect(function(dt)
-        elapsed = elapsed + dt
-        
-        if elapsed >= maxDuration then
-            stopVelocity()
-            return
+local function isRagdolled()
+    if not cachedCharData.humanoid then return false end
+    local state = cachedCharData.humanoid:GetState()
+    if state == Enum.HumanoidStateType.Physics or state == Enum.HumanoidStateType.Ragdoll or state == Enum.HumanoidStateType.FallingDown then return true end
+    local endTime = player:GetAttribute("RagdollEndTime")
+    if endTime and (endTime - S.Workspace:GetServerTimeNow()) > 0 then return true end
+    return false
+end
+
+local function removeRagdollConstraints()
+    if not cachedCharData.character then return end
+    for _, d in ipairs(cachedCharData.character:GetDescendants()) do
+        if d:IsA("BallSocketConstraint") or (d:IsA("Attachment") and d.Name:find("RagdollAttachment")) then
+            pcall(function() d:Destroy() end)
         end
-        
-        local character = LocalPlayer.Character
-        if not character then
-            stopVelocity()
-            return
+    end
+end
+
+local function forceExitRagdoll()
+    if not cachedCharData.humanoid or not cachedCharData.root then return end
+    pcall(function() player:SetAttribute("RagdollEndTime", S.Workspace:GetServerTimeNow()) end)
+    if cachedCharData.humanoid.Health > 0 then cachedCharData.humanoid:ChangeState(Enum.HumanoidStateType.Running) end
+    cachedCharData.root.Anchored = false
+    cachedCharData.root.AssemblyLinearVelocity = Vector3.zero
+    cachedCharData.root.AssemblyAngularVelocity = Vector3.zero
+    cachedCharData.humanoid.PlatformStand = false
+end
+
+local function constraintRemovalLoop()
+    while constraintLoopActive and cachedCharData.humanoid do
+        task.wait()
+        if isRagdolled() then removeRagdollConstraints(); forceExitRagdoll() end
+    end
+end
+
+local function setupCameraBinding()
+    if not cachedCharData.humanoid then return end
+    local conn = S.RunService.RenderStepped:Connect(function()
+        if not constraintLoopActive then return end
+        local cam = S.Workspace.CurrentCamera
+        if cam and cachedCharData.humanoid and cam.CameraSubject ~= cachedCharData.humanoid then
+            cam.CameraSubject = cachedCharData.humanoid
         end
-        
-        local hrp = character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
-            stopVelocity()
-            return
-        end
-        
-        currentUpwardSpeed = currentUpwardSpeed + (targetUpwardSpeed - currentUpwardSpeed) * smoothness
-        hrp.Velocity = Vector3.new(hrp.Velocity.X, currentUpwardSpeed, hrp.Velocity.Z)
     end)
-    
-    task.wait(0.3)
-    stopVelocity()
-    
-    local grappleEquipped = autoEquipGrapple()
-    
-    if grappleEquipped then
-        fireGrapple()
-    end
-    
-    task.wait(0.05)
-    
-    local carpetEquipped = equipFlyingCarpet()
-    
-    task.wait(0.1)
-    
-    local finalPos = getPlotBlockEdgePosition(plot, currentPos, targetPos)
-    
-    if not finalPos then
-        finalPos = targetPos
-        local animalY = targetPos.Y
-        if animalY > 10 then
-            finalPos = Vector3.new(finalPos.X, 20, finalPos.Z)
-        else
-            finalPos = Vector3.new(finalPos.X, animalY, finalPos.Z)
-        end
-    end
-    
-    hrp.CFrame = CFrame.new(finalPos)
-    
+    table.insert(ragdollConnections, conn)
+end
+
+local function setupCharacter(char)
     task.wait(0.5)
+    if not antiRagdollEnabled then return end
+    ragdollActive = false
+    if ragdollTimer then ragdollTimer:Disconnect(); ragdollTimer = nil end
+    watchHumanoidStates(char)
+    if cacheCharacterData() then setupCameraBinding(); task.spawn(constraintRemovalLoop) end
+end
+
+local function enableAntiRagdoll()
+    antiRagdollEnabled = true
+    constraintLoopActive = true
+    if player.Character then setupCharacter(player.Character) end
+    local charConn = player.CharacterAdded:Connect(setupCharacter)
+    table.insert(ragdollConnections, charConn)
+end
+
+local function disableAntiRagdoll()
+    antiRagdollEnabled = false
+    constraintLoopActive = false
+    ragdollActive = false
+    if ragdollTimer then ragdollTimer:Disconnect(); ragdollTimer = nil end
+    if humanoidWatchConnection then humanoidWatchConnection:Disconnect(); humanoidWatchConnection = nil end
+    for _, conn in ipairs(ragdollConnections) do pcall(function() conn:Disconnect() end) end
+    ragdollConnections = {}
+    cachedCharData = {}
+end
+
+local function toggleAntiRagdoll(state)
+    if state then
+        enableAntiRagdoll()
+    else
+        disableAntiRagdoll()
+    end
+end
+
+-- ==================== XRAY BASE FUNCTIONS ====================
+local function isBaseWall(obj)
+    if not obj:IsA("BasePart") then return false end
+    local n = obj.Name:lower()
+    local parent = obj.Parent and obj.Parent.Name:lower() or ""
+    return n:find("base") or parent:find("base")
+end
+
+local function tryApplyInvisibleWalls()
+    if not xrayBaseEnabled or invisibleWallsLoaded then return end
+    local plots = S.Workspace:FindFirstChild("Plots")
+    if not plots or #plots:GetChildren() == 0 then return end
+    
+    for _, plot in pairs(plots:GetChildren()) do
+        for _, obj in pairs(plot:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Anchored and obj.CanCollide and isBaseWall(obj) then
+                if not originalTransparency[obj] then
+                    originalTransparency[obj] = obj.LocalTransparencyModifier
+                    obj.LocalTransparencyModifier = 0.85
+                end
+            end
+        end
+    end
+    invisibleWallsLoaded = true
+end
+
+local function enableXrayBase()
+    if xrayBaseEnabled then return end
+    xrayBaseEnabled = true
+    invisibleWallsLoaded = false
+    
+    task.spawn(function() task.wait(0.5); tryApplyInvisibleWalls() end)
+    
+    xrayBaseConnection = S.Workspace.DescendantAdded:Connect(function(obj)
+        if not xrayBaseEnabled then return end
+        task.wait(0.1)
+        if isBaseWall(obj) and obj:IsA("BasePart") and obj.Anchored and obj.CanCollide then
+            if not originalTransparency[obj] then
+                originalTransparency[obj] = obj.LocalTransparencyModifier
+                obj.LocalTransparencyModifier = 0.85
+            end
+        end
+    end)
+end
+
+local function disableXrayBase()
+    if not xrayBaseEnabled then return end
+    xrayBaseEnabled = false
+    invisibleWallsLoaded = false
+    
+    if xrayBaseConnection then xrayBaseConnection:Disconnect(); xrayBaseConnection = nil end
+    
+    for obj, value in pairs(originalTransparency) do
+        if obj and obj.Parent then pcall(function() obj.LocalTransparencyModifier = value end) end
+    end
+    originalTransparency = {}
+end
+
+local function toggleXrayBase(state)
+    if state then
+        enableXrayBase()
+    else
+        disableXrayBase()
+    end
+end
+
+-- ==================== OPTIMIZER FUNCTIONS ====================
+local function storeOriginalSettings()
+    pcall(function()
+        originalSettings = {
+            qualityLevel = settings().Rendering.QualityLevel,
+            globalShadows = S.Lighting.GlobalShadows,
+            brightness = S.Lighting.Brightness,
+            fogEnd = S.Lighting.FogEnd,
+            decoration = S.Workspace.Terrain.Decoration,
+            waterWaveSize = S.Workspace.Terrain.WaterWaveSize,
+        }
+    end)
+end
+
+local function applyFFlags()
+    for flag, value in pairs(PERFORMANCE_FFLAGS) do
+        pcall(function() setfflag(flag, tostring(value)) end)
+    end
+end
+
+local function nukeVisualEffects()
+    pcall(function()
+        for _, obj in ipairs(S.Workspace:GetDescendants()) do
+            pcall(function()
+                if obj:IsA("ParticleEmitter") then obj.Enabled = false; obj:Destroy()
+                elseif obj:IsA("Trail") then obj.Enabled = false; obj:Destroy()
+                elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then obj.Enabled = false; obj:Destroy()
+                elseif obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then obj.Enabled = false; obj:Destroy()
+                elseif obj:IsA("BasePart") then obj.CastShadow = false; obj.Material = Enum.Material.Plastic
+                end
+            end)
+        end
+    end)
+end
+
+local function optimizeCharacter(char)
+    if not char then return end
+    task.spawn(function()
+        task.wait(0.5)
+        pcall(function()
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then part.CastShadow = false; part.Material = Enum.Material.Plastic
+                elseif part:IsA("ParticleEmitter") or part:IsA("Trail") then part:Destroy()
+                end
+            end
+        end)
+    end)
+end
+
+local function enableFpsBoost()
+    if fpsBoostEnabled then return end
+    fpsBoostEnabled = true
+    getgenv().OPTIMIZER_ACTIVE = true
+    storeOriginalSettings()
+    
+    pcall(applyFFlags)
+    
+    pcall(function()
+        S.Workspace.StreamingEnabled = true
+        S.Workspace.StreamingMinRadius = 64
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+        S.Lighting.GlobalShadows = false
+        S.Lighting.FogEnd = 9e9
+        S.Lighting.Technology = Enum.Technology.Legacy
+        S.Workspace.Terrain.Decoration = false
+    end)
+    
+    table.insert(optimizerThreads, task.spawn(function() task.wait(1); nukeVisualEffects() end))
+    
+    table.insert(optimizerConnections, S.Workspace.DescendantAdded:Connect(function(obj)
+        if not getgenv().OPTIMIZER_ACTIVE then return end
+        pcall(function()
+            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Fire") then obj:Destroy()
+            elseif obj:IsA("BasePart") then obj.CastShadow = false
+            end
+        end)
+    end))
+    
+    for _, p in ipairs(S.Players:GetPlayers()) do
+        if p.Character then optimizeCharacter(p.Character) end
+        table.insert(optimizerConnections, p.CharacterAdded:Connect(function(char) if getgenv().OPTIMIZER_ACTIVE then optimizeCharacter(char) end end))
+    end
+    
+    pcall(function() setfpscap(999) end)
+end
+
+local function disableFpsBoost()
+    if not fpsBoostEnabled then return end
+    fpsBoostEnabled = false
+    getgenv().OPTIMIZER_ACTIVE = false
+    
+    for _, t in ipairs(optimizerThreads) do pcall(function() task.cancel(t) end) end
+    optimizerThreads = {}
+    for _, c in ipairs(optimizerConnections) do pcall(function() c:Disconnect() end) end
+    optimizerConnections = {}
+    
+    pcall(function()
+        settings().Rendering.QualityLevel = originalSettings.qualityLevel or Enum.QualityLevel.Automatic
+        S.Lighting.GlobalShadows = originalSettings.globalShadows ~= false
+        S.Workspace.Terrain.Decoration = originalSettings.decoration ~= false
+    end)
+end
+
+local function toggleOptimizer(state)
+    if state then
+        enableFpsBoost()
+    else
+        disableFpsBoost()
+    end
+end
+
+-- ==================== ANTI LAG FUNCTIONS ====================
+local function destroyAllEquippableItems(character)
+    if not character then return end
+    if not antiLagRunning then return end
+    
+    pcall(function()
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("Accessory") or child:IsA("Hat") then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("Shirt") or child:IsA("Pants") or child:IsA("ShirtGraphic") then
+                child:Destroy()
+            end
+        end
+        
+        local bodyColors = character:FindFirstChildOfClass("BodyColors")
+        if bodyColors then
+            bodyColors:Destroy()
+        end
+        
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("CharacterMesh") then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child.ClassName == "LayeredClothing" or child.ClassName == "WrapLayer" then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("BasePart") then
+                local mesh = child:FindFirstChildOfClass("SpecialMesh")
+                if mesh then
+                    mesh:Destroy()
+                end
+            end
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("ParticleEmitter") or child:IsA("Trail") or child:IsA("Beam") then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("PointLight") or child:IsA("SpotLight") or child:IsA("SurfaceLight") then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("Fire") or child:IsA("Smoke") or child:IsA("Sparkles") then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("Highlight") then
+                child:Destroy()
+            end
+        end
+        
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("Decal") or child:IsA("Texture") then
+                if not (child.Name == "face" and child.Parent and child.Parent.Name == "Head") then
+                    child:Destroy()
+                end
+            end
+        end
+    end)
+end
+
+local function destroyBackpackTools(plr)
+    if not antiLagRunning then return end
+    
+    pcall(function()
+        local backpack = plr:FindFirstChild("Backpack")
+        if backpack then
+            for _, tool in ipairs(backpack:GetChildren()) do
+                if tool:IsA("Tool") then
+                    for _, desc in ipairs(tool:GetDescendants()) do
+                        if desc:IsA("ParticleEmitter") or desc:IsA("Trail") or desc:IsA("Beam") or
+                           desc:IsA("SpecialMesh") or desc:IsA("PointLight") or desc:IsA("SpotLight") or
+                           desc:IsA("Fire") or desc:IsA("Smoke") or desc:IsA("Sparkles") then
+                            desc:Destroy()
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function destroyEquippedTools(character)
+    if not character then return end
+    if not antiLagRunning then return end
+    
+    pcall(function()
+        for _, tool in ipairs(character:GetChildren()) do
+            if tool:IsA("Tool") then
+                for _, desc in ipairs(tool:GetDescendants()) do
+                    if desc:IsA("ParticleEmitter") or desc:IsA("Trail") or desc:IsA("Beam") or
+                       desc:IsA("SpecialMesh") or desc:IsA("PointLight") or desc:IsA("SpotLight") or
+                       desc:IsA("Fire") or desc:IsA("Smoke") or desc:IsA("Sparkles") then
+                        desc:Destroy()
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function antiLagCleanCharacter(char)
+    if not char then return end
+    
+    destroyAllEquippableItems(char)
+    destroyEquippedTools(char)
+    cleanedCharacters[char] = true
+end
+
+local function antiLagDisconnectAll()
+    for _, conn in ipairs(antiLagConnections) do
+        if typeof(conn) == "RBXScriptConnection" then
+            conn:Disconnect()
+        end
+    end
+    antiLagConnections = {}
+    cleanedCharacters = {}
+end
+
+local function enableAntiLag()
+    if antiLagRunning then return end
+    antiLagRunning = true
+    
+    for _, plr in ipairs(S.Players:GetPlayers()) do
+        if plr.Character then
+            antiLagCleanCharacter(plr.Character)
+            destroyBackpackTools(plr)
+        end
+        
+        if plr.Backpack then
+            table.insert(antiLagConnections, plr.Backpack.ChildAdded:Connect(function()
+                if antiLagRunning then
+                    task.wait(0.1)
+                    destroyBackpackTools(plr)
+                end
+            end))
+        end
+    end
+    
+    table.insert(antiLagConnections, S.Players.PlayerAdded:Connect(function(plr)
+        table.insert(antiLagConnections, plr.CharacterAdded:Connect(function(char)
+            if not antiLagRunning then return end
+            task.wait(0.5)
+            antiLagCleanCharacter(char)
+            destroyBackpackTools(plr)
+            
+            table.insert(antiLagConnections, char.ChildAdded:Connect(function(child)
+                if not antiLagRunning then return end
+                task.wait(0.1)
+                
+                if child:IsA("Accessory") or child:IsA("Hat") or child:IsA("Shirt") or 
+                   child:IsA("Pants") or child:IsA("ShirtGraphic") then
+                    child:Destroy()
+                elseif child:IsA("Tool") then
+                    destroyEquippedTools(char)
+                end
+            end))
+        end))
+        
+        if plr.Character then
+            antiLagCleanCharacter(plr.Character)
+            destroyBackpackTools(plr)
+        end
+        
+        if plr.Backpack then
+            table.insert(antiLagConnections, plr.Backpack.ChildAdded:Connect(function()
+                if antiLagRunning then
+                    task.wait(0.1)
+                    destroyBackpackTools(plr)
+                end
+            end))
+        end
+    end))
+    
+    for _, plr in ipairs(S.Players:GetPlayers()) do
+        table.insert(antiLagConnections, plr.CharacterAdded:Connect(function(char)
+            if antiLagRunning then
+                task.wait(0.5)
+                antiLagCleanCharacter(char)
+                destroyBackpackTools(plr)
+                
+                table.insert(antiLagConnections, char.ChildAdded:Connect(function(child)
+                    if not antiLagRunning then return end
+                    task.wait(0.1)
+                    
+                    if child:IsA("Accessory") or child:IsA("Hat") or child:IsA("Shirt") or 
+                       child:IsA("Pants") or child:IsA("ShirtGraphic") then
+                        child:Destroy()
+                    elseif child:IsA("Tool") then
+                        destroyEquippedTools(char)
+                    end
+                end))
+            end
+        end))
+    end
+    
+    table.insert(antiLagConnections, task.spawn(function()
+        while antiLagRunning do
+            task.wait(3)
+            
+            for _, plr in ipairs(S.Players:GetPlayers()) do
+                if plr.Character and not cleanedCharacters[plr.Character] then
+                    antiLagCleanCharacter(plr.Character)
+                    destroyBackpackTools(plr)
+                end
+            end
+        end
+    end))
+end
+
+local function disableAntiLag()
+    if not antiLagRunning then return end
+    antiLagRunning = false
+    antiLagDisconnectAll()
+end
+
+local function toggleAntiLag(state)
+    if state then
+        enableAntiLag()
+    else
+        disableAntiLag()
+    end
+end
+
+-- ==================== ANTI DEBUFF V2 FUNCTIONS ====================
+function FOV_MANAGER:Start()
+    if self.conn then return end
+    
+    self.conn = S.RunService.RenderStepped:Connect(function()
+        local cam = S.Workspace.CurrentCamera
+        if cam and cam.FieldOfView ~= self.forcedFOV then
+            cam.FieldOfView = self.forcedFOV
+        end
+    end)
+end
+
+function FOV_MANAGER:Stop()
+    if self.conn then
+        self.conn:Disconnect()
+        self.conn = nil
+    end
+end
+
+function FOV_MANAGER:Push()
+    self.activeCount += 1
+    self:Start()
+end
+
+function FOV_MANAGER:Pop()
+    if self.activeCount > 0 then
+        self.activeCount -= 1
+    end
+    if self.activeCount == 0 then
+        self:Stop()
+    end
+end
+
+local function setupInstantAnimationBlocker()
+    local character = player.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    if not humanoid then return end
+    
+    local animator = humanoid:FindFirstChildOfClass("Animator")
+    if not animator then return end
+    
+    if animationPlayedConnection then 
+        animationPlayedConnection:Disconnect() 
+    end
+    
+    animationPlayedConnection = animator.AnimationPlayed:Connect(function(track)
+        if not antiDebuffEnabled then return end
+        if track and track.Animation then
+            if tostring(track.Animation.AnimationId):gsub("%D", "") == BOOGIE_ANIMATION_ID then
+                track:Stop(0)
+                track:Destroy()
+            end
+        end
+    end)
+end
+
+local function antiBeeDiscoNuke(obj)
+    if not obj or not obj.Parent then return end
+    if not antiDebuffEnabled then return end
+    if BAD_LIGHTING_NAMES[obj.Name] then
+        pcall(function()
+            obj:Destroy()
+        end)
+    end
+end
+
+local function antiBeeDiscoDisconnectAll()
+    for _, conn in ipairs(antiBeeDiscoConnections) do
+        if typeof(conn) == "RBXScriptConnection" then
+            conn:Disconnect()
+        end
+    end
+    antiBeeDiscoConnections = {}
+end
+
+local function protectControls()
+    if controlsProtected then return end
+    
+    pcall(function()
+        local PlayerScripts = player.PlayerScripts
+        local PlayerModule = PlayerScripts:FindFirstChild("PlayerModule")
+        if not PlayerModule then return end
+        
+        local Controls = require(PlayerModule):GetControls()
+        if not Controls then return end
+        
+        if not originalMoveFunction then
+            originalMoveFunction = Controls.moveFunction
+        end
+        
+        local function protectedMoveFunction(self, moveVector, relativeToCamera)
+            if originalMoveFunction then
+                originalMoveFunction(self, moveVector, relativeToCamera)
+            end
+        end
+        
+        local controlCheckConn = S.RunService.Heartbeat:Connect(function()
+            if not antiDebuffEnabled then return end
+            
+            if Controls.moveFunction ~= protectedMoveFunction then
+                Controls.moveFunction = protectedMoveFunction
+            end
+        end)
+        
+        table.insert(antiBeeDiscoConnections, controlCheckConn)
+        
+        Controls.moveFunction = protectedMoveFunction
+        controlsProtected = true
+    end)
+end
+
+local function blockBuzzingSound()
+    if not antiDebuffEnabled then return end
+    pcall(function()
+        local PlayerScripts = player.PlayerScripts
+        local beeScript = PlayerScripts:FindFirstChild("Bee", true)
+        if beeScript then
+            local buzzing = beeScript:FindFirstChild("Buzzing")
+            if buzzing and buzzing:IsA("Sound") then
+                buzzing:Stop()
+                buzzing.Volume = 0
+            end
+        end
+    end)
+end
+
+local function enableAntiDebuff()
+    if antiDebuffEnabled then return end
+    antiDebuffEnabled = true
+    
+    setupInstantAnimationBlocker()
+    
+    for _, inst in ipairs(S.Lighting:GetDescendants()) do
+        antiBeeDiscoNuke(inst)
+    end
+    
+    table.insert(antiBeeDiscoConnections, S.Lighting.DescendantAdded:Connect(function(obj)
+        antiBeeDiscoNuke(obj)
+    end))
+    
+    protectControls()
+    
+    table.insert(antiBeeDiscoConnections, S.RunService.Heartbeat:Connect(function()
+        blockBuzzingSound()
+    end))
+    
+    FOV_MANAGER:Push()
+end
+
+local function disableAntiDebuff()
+    if not antiDebuffEnabled then return end
+    antiDebuffEnabled = false
+    
+    if animationPlayedConnection then
+        animationPlayedConnection:Disconnect()
+        animationPlayedConnection = nil
+    end
+    
+    antiBeeDiscoDisconnectAll()
+    controlsProtected = false
+    originalMoveFunction = nil
+    
+    FOV_MANAGER:Pop()
+end
+
+local function toggleAntiDebuff(state)
+    if state then
+        enableAntiDebuff()
+    else
+        disableAntiDebuff()
+    end
+end
+
+-- ==================== NO ANIM DURING STEAL FUNCTIONS ====================
+local function cacheOriginalAnimations()
+    local char = player.Character
+    if not char then return false end
+    
+    animateScript = char:FindFirstChild("Animate")
+    if not animateScript then return false end
+    
+    originalAnimIds = {}
+    
+    for _, animType in ipairs(ANIM_TYPES) do
+        local animFolder = animateScript:FindFirstChild(animType)
+        if animFolder then
+            originalAnimIds[animType] = {}
+            for _, anim in ipairs(animFolder:GetChildren()) do
+                if anim:IsA("Animation") then
+                    originalAnimIds[animType][anim.Name] = anim.AnimationId
+                end
+            end
+        end
+    end
     
     return true
 end
 
--- ==================== SEMI INVISIBLE FUNCTIONS ====================
--- Semi Invisible Variables
-local connections = {
-    SemiInvisible = {}
-}
-local isInvisible = false
-local clone, oldRoot, hip, animTrack, connection, characterConnection
-
-local function removeFolders()
-    local playerName = player.Name
-    local playerFolder = Workspace:FindFirstChild(playerName)
-    if not playerFolder then return end
+local function disableAnimations()
+    if not animateScript then return end
     
-    local doubleRig = playerFolder:FindFirstChild("DoubleRig")
-    if doubleRig then doubleRig:Destroy() end
-    
-    local constraints = playerFolder:FindFirstChild("Constraints")
-    if constraints then constraints:Destroy() end
-    
-    local childAddedConn = playerFolder.ChildAdded:Connect(function(child)
-        if child.Name == "DoubleRig" or child.Name == "Constraints" then
-            child:Destroy()
-        end
-    end)
-    table.insert(connections.SemiInvisible, childAddedConn)
-end
-
-local function doClone()
-    if player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-        hip = player.Character.Humanoid.HipHeight
-        oldRoot = player.Character:FindFirstChild("HumanoidRootPart")
-        if not oldRoot or not oldRoot.Parent then return false end
-        
-        local tempParent = Instance.new("Model")
-        tempParent.Parent = game
-        player.Character.Parent = tempParent
-        
-        clone = oldRoot:Clone()
-        clone.Parent = player.Character
-        oldRoot.Parent = game.Workspace.CurrentCamera
-        
-        clone.CFrame = oldRoot.CFrame
-        player.Character.PrimaryPart = clone
-        player.Character.Parent = game.Workspace
-        
-        for _, v in pairs(player.Character:GetDescendants()) do
-            if v:IsA("Weld") or v:IsA("Motor6D") then
-                if v.Part0 == oldRoot then v.Part0 = clone end
-                if v.Part1 == oldRoot then v.Part1 = clone end
-            end
-        end
-        
-        tempParent:Destroy()
-        return true
-    end
-    return false
-end
-
-local function revertClone()
-    if not oldRoot or not oldRoot:IsDescendantOf(game.Workspace) or not player.Character or player.Character.Humanoid.Health <= 0 then return false end
-    
-    local tempParent = Instance.new("Model")
-    tempParent.Parent = game
-    player.Character.Parent = tempParent
-    
-    oldRoot.Parent = player.Character
-    player.Character.PrimaryPart = oldRoot
-    player.Character.Parent = game.Workspace
-    oldRoot.CanCollide = true
-    
-    for _, v in pairs(player.Character:GetDescendants()) do
-        if v:IsA("Weld") or v:IsA("Motor6D") then
-            if v.Part0 == clone then v.Part0 = oldRoot end
-            if v.Part1 == clone then v.Part1 = oldRoot end
-        end
-    end
-    
-    if clone then
-        local oldPos = clone.CFrame
-        clone:Destroy()
-        clone = nil
-        oldRoot.CFrame = oldPos
-    end
-    
-    oldRoot = nil
-    if player.Character and player.Character.Humanoid then
-        player.Character.Humanoid.HipHeight = hip
-    end
-end
-
-local function animationTrickery()
-    if player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-        local anim = Instance.new("Animation")
-        anim.AnimationId = "http://www.roblox.com/asset/?id=18537363391"
-        local humanoid = player.Character.Humanoid
-        local animator = humanoid:FindFirstChild("Animator") or Instance.new("Animator", humanoid)
-        
-        animTrack = animator:LoadAnimation(anim)
-        animTrack.Priority = Enum.AnimationPriority.Action4
-        animTrack:Play(0, 1, 0)
-        anim:Destroy()
-        
-        local animStoppedConn = animTrack.Stopped:Connect(function()
-            if isInvisible then
-                animationTrickery()
-            end
-        end)
-        table.insert(connections.SemiInvisible, animStoppedConn)
-        
-        task.delay(0, function()
-            animTrack.TimePosition = 0.7
-            task.delay(1, function()
-                animTrack:AdjustSpeed(math.huge)
-            end)
-        end)
-    end
-end
-
-local function setupGodmode()
-    local char = player.Character or player.CharacterAdded:Wait()
-    local hum = char:WaitForChild("Humanoid")
-    
-    local mt = getrawmetatable(game)
-    local oldNC = mt.__namecall
-    local oldNI = mt.__newindex
-    setreadonly(mt, false)
-    
-    mt.__namecall = newcclosure(function(self, ...)
-        local m = getnamecallmethod()
-        if self == hum then
-            if m == "ChangeState" and select(1, ...) == Enum.HumanoidStateType.Dead then return end
-            if m == "SetStateEnabled" then
-                local st, en = ...
-                if st == Enum.HumanoidStateType.Dead and en == true then return end
-            end
-            if m == "Destroy" then return end
-        end
-        if self == char and m == "BreakJoints" then return end
-        return oldNC(self, ...)
-    end)
-    
-    mt.__newindex = newcclosure(function(self, k, v)
-        if self == hum then
-            if k == "Health" and type(v) == "number" and v <= 0 then return end
-            if k == "MaxHealth" and type(v) == "number" and v < hum.MaxHealth then return end
-            if k == "BreakJointsOnDeath" and v == true then return end
-            if k == "Parent" and v == nil then return end
-        end
-        return oldNI(self, k, v)
-    end)
-    
-    setreadonly(mt, true)
-end
-
-local function enableInvisibility()
-    if not player.Character or player.Character.Humanoid.Health <= 0 then return false end
-    
-    removeFolders()
-    
-    local success = doClone()
-    if success then
-        task.wait(0.1)
-        animationTrickery()
-        
-        connection = RunService.PreSimulation:Connect(function(dt)
-            if player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 and oldRoot then
-                local root = player.Character.PrimaryPart or player.Character:FindFirstChild("HumanoidRootPart")
-                if root then
-                    local cf = root.CFrame - Vector3.new(0, player.Character.Humanoid.HipHeight + (root.Size.Y / 2) - 1 + 0.6, 0)
-                    oldRoot.CFrame = cf * CFrame.Angles(math.rad(222), 0, 0)
-                    oldRoot.Velocity = root.Velocity
-                    oldRoot.CanCollide = false
+    for _, animType in ipairs(ANIM_TYPES) do
+        local animFolder = animateScript:FindFirstChild(animType)
+        if animFolder then
+            for _, anim in ipairs(animFolder:GetChildren()) do
+                if anim:IsA("Animation") then
+                    anim.AnimationId = ""
                 end
             end
-        end)
-        table.insert(connections.SemiInvisible, connection)
-        
-        characterConnection = player.CharacterAdded:Connect(function(newChar)
-            if isInvisible then
-                if animTrack then animTrack:Stop(); animTrack:Destroy(); animTrack = nil end
-                if connection then connection:Disconnect() end
-                revertClone()
-                removeFolders()
-                isInvisible = false
-                for _, conn in ipairs(connections.SemiInvisible) do if conn then conn:Disconnect() end end
-                connections.SemiInvisible = {}
-            end
-        end)
-        table.insert(connections.SemiInvisible, characterConnection)
-        
-        return true
-    end
-    return false
-end
-
-local function disableInvisibility()
-    if animTrack then 
-        animTrack:Stop()
-        animTrack:Destroy()
-        animTrack = nil
-    end
-    
-    if connection then connection:Disconnect() end
-    if characterConnection then characterConnection:Disconnect() end
-    
-    revertClone()
-    removeFolders()
-end
-
--- ==================== NEW FUNCTIONS ====================
--- Quantum Desync Function
-local function performQuantumDesync()
-    pcall(function()
-        local backpack = player:WaitForChild("Backpack")
-        local char = player.Character or player.CharacterAdded:Wait()
-        local humanoid = char:WaitForChild("Humanoid")
-        local packages = ReplicatedStorage:WaitForChild("Packages")
-        local netFolder = packages:WaitForChild("Net")
-        local useItemRemote = netFolder:WaitForChild("RE/UseItem")
-        local teleportRemote = netFolder:WaitForChild("RE/QuantumCloner/OnTeleport")
-
-        local toolNames = {"Quantum Cloner","Brainrot","brainrot"}
-        local tool
-        for _, name in ipairs(toolNames) do
-            tool = backpack:FindFirstChild(name) or char:FindFirstChild(name)
-            if tool then break end
         end
-        if not tool then
-            for _, item in ipairs(backpack:GetChildren()) do
-                if item:IsA("Tool") then tool=item break end
+    end
+    
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
+                track:Stop(0)
             end
         end
-        if tool and tool.Parent==backpack then humanoid:EquipTool(tool) end
-
-        useItemRemote:FireServer()
-        teleportRemote:FireServer()
-    end)
+    end
 end
 
--- FPS Devourer Function (IMPROVED SPEED)
-local function fpsDevourer()
-    -- Note: Initial loops may cause a temporary lag spike as they scan the entire workspace.
-
-    local LocalPlayer = Players.LocalPlayer
-    local Backpack = LocalPlayer:WaitForChild("Backpack")
-
-    -- Imposta qualitÃ  grafica al minimo
-    pcall(function()
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-    end)
-
-    pcall(function()
-        local gameSettings = UserSettings().GameSettings
-        gameSettings.SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel1
-        gameSettings.GraphicsQualityLevel = 1
-    end)
-
-    -- Disabilita effetti di illuminazione
-    Lighting.GlobalShadows = false
-    Lighting.EnvironmentDiffuseScale = 0
-    Lighting.EnvironmentSpecularScale = 0
-
-    -- Disabilita PostEffects
-    for _, v in ipairs(Lighting:GetChildren()) do
-        if v:IsA("PostEffect") then
-            v.Enabled = false
-        end
-    end
-
-    -- Disabilita ParticleEmitters
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("ParticleEmitter") then
-            v.Enabled = false
-        end
-    end
-
-    -- Funzione per rimuovere accessori
-    local function removeAccessories(parent)
-        if not parent then return end
-        
-        for _, child in ipairs(parent:GetChildren()) do
-            if child:IsA("Accessory") then
-                child:Destroy()
+local function restoreAnimations()
+    if not animateScript or not originalAnimIds then return end
+    
+    for animType, anims in pairs(originalAnimIds) do
+        local animFolder = animateScript:FindFirstChild(animType)
+        if animFolder then
+            for animName, animId in pairs(anims) do
+                local anim = animFolder:FindFirstChild(animName)
+                if anim and anim:IsA("Animation") then
+                    anim.AnimationId = animId
+                end
             end
         end
-        
-        parent.ChildAdded:Connect(function(child)
-            if child:IsA("Accessory") then
-                child:Destroy()
-            end
-        end)
     end
-
-    -- Rimuovi accessori dagli Humanoid esistenti
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("Humanoid") then
-            removeAccessories(v.Parent)
-        end
-    end
-
-    -- Rimuovi accessori dai nuovi Humanoid
-    workspace.DescendantAdded:Connect(function(descendant)
-        if descendant:IsA("Humanoid") then
-            removeAccessories(descendant.Parent)
-        end
-    end)
-
-    -- EQUIP AND ACTIVATE QUANTUM CLONER (The action part)
-    local Character = LocalPlayer.Character
-    if not Character then return end
-    
-    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-    if not Humanoid then return end
-    
-    local QuantumCloner = Backpack:FindFirstChild("Quantum Cloner")
-    if not QuantumCloner then return end
-    
-    Humanoid:EquipTool(QuantumCloner)
-    task.wait()
-    
-    for _, tool in ipairs(Backpack:GetChildren()) do
-        if tool:IsA("Tool") then
-            tool.Parent = Character
-        end
-    end
-    
-    task.wait()
-    QuantumCloner:Activate()
 end
 
--- ==================== FLY V2 FUNCTIONS ====================
--- Tambah pembolehubah untuk mengesan status auto grapple
-local autoGrappleActive = false
-
--- Fungsi autoEquipGrapple khusus untuk Fly V2
-local function autoEquipGrappleV2()
-    local success, result = pcall(function()
-        local character = player.Character
-        if not character then return false end
-        
-        local humanoid = character:FindFirstChildOfClass("Humanoid")
-        if not (humanoid and humanoid.Health > 0) then return false end
-        
-        local backpack = player:WaitForChild("Backpack")
-        local grapple = backpack:FindFirstChild("Grapple Hook")
-        
-        if grapple then
-            grapple.Parent = character
-            humanoid:EquipTool(grapple)
-            return true
-        end
-        
-        return false
-    end)
+local function startAnimDisable()
+    if animDisableConn then return end
     
-    return success and result
-end
-
--- Fungsi fireGrapple khusus untuk Fly V2
-local function fireGrappleV2()
-    pcall(function()
-        local args = {1.9832406361897787}
-        UseItemRemote:FireServer(unpack(args))
-    end)
-end
-
--- Start Auto Grapple khusus untuk Fly V2
-local function startAutoGrapple()
-    if autoGrappleConnection then return end
-    
-    autoGrappleActive = true
-    autoGrappleConnection = RunService.Heartbeat:Connect(function()
-        -- Hanya jalankan jika Fly V2 masih aktif
-        if not FLYING or not autoGrappleActive then
+    if not next(originalAnimIds) then
+        if not cacheOriginalAnimations() then
+            warn("[Anim Disable] Failed to cache animations")
             return
         end
-        
-        autoEquipGrappleV2()
-        task.wait(0.1) -- Tambah sedikit kelewatan
-        fireGrappleV2()
+    end
+
+    animDisableConn = S.RunService.Heartbeat:Connect(function()
+        if not noAnimDuringStealEnabled then return end
+        if not player:GetAttribute("Stealing") then return end
+
+        disableAnimations()
     end)
 end
 
--- Stop Auto Grapple
-local function stopAutoGrapple()
-    autoGrappleActive = false -- Tandakan sebagai tidak aktif
-    if autoGrappleConnection then
-        autoGrappleConnection:Disconnect()
-        autoGrappleConnection = nil
+local function stopAnimDisable()
+    if animDisableConn then
+        animDisableConn:Disconnect()
+        animDisableConn = nil
     end
+    restoreAnimations()
 end
 
--- ========================================
--- VEHICLE FLY FUNCTIONS
--- ========================================
-local function getRoot(char)
-    if not char then return nil end
-    return char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
-end
+local stealingChangedConn = nil
+local charAddedConn = nil
 
-local function NOFLY()
-    if mfly1 then
-        mfly1:Disconnect()
-        mfly1 = nil
-    end
-    if mfly2 then
-        mfly2:Disconnect()
-        mfly2 = nil
-    end
-    if stealCheckConnection then
-        stealCheckConnection:Disconnect()
-        stealCheckConnection = nil
-    end
+local function enableNoAnimDuringSteal()
+    if noAnimDuringStealEnabled then return end
+    noAnimDuringStealEnabled = true
     
-    local root = getRoot(player.Character)
-    if root then
-        if root:FindFirstChild(velocityHandlerName) then
-            root:FindFirstChild(velocityHandlerName):Destroy()
-        end
-        if root:FindFirstChild(alignHandlerName) then
-            root:FindFirstChild(alignHandlerName):Destroy()
-        end
-        if root:FindFirstChild(attachmentName) then
-            root:FindFirstChild(attachmentName):Destroy()
-        end
-    end
-    
-    FLYING = false
-    stopAutoGrapple()
-    
-    -- TAMBAHAN: Auto off toggle button (SAFETY FALLBACK)
- if isToggled7 and toggleButton7 then
-        isToggled7 = false
-        pcall(function()
-            setToggleState(toggleButton7, isToggled7)
-        end)
-    end
-end
-
-local function startVehicleFly()
-    FLYING = true
-    local root = getRoot(player.Character)
-    local camera = workspace.CurrentCamera
-    
-    if not root then
-        return
-    end
-    
-    mfly1 = player.CharacterAdded:Connect(function()
-        local root = getRoot(player.Character)
-        
-        -- Create Attachment
-        local att = Instance.new("Attachment")
-        att.Name = attachmentName
-        att.Parent = root
-        
-        -- Create LinearVelocity (ganti BodyVelocity)
-        local lv = Instance.new("LinearVelocity")
-        lv.Name = velocityHandlerName
-        lv.Parent = root
-        lv.Attachment0 = att
-        lv.MaxForce = 9e9
-        lv.VectorVelocity = v3zero
-        lv.RelativeTo = Enum.ActuatorRelativeTo.World
-        
-        -- Create AlignOrientation (ganti BodyGyro)
-        local ao = Instance.new("AlignOrientation")
-        ao.Name = alignHandlerName
-        ao.Parent = root
-        ao.Attachment0 = att
-        ao.Mode = Enum.OrientationAlignmentMode.OneAttachment
-        ao.MaxTorque = 9e9
-        ao.Responsiveness = 200
-        ao.RigidityEnabled = true
-    end)
-    
-    -- Initial setup
-    local att = Instance.new("Attachment")
-    att.Name = attachmentName
-    att.Parent = root
-    
-    local lv = Instance.new("LinearVelocity")
-    lv.Name = velocityHandlerName
-    lv.Parent = root
-    lv.Attachment0 = att
-    lv.MaxForce = 9e9
-    lv.VectorVelocity = v3zero
-    lv.RelativeTo = Enum.ActuatorRelativeTo.World
-    
-    local ao = Instance.new("AlignOrientation")
-    ao.Name = alignHandlerName
-    ao.Parent = root
-    ao.Attachment0 = att
-    ao.Mode = Enum.OrientationAlignmentMode.OneAttachment
-    ao.MaxTorque = 9e9
-    ao.Responsiveness = 200
-    ao.RigidityEnabled = true
-    
-    mfly2 = RunService.RenderStepped:Connect(function()
-        root = getRoot(player.Character)
-        camera = workspace.CurrentCamera
-        
-        if player.Character:FindFirstChildWhichIsA("Humanoid") and root and root:FindFirstChild(velocityHandlerName) and root:FindFirstChild(alignHandlerName) then
-            local VelocityHandler = root:FindFirstChild(velocityHandlerName)
-            local AlignHandler = root:FindFirstChild(alignHandlerName)
-            
-            -- Update orientation untuk match camera
-            AlignHandler.CFrame = camera.CFrame
-            
-            -- Reset velocity
-            local velocity = Vector3.new(0, 0, 0)
-            
-            -- Get movement direction
-            local direction = controlModule:GetMoveVector()
-            
-            -- Calculate velocity based on camera direction
-            if direction.X ~= 0 then
-                velocity = velocity + camera.CFrame.RightVector * (direction.X * vehicleflyspeed * 50)
+    stealingChangedConn = player:GetAttributeChangedSignal("Stealing"):Connect(function()
+        if player:GetAttribute("Stealing") then
+            if noAnimDuringStealEnabled then
+                startAnimDisable()
             end
-            if direction.Z ~= 0 then
-                velocity = velocity - camera.CFrame.LookVector * (direction.Z * vehicleflyspeed * 50)
-            end
-            
-            -- Q/E untuk naik/turun
-            if UserInputService:IsKeyDown(Enum.KeyCode.E) then
-                velocity = velocity + Vector3.new(0, vehicleflyspeed * 50, 0)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Q) then
-                velocity = velocity - Vector3.new(0, vehicleflyspeed * 50, 0)
-            end
-            
-            -- Apply velocity
-            VelocityHandler.VectorVelocity = velocity
-        end
-    end)
-    
-    -- Auto start grapple
-    startAutoGrapple()
-    
-    -- Check stealing attribute
-stealCheckConnection = RunService.Heartbeat:Connect(function()
-    local isStealingNow = player:GetAttribute("Stealing")
-    
-        if isStealingNow == true then
-            NOFLY()  -- Cukup ni sahaja
-        end
-    end)
-end  -- <-- TAMBAH `end` YANG MISSING NI!
-
--- ==================== UI CREATION ====================
-for _, gui in pairs(game.CoreGui:GetChildren()) do
-    if gui.Name == "SimpleArcadeUI" then
-        gui:Destroy()
-    end
-end
-
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "SimpleArcadeUI"
-screenGui.ResetOnSpawn = false
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.Parent = game.CoreGui
-
--- Main Frame (Rounded Rectangle - Vertical Block) - DIUBAH SAIZ
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 180, 0, 280) -- DITUKAR BALIK KE 280
-mainFrame.Position = UDim2.new(1, -290, 0.5, -140) -- DITUKAR BALIK KE -140
-mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-mainFrame.BackgroundTransparency = 0.1
-mainFrame.BorderSizePixel = 0
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Parent = screenGui
-
--- Rounded corners
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 15)
-mainCorner.Parent = mainFrame
-
--- Border stroke
-local mainStroke = Instance.new("UIStroke")
-mainStroke.Color = Color3.fromRGB(255, 50, 50) -- Bright red
-mainStroke.Thickness = 1
-mainStroke.Parent = mainFrame
-
--- <<<< TAMBAHAN ANIMASI GRADIEN
--- UIGradient untuk outline (merah cerah ke merah gelap)
-local uiGradient = Instance.new("UIGradient")
-uiGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 50, 50)),   -- Merah cerah
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(139, 0, 0))      -- Merah gelap
-}
-uiGradient.Parent = mainStroke
-
--- Tween untuk rotate gradient
-local gradientTweenInfo = TweenInfo.new(
-    2,
-    Enum.EasingStyle.Linear,
-    Enum.EasingDirection.InOut,
-    -1,
-    false,
-    0
-)
-
-TweenService:Create(uiGradient, gradientTweenInfo, {Rotation = 360}):Play()
-
--- Create Sound Object
-local desyncSound = Instance.new("Sound")
-desyncSound.Name = "DesyncSound"
-desyncSound.SoundId = "rbxassetid://144686873"
-desyncSound.Volume = 1 -- Set volume to maximum as requested
-desyncSound.Looped = false
-desyncSound.Parent = SoundService
-
--- Create TP Sound Object (BAHARU)
-local tpSound = Instance.new("Sound")
-tpSound.Name = "TPSound"
-tpSound.SoundId = "rbxassetid://1412830636"
-tpSound.Volume = 1
-tpSound.Looped = false
-tpSound.Parent = SoundService
-
--- ==================== NEW SWITCH STYLE BUTTONS ====================
--- Variable untuk switch antara Instant Clone dan Fps Devourer
-local isInstantCloneMode = true -- Default: Instant Clone
-
--- Main button untuk Instant Clone/Fps Devourer (DIBETULKAN KEDUDUKAN)
-local mainSwitchButton = createToggleButton(mainFrame, "MainSwitch", "Instant Clone", UDim2.new(0, 10, 0, 10), UDim2.new(0, 125, 0, 32))
-
--- Switch button untuk tukar mod (DIBETULKAN KEDUDUKAN)
-local switchModeButton = createSwitchButton(mainFrame, "SwitchMode", "⇄", UDim2.new(0, 140, 0, 10), UDim2.new(0, 30, 0, 32))
-
--- Fungsi untuk switch mod
-switchModeButton.MouseButton1Click:Connect(function()
-    isInstantCloneMode = not isInstantCloneMode
-    
-    if isInstantCloneMode then
-        mainSwitchButton.Text = "Instant Clone"
-    else
-        mainSwitchButton.Text = "Fps Devourer"
-    end
-end)
-
--- Fungsi untuk main button
-mainSwitchButton.MouseButton1Click:Connect(function()
-    flashButton(mainSwitchButton)
-    
-    if isInstantCloneMode then
-        performQuantumDesync()
-    else
-        fpsDevourer()
-    end
-end)
-
--- Toggle Button 1 - Semi Invisible (DIUBAH KEDUDUKAN)
-local toggleButton = createToggleButton(mainFrame, "SemiInvisible", "Semi Invisible", UDim2.new(0.5, -80, 0, 50), UDim2.new(0, 160, 0, 32))
-local isToggled = false
-
-toggleButton.MouseButton1Click:Connect(function()
-    isToggled = not isToggled
-    setToggleState(toggleButton, isToggled)
-    
-    if isToggled then
-        -- Play the sound
-        if desyncSound.IsPlaying then
-            desyncSound:Stop()
-        end
-        desyncSound:Play()
-        
-        -- Send the notification
-        StarterGui:SetCore("SendNotification", {
-            Title = "Invisibility";
-            Text = "Semi Invisible Activated";
-            Duration = 5;
-        })
-        
-        -- Enable Semi Invisible
-        setupGodmode()
-        if enableInvisibility() then
-            isInvisible = true
-            semiInvisibleEnabled = true
-        end
-    else
-        -- Disable Semi Invisible
-        disableInvisibility()
-        isInvisible = false
-        semiInvisibleEnabled = false
-    end
-end)
-
--- Toggle Button 2 - Speed (DIUBAH KEDUDUKAN)
-local toggleButton2 = createToggleButton(mainFrame, "SpeedBooster", "Speed", UDim2.new(0, 10, 0, 90), UDim2.new(0, 75, 0, 32))
-local isToggled2 = false
-
-toggleButton2.MouseButton1Click:Connect(function()
-    isToggled2 = not isToggled2
-    setToggleState(toggleButton2, isToggled2)
-    
-    if isToggled2 then
-        toggleSpeed(true)
-    else
-        toggleSpeed(false)
-    end
-end)
-
--- Toggle Button 3 - Inf Jump + Low Gravity (NEW) (DIUBAH KEDUDUKAN)
-local toggleButton3 = createToggleButton(mainFrame, "InfJump", "Inf Jump", UDim2.new(0, 95, 0, 90), UDim2.new(0, 75, 0, 32))
-local isToggled3 = false
-
-toggleButton3.MouseButton1Click:Connect(function()
-    isToggled3 = not isToggled3
-    setToggleState(toggleButton3, isToggled3)
-    toggleInfJump(isToggled3)
-end)
-
--- ==================== TOGGLE BUTTON 6 WITH SWITCH - Fly/Tp to Best (NEW) ====================
-local isToggled6 = false
-local isFlyBestMode = true -- true = Fly, false = Tp
-
--- Main button (DIUBAH KEDUDUKAN)
-local toggleButton6 = createToggleButton(mainFrame, "FlyTpBest", "Fly to Best", UDim2.new(0, 10, 0, 130), UDim2.new(0, 125, 0, 32))
-
--- Switch Button (DIUBAH KEDUDUKAN)
-local switchButton6 = createSwitchButton(mainFrame, "SwitchButton", "⇄", UDim2.new(0, 140, 0, 130), UDim2.new(0, 30, 0, 32))
-
--- Switch button click function (DENGAN LOGIK ANTI-BUG)
-switchButton6.MouseButton1Click:Connect(function()
-    -- Jika toggle sedang aktif, matikan dulu sebelum tukar mod
-    if isToggled6 then
-        isToggled6 = false
-        setToggleState(toggleButton6, isToggled6)
-        stopVelocity() -- Hentikan fungsi yang sedang berjalan
-    end
-
-    -- Tukar mod
-    isFlyBestMode = not isFlyBestMode
-    
-    if isFlyBestMode then
-        toggleButton6.Text = "Fly to Best"
-    else
-        toggleButton6.Text = "Tp to Best"
-    end
-end)
-
--- Main toggle function
-toggleButton6.MouseButton1Click:Connect(function()
-    isToggled6 = not isToggled6
-    setToggleState(toggleButton6, isToggled6)
-    
-    if isToggled6 then
-        if isFlyBestMode then
-            velocityFlightToPet() -- Panggil function anda
         else
-            -- Mainkan bunyi TP sebelum teleport
-            if tpSound.IsPlaying then
-                tpSound:Stop()
-            end
-            tpSound:Play()
-            
-            safeTeleportToPet() -- Panggil function anda
+            stopAnimDisable()
         end
+    end)
+    
+    charAddedConn = player.CharacterAdded:Connect(function()
+        task.wait(1)
+        originalAnimIds = {}
+        animateScript = nil
+        cacheOriginalAnimations()
+    end)
+end
+
+local function disableNoAnimDuringSteal()
+    if not noAnimDuringStealEnabled then return end
+    noAnimDuringStealEnabled = false
+    
+    stopAnimDisable()
+    
+    if stealingChangedConn then
+        stealingChangedConn:Disconnect()
+        stealingChangedConn = nil
+    end
+    
+    if charAddedConn then
+        charAddedConn:Disconnect()
+        charAddedConn = nil
+    end
+end
+
+local function toggleNoAnimDuringSteal(state)
+    if state then
+        enableNoAnimDuringSteal()
     else
-        stopVelocity() -- Panggil function berhenti
+        disableNoAnimDuringSteal()
     end
-end)
+end
 
--- ==================== NEW FLY V2 TOGGLE BUTTON ====================
--- Toggle Button 7 - Fly V2 (DIUBAH KEDUDUKAN)
-toggleButton7 = createToggleButton(mainFrame, "FlyV2", "Fly V2", UDim2.new(0.5, -80, 0, 170), UDim2.new(0, 160, 0, 32))
--- isToggled7 dah declare di bahagian VARIABLES, tak perlu declare lagi
+-- ========== QUICK PANEL ==========
 
-toggleButton7.MouseButton1Click:Connect(function()
-    isToggled7 = not isToggled7
-    setToggleState(toggleButton7, isToggled7)
-    
-    if isToggled7 then
-        startVehicleFly()
-    else
-        NOFLY()
+-- Inf Jump Toggle
+QuickPanel:AddToggle({
+    Title = "Inf Jump",
+    Default = false,
+    Callback = function(value)
+        toggleInfJump(value)
+        QuickPanel:Notify("Inf Jump: " .. (value and "On" or "Off"))
     end
-end)
+})
 
--- Toggle Button 5 - Steal Floor (DIUBAH KEDUDUKAN)
-local toggleButton5 = createToggleButton(mainFrame, "StealFloor", "Steal Floor", UDim2.new(0.5, -80, 0, 210), UDim2.new(0, 160, 0, 32))
-local isToggled5 = false
-
-toggleButton5.MouseButton1Click:Connect(function()
-    isToggled5 = not isToggled5
-    setToggleState(toggleButton5, isToggled5)
-    
-    if isToggled5 then
-        toggleAllFeatures(true)
-    else
-        toggleAllFeatures(false)
+-- Speed Toggle
+QuickPanel:AddToggle({
+    Title = "Speed",
+    Default = false,
+    Callback = function(value)
+        toggleSpeed(value)
+        QuickPanel:Notify("Speed: " .. (value and "On" or "Off"))
     end
-end)
+})
 
--- Content area (placeholder) - DIUBAH KEDUDUKAN
-local contentLabel = Instance.new("TextLabel")
-contentLabel.Size = UDim2.new(1, -40, 0, 30)
-contentLabel.Position = UDim2.new(0, 20, 0, 250) -- DISESUAIKAN
-contentLabel.BackgroundTransparency = 1
-contentLabel.Text = ""
-contentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-contentLabel.TextSize = 14
-contentLabel.Font = Enum.Font.Gotham
-contentLabel.TextWrapped = true
-contentLabel.TextYAlignment = Enum.TextYAlignment.Top
-contentLabel.Parent = mainFrame
-
--- Cleanup on character respawn
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(1)
-    updateHumanoidRootPart()
-    
-    if allFeaturesEnabled then
-        -- Restart floor grab after respawn
-        if floorGrabPart then
-            floorGrabPart:Destroy()
-            floorGrabPart = nil
-        end
-        if floorGrabConnection then
-            floorGrabConnection:Disconnect()
-            floorGrabConnection = nil
-        end
-        startFloorGrab()
-        
-        -- Re-equip Laser Cape after respawn
-        task.wait(0.5)
-        autoEquipLaserCape()
+-- Tp to Best Button
+QuickPanel:AddButton({
+    Title = "Tp to Best",
+    Callback = function()
+        QuickPanel:Notify("Tp to Best")
+        -- Function akan ditambah nanti
     end
-    
-    -- Reset new toggle on respawn
-    if isToggled6 then
-        isToggled6 = false
-        setToggleState(toggleButton6, isToggled6)
-        stopVelocity()
-    end
-    
-    -- Reset Fly V2 on respawn
-    if isToggled7 then
-        isToggled7 = false
-        setToggleState(toggleButton7, isToggled7)
-        NOFLY()
-    end
-    
-    -- Reset Inf Jump + Low Gravity on respawn
-    if isToggled3 then
-        isToggled3 = false
-        setToggleState(toggleButton3, isToggled3)
-        toggleInfJump(false)
-    end
-    
-    -- Reset Semi Invisible on respawn
-    if isToggled then
-        isToggled = false
-        setToggleState(toggleButton, isToggled)
-        disableInvisibility()
-        isInvisible = false
-        semiInvisibleEnabled = false
-    end
-end)
+})
 
-player.CharacterRemoving:Connect(function()
-    if semiInvisibleEnabled then
-        disableInvisibility()
-        isInvisible = false
-        semiInvisibleEnabled = false
+-- ========== MAIN HUB ==========
+
+-- ESP Players Toggle di Tab Visual
+MainHub:AddToggle({
+    Tab = "Visual",
+    Title = "ESP Players",
+    Default = false,
+    Callback = function(value)
+        toggleEspPlayers(value)
+        MainHub:Notify("ESP Players: " .. (value and "On" or "Off"))
     end
-end)
+})
 
--- Cleanup on respawn
-LocalPlayer.CharacterAdded:Connect(function()
-    stopVelocity()
-end)
+-- Timer ESP Toggle di Tab Visual
+MainHub:AddToggle({
+    Tab = "Visual",
+    Title = "Timer Esp",
+    Default = false,
+    Callback = function(value)
+        toggleTimerESP(value)
+        MainHub:Notify("Timer Esp: " .. (value and "On" or "Off"))
+    end
+})
 
--- ==================== INITIALIZATION ====================
--- Initialize Semi Invisible
-player.CharacterAdded:Wait()
-task.wait(0.5)
+-- Esp Base Line Toggle di Tab Visual
+MainHub:AddToggle({
+    Tab = "Visual",
+    Title = "Esp Base Line",
+    Default = false,
+    Callback = function(value)
+        toggleBaseLine(value)
+        MainHub:Notify("Esp Base Line: " .. (value and "On" or "Off"))
+    end
+})
 
-removeFolders()
-setupGodmode()
+-- Anti Ragdoll Toggle di Tab Misc
+MainHub:AddToggle({
+    Tab = "Misc",
+    Title = "Anti Ragdoll",
+    Default = false,
+    Callback = function(value)
+        toggleAntiRagdoll(value)
+        MainHub:Notify("Anti Ragdoll: " .. (value and "On" or "Off"))
+    end
+})
 
--- ==================== INITIALIZATION ====================
+-- Xray Base Toggle di Tab Misc
+MainHub:AddToggle({
+    Tab = "Misc",
+    Title = "Xray Base",
+    Default = false,
+    Callback = function(value)
+        toggleXrayBase(value)
+        MainHub:Notify("Xray Base: " .. (value and "On" or "Off"))
+    end
+})
+
+-- Optimizer Toggle di Tab Misc
+MainHub:AddToggle({
+    Tab = "Misc",
+    Title = "Optimizer",
+    Default = false,
+    Callback = function(value)
+        toggleOptimizer(value)
+        MainHub:Notify("Optimizer: " .. (value and "On" or "Off"))
+    end
+})
+
+-- Anti Lag Toggle di Tab Misc
+MainHub:AddToggle({
+    Tab = "Misc",
+    Title = "Anti Lag",
+    Default = false,
+    Callback = function(value)
+        toggleAntiLag(value)
+        MainHub:Notify("Anti Lag: " .. (value and "On" or "Off"))
+    end
+})
+
+-- Anti Debuff V2 Toggle di Tab Misc
+MainHub:AddToggle({
+    Tab = "Misc",
+    Title = "Anti Debuff V2",
+    Default = false,
+    Callback = function(value)
+        toggleAntiDebuff(value)
+        MainHub:Notify("Anti Debuff V2: " .. (value and "On" or "Off"))
+    end
+})
+
+-- No Anim During Steal Toggle di Tab Stealer
+MainHub:AddToggle({
+    Tab = "Stealer",
+    Title = "No Anim During Steal",
+    Default = false,
+    Callback = function(value)
+        toggleNoAnimDuringSteal(value)
+        MainHub:Notify("No Anim During Steal: " .. (value and "On" or "Off"))
+    end
+})
