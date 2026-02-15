@@ -35,7 +35,6 @@ local defaultGravity = S.Workspace.Gravity
 local speedConn
 local baseSpeed = 28
 local speedEnabled = false
-local speedRespawnConn = nil
 
 -- ESP variables
 local espPlayersEnabled = false
@@ -201,6 +200,24 @@ local function toggleInfJump(enabled)
     end
 end
 
+-- ==================== SPEED FUNCTIONS ====================
+local function GetCharacter()
+    local Char = player.Character or player.CharacterAdded:Wait()
+    local HRP = Char:WaitForChild("HumanoidRootPart")
+    local Hum = Char:FindFirstChildOfClass("Humanoid")
+    return Char, HRP, Hum
+end
+
+local function getMovementInput()
+    local Char, HRP, Hum = GetCharacter()
+    if not Char or not HRP or not Hum then return Vector3.new(0,0,0) end
+    local moveVector = Hum.MoveDirection
+    if moveVector.Magnitude > 0.1 then
+        return Vector3.new(moveVector.X, 0, moveVector.Z).Unit
+    end
+    return Vector3.new(0,0,0)
+end
+
 local function startSpeedControl()
     if speedConn then return end
     speedConn = S.RunService.Heartbeat:Connect(function()
@@ -226,37 +243,18 @@ local function stopSpeedControl()
         speedConn:Disconnect() 
         speedConn = nil 
     end
-    
-    -- Safe check untuk character
-    pcall(function()
-        local char = player.Character
-        if char then
-            local HRP = char:FindFirstChild("HumanoidRootPart")
-            if HRP then 
-                HRP.AssemblyLinearVelocity = Vector3.new(0, HRP.AssemblyLinearVelocity.Y, 0) 
-            end
-        end
-    end)
+    local _, HRP = GetCharacter()
+    if HRP then 
+        HRP.AssemblyLinearVelocity = Vector3.new(0, HRP.AssemblyLinearVelocity.Y, 0) 
+    end
 end
 
 local function toggleSpeed(enabled)
     speedEnabled = enabled
     if enabled then
         startSpeedControl()
-        
-        -- Handle respawn
-        speedRespawnConn = player.CharacterAdded:Connect(function()
-            if speedEnabled then
-                task.wait(0.5)
-                startSpeedControl()
-            end
-        end)
     else
         stopSpeedControl()
-        if speedRespawnConn then
-            speedRespawnConn:Disconnect()
-            speedRespawnConn = nil
-        end
     end
 end
 
