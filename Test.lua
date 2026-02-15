@@ -35,6 +35,7 @@ local defaultGravity = S.Workspace.Gravity
 local speedConn
 local baseSpeed = 28
 local speedEnabled = false
+local speedRespawnConn = nil
 
 -- ESP variables
 local espPlayersEnabled = false
@@ -52,6 +53,7 @@ local baseLineConnection = nil
 local baseBeamPart = nil
 local baseTargetPart = nil
 local baseBeam = nil
+local baseLineRespawnConn = nil
 
 -- Anti Ragdoll variables
 local antiRagdollEnabled = false
@@ -199,24 +201,6 @@ local function toggleInfJump(enabled)
     end
 end
 
--- ==================== SPEED FUNCTIONS ====================
-local function GetCharacter()
-    local Char = player.Character or player.CharacterAdded:Wait()
-    local HRP = Char:WaitForChild("HumanoidRootPart")
-    local Hum = Char:FindFirstChildOfClass("Humanoid")
-    return Char, HRP, Hum
-end
-
-local function getMovementInput()
-    local Char, HRP, Hum = GetCharacter()
-    if not Char or not HRP or not Hum then return Vector3.new(0,0,0) end
-    local moveVector = Hum.MoveDirection
-    if moveVector.Magnitude > 0.1 then
-        return Vector3.new(moveVector.X, 0, moveVector.Z).Unit
-    end
-    return Vector3.new(0,0,0)
-end
-
 local function startSpeedControl()
     if speedConn then return end
     speedConn = S.RunService.Heartbeat:Connect(function()
@@ -252,8 +236,20 @@ local function toggleSpeed(enabled)
     speedEnabled = enabled
     if enabled then
         startSpeedControl()
+        
+        -- Handle respawn
+        speedRespawnConn = player.CharacterAdded:Connect(function()
+            if speedEnabled then
+                task.wait(0.5)
+                startSpeedControl()
+            end
+        end)
     else
         stopSpeedControl()
+        if speedRespawnConn then
+            speedRespawnConn:Disconnect()
+            speedRespawnConn = nil
+        end
     end
 end
 
@@ -695,12 +691,22 @@ end
 local function toggleBaseLine(state)
     if state then
         enableBaseLine()
+        
+        -- Handle respawn
+        baseLineRespawnConn = player.CharacterAdded:Connect(function()
+            if baseLineEnabled then
+                task.wait(1)
+                pcall(createPlotLine)
+            end
+        end)
     else
         disableBaseLine()
+        if baseLineRespawnConn then
+            baseLineRespawnConn:Disconnect()
+            baseLineRespawnConn = nil
+        end
     end
 end
-
--- [Skip Anti Ragdoll, Xray Base, Optimizer, Anti Lag, Anti Debuff functions - sama seperti sebelum ni]
 
 -- ==================== ANTI RAGDOLL FUNCTIONS ====================
 local function stopRagdoll()
