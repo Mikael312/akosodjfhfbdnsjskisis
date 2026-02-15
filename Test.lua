@@ -435,7 +435,7 @@ local function toggleEspPlayers(state)
 end
 
 -- ==================== TIMER ESP FUNCTIONS ====================
-local function updateBillboard(mainPart, contentText, shouldShow, isUnlocked)
+ local function updateBillboard(mainPart, contentText, shouldShow, isUnlocked)
     local existing = mainPart:FindFirstChild("RemainingTimeGui")
     if shouldShow then
         if not existing then
@@ -451,8 +451,17 @@ local function updateBillboard(mainPart, contentText, shouldShow, isUnlocked)
             label.Name = "Text"
             label.Size = UDim2.new(1, 0, 1, 0)
             label.BackgroundTransparency = 1
-            label.TextScaled = true
-            label.TextColor3 = isUnlocked and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(255, 255, 255)
+            
+            -- Unlocked: Putih & Kecil, Locked: Kuning & Normal
+            if isUnlocked then
+                label.TextScaled = false
+                label.TextSize = 14
+                label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            else
+                label.TextScaled = true
+                label.TextColor3 = Color3.fromRGB(255, 255, 0)
+            end
+            
             label.TextStrokeTransparency = 0.2
             label.Font = Enum.Font.GothamBold
             label.Text = contentText
@@ -461,7 +470,16 @@ local function updateBillboard(mainPart, contentText, shouldShow, isUnlocked)
             local label = existing:FindFirstChild("Text")
             if label then
                 label.Text = contentText
-                label.TextColor3 = isUnlocked and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(255, 255, 255)
+                
+                -- Unlocked: Putih & Kecil, Locked: Kuning & Normal
+                if isUnlocked then
+                    label.TextScaled = false
+                    label.TextSize = 14
+                    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                else
+                    label.TextScaled = true
+                    label.TextColor3 = Color3.fromRGB(255, 255, 0)
+                end
             end
         end
     else
