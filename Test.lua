@@ -100,14 +100,9 @@ local FOV_MANAGER = {
 }
 
 -- No Anim During Steal variables
-local noAnimDuringStealEnabled = false
-local animDisableConn = nil
-local originalAnimIds = {}
-local animateScript = nil
+local unwalkAnimEnabled = false
+local unwalkAnimConnections = {}
 
-local ANIM_TYPES = {
-    "walk", "run", "jump", "fall"
-}
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
     local char = player.Character
@@ -1428,137 +1423,94 @@ local function toggleAntiDebuff(state)
 end
 
 -- ==================== NO ANIM DURING STEAL FUNCTIONS ====================
-local function cacheOriginalAnimations()
-    local char = player.Character
-    if not char then return false end
+local function setupNoWalkAnimation(character)
+    if not character then return end
     
-    animateScript = char:FindFirstChild("Animate")
-    if not animateScript then return false end
+    local humanoid = character:WaitForChild("Humanoid")
+    local animator = humanoid:WaitForChild("Animator")
     
-    originalAnimIds = {}
-    
-    for _, animType in ipairs(ANIM_TYPES) do
-        local animFolder = animateScript:FindFirstChild(animType)
-        if animFolder then
-            originalAnimIds[animType] = {}
-            for _, anim in ipairs(animFolder:GetChildren()) do
-                if anim:IsA("Animation") then
-                    originalAnimIds[animType][anim.Name] = anim.AnimationId
-                end
+    local function stopAllAnimations()
+        local tracks = animator:GetPlayingAnimationTracks()
+        for _, track in pairs(tracks) do
+            if track.IsPlaying then
+                track:Stop()
             end
         end
     end
     
-    return true
-end
-
-local function disableAnimations()
-    if not animateScript then return end
-    
-    for _, animType in ipairs(ANIM_TYPES) do
-        local animFolder = animateScript:FindFirstChild(animType)
-        if animFolder then
-            for _, anim in ipairs(animFolder:GetChildren()) do
-                if anim:IsA("Animation") then
-                    anim.AnimationId = ""
-                end
-            end
-        end
-    end
-    
-    local char = player.Character
-    if char then
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if hum then
-            for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
-                track:Stop(0)
-            end
-        end
-    end
-end
-
-local function restoreAnimations()
-    if not animateScript or not originalAnimIds then return end
-    
-    for animType, anims in pairs(originalAnimIds) do
-        local animFolder = animateScript:FindFirstChild(animType)
-        if animFolder then
-            for animName, animId in pairs(anims) do
-                local anim = animFolder:FindFirstChild(animName)
-                if anim and anim:IsA("Animation") then
-                    anim.AnimationId = animId
-                end
-            end
-        end
-    end
-end
-
-local function startAnimDisable()
-    if animDisableConn then return end
-    
-    if not next(originalAnimIds) then
-        if not cacheOriginalAnimations() then
-            warn("[Anim Disable] Failed to cache animations")
-            return
-        end
-    end
-
-    animDisableConn = S.RunService.Heartbeat:Connect(function()
-        if not noAnimDuringStealEnabled then return end
-        if not player:GetAttribute("Stealing") then return end
-
-        disableAnimations()
+    local runningConnection = humanoid.Running:Connect(function(speed)
+        stopAllAnimations()
     end)
+    
+    local jumpingConnection = humanoid.Jumping:Connect(function()
+        stopAllAnimations()
+    end)
+    
+    local animationPlayedConnection = animator.AnimationPlayed:Connect(function(animationTrack)
+        animationTrack:Stop()
+    end)
+    
+    local renderSteppedConnection = S.RunService.RenderStepped:Connect(function()
+        stopAllAnimations()
+    end)
+    
+    table.insert(unwalkAnimConnections, runningConnection)
+    table.insert(unwalkAnimConnections, jumpingConnection)
+    table.insert(unwalkAnimConnections, animationPlayedConnection)
+    table.insert(unwalkAnimConnections, renderSteppedConnection)
 end
 
-local function stopAnimDisable()
-    if animDisableConn then
-        animDisableConn:Disconnect()
-        animDisableConn = nil
+local function enableUnwalkAnim()
+    if unwalkAnimEnabled then return end
+    unwalkAnimEnabled = true
+    
+    if player.Character then
+        setupNoWalkAnimation(player.Character)
     end
-    restoreAnimations()
+    
+    local charConn = player.CharacterAdded:Connect(setupNoWalkAnimation)
+    table.insert(unwalkAnimConnections, charConn)
 end
 
-local stealingChangedConn = nil
-local charAddedConn = nil
+local function disableUnwalkAnim()
+    if not unwalkAnimEnabled then return end
+    unwalkAnimEnabled = false
+    
+    for _, connection in pairs(unwalkAnimConnections) do
+        if connection then
+            connection:Disconnect()
+        end
+    end
+    unwalkAnimConnections = {}
+end
+
+local stealingMonitorConn = nil
 
 local function enableNoAnimDuringSteal()
-    if noAnimDuringStealEnabled then return end
-    noAnimDuringStealEnabled = true
+    if stealingMonitorConn then return end
     
-    stealingChangedConn = player:GetAttributeChangedSignal("Stealing"):Connect(function()
-        if player:GetAttribute("Stealing") then
-            if noAnimDuringStealEnabled then
-                startAnimDisable()
-            end
+    stealingMonitorConn = player:GetAttributeChangedSignal("Stealing"):Connect(function()
+        local isStealing = player:GetAttribute("Stealing")
+        
+        if isStealing then
+            enableUnwalkAnim()
         else
-            stopAnimDisable()
+            disableUnwalkAnim()
         end
     end)
     
-    charAddedConn = player.CharacterAdded:Connect(function()
-        task.wait(1)
-        originalAnimIds = {}
-        animateScript = nil
-        cacheOriginalAnimations()
-    end)
+    if player:GetAttribute("Stealing") then
+        enableUnwalkAnim()
+    end
 end
 
 local function disableNoAnimDuringSteal()
-    if not noAnimDuringStealEnabled then return end
-    noAnimDuringStealEnabled = false
-    
-    stopAnimDisable()
-    
-    if stealingChangedConn then
-        stealingChangedConn:Disconnect()
-        stealingChangedConn = nil
+    if stealingMonitorConn then
+        stealingMonitorConn:Disconnect()
+        stealingMonitorConn = nil
     end
     
-    if charAddedConn then
-        charAddedConn:Disconnect()
-        charAddedConn = nil
-    end
+    disableUnwalkAnim()
 end
 
 local function toggleNoAnimDuringSteal(state)
