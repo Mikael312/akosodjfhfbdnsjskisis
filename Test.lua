@@ -450,7 +450,7 @@ end
             local gui = Instance.new("BillboardGui")
             gui.Name = "RemainingTimeGui"
             gui.Adornee = mainPart
-            gui.Size = UDim2.new(0, 110, 0, 25)
+            gui.Size = UDim2.new(0, 90, 0, 20)
             gui.StudsOffset = Vector3.new(0, 5, 0)
             gui.AlwaysOnTop = true
             gui.Parent = mainPart
