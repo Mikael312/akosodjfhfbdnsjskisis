@@ -123,6 +123,14 @@ local tracerBeam = nil
 local tracerConnection = nil
 local espBestRespawnConn = nil
 
+-- Steal Floor variables (BARU - letak selepas Esp Best variables)
+local stealFloorEnabled = false
+local floatPlatform = nil
+local stealFloorUpdateConn = nil
+local stealFloorInvisibleWallsLoaded = false
+local stealFloorOriginalTransparency = {}
+local stealFloorXrayConnection = nil
+
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
     local char = player.Character
@@ -1827,6 +1835,128 @@ local function toggleESPBest(state)
     end
 end
 
+-- ==================== STEAL FLOOR FUNCTIONS ====================
+local function getHRP()
+    local c = player.Character
+    if not c then return end
+    return c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("UpperTorso")
+end
+
+local function startFloorSteal()
+    if floatPlatform then floatPlatform:Destroy() end
+    
+    floatPlatform = Instance.new("Part")
+    floatPlatform.Size = Vector3.new(6, 1, 6)
+    floatPlatform.Anchored = true
+    floatPlatform.CanCollide = true
+    floatPlatform.Transparency = 1
+    floatPlatform.Parent = S.Workspace
+    
+    stealFloorUpdateConn = task.spawn(function()
+        while stealFloorEnabled and floatPlatform do
+            local hrp = getHRP()
+            if hrp then
+                floatPlatform.Position = hrp.Position - Vector3.new(0, 3, 0)
+            end
+            task.wait(0.05)
+        end
+    end)
+end
+
+local function stopFloorSteal()
+    if floatPlatform then
+        floatPlatform:Destroy()
+        floatPlatform = nil
+    end
+    if stealFloorUpdateConn then
+        task.cancel(stealFloorUpdateConn)
+        stealFloorUpdateConn = nil
+    end
+end
+
+local function isStealFloorBaseWall(obj)
+    if not obj:IsA("BasePart") then return false end
+    local n = obj.Name:lower()
+    local parent = obj.Parent and obj.Parent.Name:lower() or ""
+    return n:find("base") or parent:find("base")
+end
+
+local function tryApplyStealFloorInvisibleWalls()
+    if not stealFloorEnabled or stealFloorInvisibleWallsLoaded then return end
+    local plots = S.Workspace:FindFirstChild("Plots")
+    if not plots or #plots:GetChildren() == 0 then return end
+    
+    for _, plot in pairs(plots:GetChildren()) do
+        for _, obj in pairs(plot:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Anchored and obj.CanCollide and isStealFloorBaseWall(obj) then
+                if not stealFloorOriginalTransparency[obj] then
+                    stealFloorOriginalTransparency[obj] = obj.LocalTransparencyModifier
+                    obj.LocalTransparencyModifier = 0.85
+                end
+            end
+        end
+    end
+    stealFloorInvisibleWallsLoaded = true
+end
+
+local function enableStealFloorXray()
+    if stealFloorInvisibleWallsLoaded then return end
+    stealFloorInvisibleWallsLoaded = false
+    
+    task.spawn(function() task.wait(0.5); tryApplyStealFloorInvisibleWalls() end)
+    
+    stealFloorXrayConnection = S.Workspace.DescendantAdded:Connect(function(obj)
+        if not stealFloorEnabled then return end
+        task.wait(0.1)
+        if isStealFloorBaseWall(obj) and obj:IsA("BasePart") and obj.Anchored and obj.CanCollide then
+            if not stealFloorOriginalTransparency[obj] then
+                stealFloorOriginalTransparency[obj] = obj.LocalTransparencyModifier
+                obj.LocalTransparencyModifier = 0.85
+            end
+        end
+    end)
+end
+
+local function disableStealFloorXray()
+    stealFloorInvisibleWallsLoaded = false
+    
+    if stealFloorXrayConnection then 
+        stealFloorXrayConnection:Disconnect()
+        stealFloorXrayConnection = nil 
+    end
+    
+    for obj, value in pairs(stealFloorOriginalTransparency) do
+        if obj and obj.Parent then 
+            pcall(function() obj.LocalTransparencyModifier = value end) 
+        end
+    end
+    stealFloorOriginalTransparency = {}
+end
+
+local function enableStealFloor()
+    if stealFloorEnabled then return end
+    stealFloorEnabled = true
+    
+    startFloorSteal()
+    enableStealFloorXray()
+end
+
+local function disableStealFloor()
+    if not stealFloorEnabled then return end
+    stealFloorEnabled = false
+    
+    stopFloorSteal()
+    disableStealFloorXray()
+end
+
+local function toggleStealFloor(state)
+    if state then
+        enableStealFloor()
+    else
+        disableStealFloor()
+    end
+end
+
 -- ========== QUICK PANEL ==========
 
 -- Inf Jump Toggle
@@ -1855,6 +1985,16 @@ QuickPanel:AddButton({
     Callback = function()
         QuickPanel:Notify("Tp to Best")
         -- Function akan ditambah nanti
+    end
+})
+
+-- Steal Floor Toggle (letak selepas Speed)
+QuickPanel:AddToggle({
+    Title = "Steal Floor",
+    Default = false,
+    Callback = function(value)
+        toggleStealFloor(value)
+        QuickPanel:Notify("Steal Floor: " .. (value and "On" or "Off"))
     end
 })
 
