@@ -1903,7 +1903,7 @@ local function enableStealFloorXray()
     if stealFloorInvisibleWallsLoaded then return end
     stealFloorInvisibleWallsLoaded = false
     
-    task.spawn(function() task.wait(0.5); tryApplyStealFloorInvisibleWalls() end)
+    task.spawn(function() task.wait(0.1); tryApplyStealFloorInvisibleWalls() end)
     
     stealFloorXrayConnection = S.Workspace.DescendantAdded:Connect(function(obj)
         if not stealFloorEnabled then return end
