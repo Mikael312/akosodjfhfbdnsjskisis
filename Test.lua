@@ -123,13 +123,14 @@ local tracerBeam = nil
 local tracerConnection = nil
 local espBestRespawnConn = nil
 
--- Steal Floor variables (BARU - letak selepas Esp Best variables)
+-- Steal Floor variables
 local stealFloorEnabled = false
 local floatPlatform = nil
 local stealFloorUpdateConn = nil
 local stealFloorInvisibleWallsLoaded = false
 local stealFloorOriginalTransparency = {}
 local stealFloorXrayConnection = nil
+local stealFloorStealingMonitor = nil
 
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
@@ -1903,7 +1904,7 @@ local function enableStealFloorXray()
     if stealFloorInvisibleWallsLoaded then return end
     stealFloorInvisibleWallsLoaded = false
     
-    tryApplyStealFloorInvisibleWalls()  -- Instant, no delay!
+    tryApplyStealFloorInvisibleWalls()
     
     stealFloorXrayConnection = S.Workspace.DescendantAdded:Connect(function(obj)
         if not stealFloorEnabled then return end
@@ -1939,6 +1940,23 @@ local function enableStealFloor()
     
     startFloorSteal()
     enableStealFloorXray()
+    
+    -- Monitor "Stealing" attribute - auto disable bila stealing (TAK ON BALIK)
+    stealFloorStealingMonitor = player:GetAttributeChangedSignal("Stealing"):Connect(function()
+        if player:GetAttribute("Stealing") then
+            -- Bila mula stealing, OFF steal floor permanently
+            if stealFloorEnabled then
+                stealFloorEnabled = false
+                stopFloorSteal()
+                disableStealFloorXray()
+                
+                if stealFloorStealingMonitor then
+                    stealFloorStealingMonitor:Disconnect()
+                    stealFloorStealingMonitor = nil
+                end
+            end
+        end
+    end)
 end
 
 local function disableStealFloor()
@@ -1947,6 +1965,11 @@ local function disableStealFloor()
     
     stopFloorSteal()
     disableStealFloorXray()
+    
+    if stealFloorStealingMonitor then
+        stealFloorStealingMonitor:Disconnect()
+        stealFloorStealingMonitor = nil
+    end
 end
 
 local function toggleStealFloor(state)
@@ -1988,7 +2011,7 @@ QuickPanel:AddButton({
     end
 })
 
--- Steal Floor Toggle (letak selepas Speed)
+-- Steal Floor Toggle
 QuickPanel:AddToggle({
     Title = "Steal Floor",
     Default = false,
