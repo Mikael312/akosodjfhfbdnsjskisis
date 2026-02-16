@@ -916,7 +916,7 @@ local function enableXrayBase()
     xrayBaseEnabled = true
     invisibleWallsLoaded = false
     
-    task.spawn(function() task.wait(0.5); tryApplyInvisibleWalls() end)
+    tryApplyInvisibleWalls()  -- Instant, no delay!
     
     xrayBaseConnection = S.Workspace.DescendantAdded:Connect(function(obj)
         if not xrayBaseEnabled then return end
@@ -1903,7 +1903,7 @@ local function enableStealFloorXray()
     if stealFloorInvisibleWallsLoaded then return end
     stealFloorInvisibleWallsLoaded = false
     
-    task.spawn(function() task.wait(0.1); tryApplyStealFloorInvisibleWalls() end)
+    tryApplyStealFloorInvisibleWalls()  -- Instant, no delay!
     
     stealFloorXrayConnection = S.Workspace.DescendantAdded:Connect(function(obj)
         if not stealFloorEnabled then return end
