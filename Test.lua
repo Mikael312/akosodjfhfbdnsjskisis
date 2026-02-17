@@ -1954,6 +1954,11 @@ local function enableStealFloor()
                     stealFloorStealingMonitor:Disconnect()
                     stealFloorStealingMonitor = nil
                 end
+
+                -- Auto OFF toggle UI sekali
+                if stealFloorToggle then
+                    stealFloorToggle.SetState(false)
+                end
             end
         end
     end)
@@ -2012,7 +2017,7 @@ QuickPanel:AddButton({
 })
 
 -- Steal Floor Toggle
-QuickPanel:AddToggle({
+local stealFloorToggle = QuickPanel:AddToggle({
     Title = "Steal Floor",
     Default = false,
     Callback = function(value)
