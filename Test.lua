@@ -1954,11 +1954,6 @@ local function enableStealFloor()
                     stealFloorStealingMonitor:Disconnect()
                     stealFloorStealingMonitor = nil
                 end
-
-                -- Auto OFF toggle UI sekali
-                if stealFloorToggle then
-                    stealFloorToggle.SetState(false)
-                end
             end
         end
     end)
@@ -2023,6 +2018,21 @@ local stealFloorToggle = QuickPanel:AddToggle({
     Callback = function(value)
         toggleStealFloor(value)
         QuickPanel:Notify("Steal Floor: " .. (value and "On" or "Off"))
+        
+        if value then
+            -- Monitor Stealing attribute bila toggle ON
+            stealFloorStealingMonitor = player:GetAttributeChangedSignal("Stealing"):Connect(function()
+                if player:GetAttribute("Stealing") then
+                    stealFloorToggle.SetState(false) -- Auto OFF toggle UI + trigger Callback
+                end
+            end)
+        else
+            -- Disconnect monitor bila toggle OFF manual
+            if stealFloorStealingMonitor then
+                stealFloorStealingMonitor:Disconnect()
+                stealFloorStealingMonitor = nil
+            end
+        end
     end
 })
 
