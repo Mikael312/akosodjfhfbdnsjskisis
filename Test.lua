@@ -2012,36 +2012,12 @@ QuickPanel:AddButton({
 })
 
 -- Steal Floor Toggle
-local stealFloorToggle = QuickPanel:AddToggle({
+QuickPanel:AddToggle({
     Title = "Steal Floor",
     Default = false,
     Callback = function(value)
-        print("[StealFloor] Toggle Callback fired, value:", value)
         toggleStealFloor(value)
         QuickPanel:Notify("Steal Floor: " .. (value and "On" or "Off"))
-        
-        if value then
-            print("[StealFloor] Setting up Stealing monitor...")
-            stealFloorStealingMonitor = player:GetAttributeChangedSignal("Stealing"):Connect(function()
-                local isStealing = player:GetAttribute("Stealing")
-                print("[StealFloor] Stealing attribute changed, value:", isStealing)
-                if isStealing then
-                    print("[StealFloor] Stealing detected! Calling SetState(false)...")
-                    stealFloorToggle.SetState(false)
-                    print("[StealFloor] SetState(false) called!")
-                end
-            end)
-            print("[StealFloor] Monitor connected!")
-        else
-            print("[StealFloor] Toggle OFF - disconnecting monitor...")
-            if stealFloorStealingMonitor then
-                stealFloorStealingMonitor:Disconnect()
-                stealFloorStealingMonitor = nil
-                print("[StealFloor] Monitor disconnected!")
-            else
-                print("[StealFloor] No monitor to disconnect")
-            end
-        end
     end
 })
 
