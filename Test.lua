@@ -1940,23 +1940,6 @@ local function enableStealFloor()
     
     startFloorSteal()
     enableStealFloorXray()
-    
-    -- Monitor "Stealing" attribute - auto disable bila stealing (TAK ON BALIK)
-    stealFloorStealingMonitor = player:GetAttributeChangedSignal("Stealing"):Connect(function()
-        if player:GetAttribute("Stealing") then
-            -- Bila mula stealing, OFF steal floor permanently
-            if stealFloorEnabled then
-                stealFloorEnabled = false
-                stopFloorSteal()
-                disableStealFloorXray()
-                
-                if stealFloorStealingMonitor then
-                    stealFloorStealingMonitor:Disconnect()
-                    stealFloorStealingMonitor = nil
-                end
-            end
-        end
-    end)
 end
 
 local function disableStealFloor()
@@ -2011,13 +1994,30 @@ QuickPanel:AddButton({
     end
 })
 
--- Steal Floor Toggle
-QuickPanel:AddToggle({
+-- Declare dulu
+local stealFloorToggle
+
+-- Assign tanpa 'local'
+stealFloorToggle = QuickPanel:AddToggle({
     Title = "Steal Floor",
     Default = false,
     Callback = function(value)
         toggleStealFloor(value)
         QuickPanel:Notify("Steal Floor: " .. (value and "On" or "Off"))
+        
+        if value then
+            stealFloorStealingMonitor = player:GetAttributeChangedSignal("Stealing"):Connect(function()
+                local isStealing = player:GetAttribute("Stealing")
+                if isStealing then
+                    stealFloorToggle.SetState(false)
+                end
+            end)
+        else
+            if stealFloorStealingMonitor then
+                stealFloorStealingMonitor:Disconnect()
+                stealFloorStealingMonitor = nil
+            end
+        end
     end
 })
 
