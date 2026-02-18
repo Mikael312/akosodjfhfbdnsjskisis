@@ -2320,16 +2320,3 @@ MainHub:AddToggle({
         MainHub:Notify("Auto Medusa: " .. (value and "On" or "Off"))
     end
 })
-
--- Auto Medusa Radius Input di Tab Stealer
-MainHub:AddInput({
-    Tab = "Stealer",
-    Title = "Medusa Radius",
-    Placeholder = "Enter radius (max 15)...",
-    Min = 1,
-    Max = 15,
-    Callback = function(value)
-        detectionRange = tonumber(value) or 15
-        MainHub:Notify("Medusa Radius set to: " .. detectionRange)
-    end
-})
