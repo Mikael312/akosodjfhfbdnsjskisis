@@ -132,6 +132,15 @@ local stealFloorOriginalTransparency = {}
 local stealFloorXrayConnection = nil
 local stealFloorStealingMonitor = nil
 
+-- Auto Medusa variables
+local autoMedusaEnabled = false
+local autoMedusaThread = nil
+local detectionRange = 15
+local medusaItemName = "Medusa's Head"
+local MEDUSA_COOLDOWN = 25
+local lastMedusaActivate = 0
+local serverTimeOffset = 0
+
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
     local char = player.Character
@@ -1963,6 +1972,147 @@ local function toggleStealFloor(state)
     end
 end
 
+-- ==================== AUTO MEDUSA FUNCTIONS ====================
+local function syncServerTime()
+    local sendTime = os.clock()
+    local ping = 0
+    pcall(function()
+        local serverTime = S.Workspace:GetServerTimeNow()
+        local receiveTime = os.clock()
+        ping = (receiveTime - sendTime) / 2
+        serverTimeOffset = serverTime - os.clock() - ping
+    end)
+end
+
+local function getServerTime()
+    return os.clock() + serverTimeOffset
+end
+
+local function isMedusaOnCooldown()
+    local currentTime = getServerTime()
+    local timeSinceLast = currentTime - lastMedusaActivate
+    return timeSinceLast < MEDUSA_COOLDOWN, math.max(0, MEDUSA_COOLDOWN - timeSinceLast)
+end
+
+local function findMedusaTool()
+    local tool = nil
+    pcall(function()
+        tool = player.Backpack:FindFirstChild(medusaItemName)
+        if not tool and player.Character then
+            tool = player.Character:FindFirstChild(medusaItemName)
+        end
+    end)
+    return tool
+end
+
+local function equipMedusa()
+    local medusaTool = findMedusaTool()
+    if medusaTool and medusaTool.Parent == player.Backpack then
+        pcall(function()
+            player.Character.Humanoid:EquipTool(medusaTool)
+        end)
+        task.wait(0.1)
+        return player.Character:FindFirstChild(medusaItemName) ~= nil
+    end
+    if medusaTool and medusaTool.Parent == player.Character then
+        return true
+    end
+    return false
+end
+
+local function isValidTarget(targetPlayer)
+    if not targetPlayer or not targetPlayer.Character or targetPlayer == player then return false end
+    local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local humanoid = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if not hrp or not humanoid or humanoid.Health <= 0 then return false end
+    return true
+end
+
+local function findNearestPlayer()
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return nil end
+    local myPos = player.Character.HumanoidRootPart.Position
+    local nearest = nil
+    local nearestDist = math.huge
+    pcall(function()
+        for _, targetPlayer in ipairs(S.Players:GetPlayers()) do
+            if isValidTarget(targetPlayer) then
+                local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if targetHRP then
+                    local distance = (targetHRP.Position - myPos).Magnitude
+                    if distance <= detectionRange and distance < nearestDist then
+                        nearestDist = distance
+                        nearest = targetPlayer
+                    end
+                end
+            end
+        end
+    end)
+    return nearest, nearestDist
+end
+
+local function activateMedusa()
+    pcall(function()
+        local tool = player.Character and player.Character:FindFirstChild(medusaItemName)
+        if tool then
+            tool:Activate()
+            lastMedusaActivate = getServerTime()
+        end
+    end)
+end
+
+local function autoMedusaWorker()
+    syncServerTime()
+
+    while autoMedusaEnabled do
+        pcall(function()
+            local onCooldown, remaining = isMedusaOnCooldown()
+
+            if onCooldown then
+                task.wait(remaining)
+                return
+            end
+
+            local target, distance = findNearestPlayer()
+            if target then
+                if equipMedusa() then
+                    activateMedusa()
+                    task.wait(MEDUSA_COOLDOWN)
+                end
+            end
+        end)
+        task.wait(0.1)
+    end
+end
+
+local function enableAutoMedusa()
+    if autoMedusaEnabled then return end
+    autoMedusaEnabled = true
+    
+    if autoMedusaThread then
+        task.cancel(autoMedusaThread)
+    end
+    
+    autoMedusaThread = task.spawn(autoMedusaWorker)
+end
+
+local function disableAutoMedusa()
+    if not autoMedusaEnabled then return end
+    autoMedusaEnabled = false
+    
+    if autoMedusaThread then
+        task.cancel(autoMedusaThread)
+        autoMedusaThread = nil
+    end
+end
+
+local function toggleAutoMedusa(state)
+    if state then
+        enableAutoMedusa()
+    else
+        disableAutoMedusa()
+    end
+end
+
 -- ========== QUICK PANEL ==========
 
 -- Inf Jump Toggle
@@ -2157,5 +2307,29 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleNoAnimDuringSteal(value)
         MainHub:Notify("No Anim During Steal: " .. (value and "On" or "Off"))
+    end
+})
+
+-- Auto Medusa Toggle di Tab Stealer
+MainHub:AddToggle({
+    Tab = "Stealer",
+    Title = "Auto Medusa",
+    Default = false,
+    Callback = function(value)
+        toggleAutoMedusa(value)
+        MainHub:Notify("Auto Medusa: " .. (value and "On" or "Off"))
+    end
+})
+
+-- Auto Medusa Radius Input di Tab Stealer
+MainHub:AddInput({
+    Tab = "Stealer",
+    Title = "Medusa Radius",
+    Placeholder = "Enter radius (max 15)...",
+    Min = 1,
+    Max = 15,
+    Callback = function(value)
+        detectionRange = tonumber(value) or 15
+        MainHub:Notify("Medusa Radius set to: " .. detectionRange)
     end
 })
