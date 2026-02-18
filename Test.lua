@@ -1966,12 +1966,39 @@ end
 -- ========== QUICK PANEL ==========
 
 -- Inf Jump Toggle
-QuickPanel:AddToggle({
+local infJumpToggle
+local infJumpRespawnConn
+
+infJumpToggle = QuickPanel:AddToggle({
     Title = "Inf Jump",
     Default = false,
     Callback = function(value)
         toggleInfJump(value)
         QuickPanel:Notify("Inf Jump: " .. (value and "On" or "Off"))
+        
+        if value then
+            -- Monitor respawn
+            if infJumpRespawnConn then
+                infJumpRespawnConn:Disconnect()
+            end
+            
+            infJumpRespawnConn = player.CharacterAdded:Connect(function()
+                if infiniteJumpEnabled then
+                    -- Disable dulu
+                    toggleInfJump(false)
+                    
+                    -- Wait sikit pastu enable balik
+                    task.wait(0.5)
+                    toggleInfJump(true)
+                end
+            end)
+        else
+            -- Disconnect bila toggle OFF
+            if infJumpRespawnConn then
+                infJumpRespawnConn:Disconnect()
+                infJumpRespawnConn = nil
+            end
+        end
     end
 })
 
