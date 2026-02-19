@@ -250,10 +250,13 @@ local function stopSpeedControl()
         speedConn:Disconnect() 
         speedConn = nil 
     end
-    local _, HRP = GetCharacter()
-    if HRP then 
-        HRP.AssemblyLinearVelocity = Vector3.new(0, HRP.AssemblyLinearVelocity.Y, 0) 
-    end
+    
+    pcall(function()
+        local Char, HRP = GetCharacter()
+        if HRP then 
+            HRP.AssemblyLinearVelocity = Vector3.new(0, HRP.AssemblyLinearVelocity.Y, 0) 
+        end
+    end)
 end
 
 local function toggleSpeed(enabled)
