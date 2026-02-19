@@ -11,7 +11,7 @@ local S = {
     UserInputService = game:GetService("UserInputService"),
     RunService = game:GetService("RunService"),
     Workspace = game:GetService("Workspace"),
-    Lighting = game:GetService("Lighting")
+    Lighting = game:GetService("Lighting"),         -- ✅ TAMBAH COMMA
     ReplicatedStorage = game:GetService("ReplicatedStorage"),
     HttpService = game:GetService("HttpService")
 }
