@@ -35,7 +35,7 @@ local defaultGravity = S.Workspace.Gravity
 local speedConn
 local baseSpeed = 28
 local speedEnabled = false
-local isStealingActive = false
+local stealSpeedConn = nil
 
 -- ESP variables
 local espPlayersEnabled = false
@@ -219,71 +219,57 @@ local function toggleInfJump(enabled)
     end
 end
 
-local function startSpeedControl()
-    if speedConn then return end
-    speedConn = S.RunService.Heartbeat:Connect(function()
-        -- Stop kalau speed disabled DAN tak stealing
-        if not speedEnabled and not isStealingActive then return end
+local function startStealSpeed()
+    if stealSpeedConn then return end
 
-        local Char, HRP, Hum = GetCharacter()
-        if not Char or not HRP or not Hum then return end
-        
-        local inputDirection = getMovementInput()
-        
-        if inputDirection.Magnitude > 0 then
-            HRP.AssemblyLinearVelocity = Vector3.new(
-                inputDirection.X * baseSpeed,
-                HRP.AssemblyLinearVelocity.Y,
-                inputDirection.Z * baseSpeed
+    stealSpeedConn = S.RunService.Heartbeat:Connect(function()
+        if not speedEnabled then return end
+        if not player:GetAttribute("Stealing") then return end
+
+        local char = player.Character
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hum or not hrp then return end
+
+        local move = hum.MoveDirection
+        if move.Magnitude > 0 then
+            hrp.AssemblyLinearVelocity = Vector3.new(
+                move.X * baseSpeed,
+                hrp.AssemblyLinearVelocity.Y,
+                move.Z * baseSpeed
             )
-        else
-            HRP.AssemblyLinearVelocity = Vector3.new(0, HRP.AssemblyLinearVelocity.Y, 0)
         end
     end)
 end
 
-local function stopSpeedControl()
-    -- Jangan stop kalau salah satu masih active
-    if speedEnabled or isStealingActive then return end
-
-    if speedConn then 
-        speedConn:Disconnect() 
-        speedConn = nil 
+local function stopStealSpeed()
+    if stealSpeedConn then
+        stealSpeedConn:Disconnect()
+        stealSpeedConn = nil
     end
-    
-    pcall(function()
-        local Char, HRP = GetCharacter()
-        if HRP then 
-            HRP.AssemblyLinearVelocity = Vector3.new(0, HRP.AssemblyLinearVelocity.Y, 0) 
-        end
-    end)
 end
 
 local function toggleSpeed(enabled)
     speedEnabled = enabled
     if enabled then
-        startSpeedControl()
+        -- Setup monitor bila toggle ON
+        player:GetAttributeChangedSignal("Stealing"):Connect(function()
+            if player:GetAttribute("Stealing") then
+                startStealSpeed()
+            else
+                stopStealSpeed()
+            end
+        end)
+        
+        -- Check current state
+        if player:GetAttribute("Stealing") then
+            startStealSpeed()
+        end
     else
-        stopSpeedControl()
+        stopStealSpeed()
     end
 end
-
--- ==================== STEAL DETECTION ====================
-local function onStealingChanged()
-    isStealingActive = player:GetAttribute("Stealing") == true
-
-    if isStealingActive then
-        startSpeedControl()
-    else
-        stopSpeedControl()
-    end
-end
-
--- Listen bila attribute "Stealing" berubah
-player:GetAttributeChangedSignal("Stealing"):Connect(onStealingChanged)
-
--- Check masa mula-mula run (kalau dah Stealing sebelum script load)
-onStealingChanged()
 
 -- ==================== ESP FUNCTIONS ====================
 local function getEquippedItem(character)
