@@ -47,12 +47,6 @@ local baseTargetPart = nil
 local baseBeam = nil
 local baseLineRespawnConn = nil
 
--- Esp Subspace Mine variables
-local espTrapEnabled = false
-local espTrapObjects = {}
-local espTrapConnection = nil
-local espTrapLastScanTime = 0
-
 -- Anti Ragdoll variables
 local antiRagdollEnabled = false
 local humanoidWatchConnection, ragdollTimer
@@ -742,85 +736,6 @@ local function toggleBaseLine(state)
             baseLineRespawnConn:Disconnect()
             baseLineRespawnConn = nil
         end
-    end
-end
-
--- ==================== ESP SUBSPACE MINE FUNCTIONS ====================
-local function addTrapHighlight(object)
-    if object:FindFirstChild("ESP_Trap_Highlight") then return end
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "ESP_Trap_Highlight"
-    highlight.Adornee = object
-    highlight.FillTransparency = 0.5
-    highlight.OutlineTransparency = 0
-    highlight.FillColor = Color3.fromRGB(255, 50, 50)
-    highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
-    highlight.Parent = object
-    table.insert(espTrapObjects, {Object = object, Highlight = highlight})
-end
-
-local function removeTrapHighlight(object)
-    local highlight = object:FindFirstChild("ESP_Trap_Highlight")
-    if highlight then highlight:Destroy() end
-end
-
-local function isTrapObject(name)
-    return (name:find("subspace") and name:find("mine"))
-        or name:find("trap")
-        or (name:find("mine") and not name:find("mining"))
-end
-
-local function findTrapTargets()
-    for _, data in pairs(espTrapObjects) do
-        if data.Highlight then data.Highlight:Destroy() end
-    end
-    espTrapObjects = {}
-    for _, obj in pairs(S.Workspace:GetDescendants()) do
-        if obj:IsA("Model") or obj:IsA("Part") or obj:IsA("MeshPart") then
-            if isTrapObject(obj.Name:lower()) then
-                addTrapHighlight(obj)
-            end
-        end
-    end
-end
-
-local function startEspTrap()
-    if espTrapEnabled then return end
-    espTrapEnabled = true
-    findTrapTargets()
-    espTrapLastScanTime = tick()
-    espTrapConnection = S.RunService.Heartbeat:Connect(function()
-        if not espTrapEnabled then return end
-        if tick() - espTrapLastScanTime >= 6 then
-            espTrapLastScanTime = tick()
-            for _, obj in pairs(S.Workspace:GetDescendants()) do
-                if obj:IsA("Model") or obj:IsA("Part") or obj:IsA("MeshPart") then
-                    if isTrapObject(obj.Name:lower()) and not obj:FindFirstChild("ESP_Trap_Highlight") then
-                        addTrapHighlight(obj)
-                    end
-                end
-            end
-        end
-    end)
-end
-
-local function stopEspTrap()
-    espTrapEnabled = false
-    if espTrapConnection then espTrapConnection:Disconnect(); espTrapConnection = nil end
-    for _, data in pairs(espTrapObjects) do
-        if data.Highlight then data.Highlight:Destroy() end
-    end
-    espTrapObjects = {}
-    for _, obj in pairs(S.Workspace:GetDescendants()) do
-        removeTrapHighlight(obj)
-    end
-end
-
-local function toggleEspTrap(state)
-    if state then
-        startEspTrap()
-    else
-        stopEspTrap()
     end
 end
 
@@ -2296,17 +2211,6 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleBaseLine(value)
         MainHub:Notify("Esp Base Line: " .. (value and "On" or "Off"))
-    end
-})
-
--- Esp Subspace Mine Toggle di Tab Visual
-MainHub:AddToggle({
-    Tab = "Visual",
-    Title = "Esp Subspace Mine",
-    Default = false,
-    Callback = function(value)
-        toggleEspTrap(value)
-        MainHub:Notify("Esp Subspace Mine: " .. (value and "On" or "Off"))
     end
 })
 
