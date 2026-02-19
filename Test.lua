@@ -125,7 +125,7 @@ local serverTimeOffset = 0
 
 -- Carpet Speed variables
 local carpetSpeedEnabled = false
-local carpetSpeed = 190
+local carpetSpeed = 260
 local carpetConn = nil
 
 -- ==================== INF JUMP FUNCTIONS ====================
@@ -2146,18 +2146,5 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleCarpetSpeed(value)
         MainHub:Notify("Carpet Speed: " .. (value and "On" or "Off"))
-    end
-})
-
--- Carpet Speed Input di Tab Stealer
-MainHub:AddInput({
-    Tab = "Stealer",
-    Title = "Carpet Speed Value",
-    Placeholder = "Enter speed (max 1300)...",
-    Min = 1,
-    Max = 1300,
-    Callback = function(value)
-        carpetSpeed = tonumber(value) or 190
-        MainHub:Notify("Carpet Speed set to: " .. carpetSpeed)
     end
 })
