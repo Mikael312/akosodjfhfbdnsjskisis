@@ -123,6 +123,11 @@ local MEDUSA_COOLDOWN = 25
 local lastMedusaActivate = 0
 local serverTimeOffset = 0
 
+-- Carpet Speed variables
+local carpetSpeedEnabled = false
+local carpetSpeed = 190
+local carpetConn = nil
+
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
     local char = player.Character
@@ -1831,6 +1836,111 @@ local function toggleAutoMedusa(state)
     end
 end
 
+-- ==================== CARPET SPEED FUNCTIONS ====================
+local function equipFlyingCarpet()
+    local backpack = player:WaitForChild("Backpack")
+    local character = player.Character
+
+    if not character then return false end
+
+    local carpetNames = {"Flying Carpet", "FlyingCarpet", "flying carpet", "flyingcarpet"}
+
+    for _, name in ipairs(carpetNames) do
+        if character:FindFirstChild(name) then
+            return true
+        end
+    end
+
+    local carpetTool = nil
+    for _, name in ipairs(carpetNames) do
+        carpetTool = backpack:FindFirstChild(name)
+        if carpetTool then break end
+    end
+
+    if carpetTool then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:EquipTool(carpetTool)
+            task.wait(0.3)
+            return true
+        end
+    end
+
+    return false
+end
+
+local function startCarpet()
+    if carpetConn then return end
+    carpetConn = S.RunService.Heartbeat:Connect(function()
+        if not carpetSpeedEnabled then return end
+        
+        local Char = player.Character
+        if not Char then return end
+
+        local carpetTool = nil
+        local carpetNames = {"Flying Carpet", "FlyingCarpet", "flying carpet", "flyingcarpet"}
+        for _, name in ipairs(carpetNames) do
+            carpetTool = Char:FindFirstChild(name)
+            if carpetTool then break end
+        end
+
+        if not carpetTool then return end
+
+        local carpetPart = carpetTool:FindFirstChild("Handle") or
+                           carpetTool:FindFirstChildWhichIsA("BasePart")
+
+        if not carpetPart then return end
+
+        local Hum = Char:FindFirstChildOfClass("Humanoid")
+        local HRP = Char:FindFirstChild("HumanoidRootPart")
+        if not Hum or not HRP then return end
+
+        local moveDir = Hum.MoveDirection
+
+        if moveDir.Magnitude < 0.1 then
+            local currentVel = carpetPart.AssemblyLinearVelocity
+            carpetPart.AssemblyLinearVelocity = Vector3.new(0, currentVel.Y, 0)
+            return
+        end
+
+        carpetPart.AssemblyLinearVelocity = Vector3.new(
+            moveDir.X * carpetSpeed,
+            carpetPart.AssemblyLinearVelocity.Y,
+            moveDir.Z * carpetSpeed
+        )
+    end)
+end
+
+local function stopCarpet()
+    if carpetConn then
+        carpetConn:Disconnect()
+        carpetConn = nil
+    end
+end
+
+local function enableCarpetSpeed()
+    if carpetSpeedEnabled then return end
+    carpetSpeedEnabled = true
+    
+    if equipFlyingCarpet() then
+        startCarpet()
+    end
+end
+
+local function disableCarpetSpeed()
+    if not carpetSpeedEnabled then return end
+    carpetSpeedEnabled = false
+    stopCarpet()
+end
+
+local function toggleCarpetSpeed(state)
+    if state then
+        enableCarpetSpeed()
+    else
+        disableCarpetSpeed()
+    end
+end
+
 -- ========== QUICK PANEL ==========
 
 -- Inf Jump Toggle
@@ -2025,5 +2135,29 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleAutoMedusa(value)
         MainHub:Notify("Auto Medusa: " .. (value and "On" or "Off"))
+    end
+})
+
+-- Carpet Speed Toggle di Tab Stealer
+MainHub:AddToggle({
+    Tab = "Stealer",
+    Title = "Carpet Speed",
+    Default = false,
+    Callback = function(value)
+        toggleCarpetSpeed(value)
+        MainHub:Notify("Carpet Speed: " .. (value and "On" or "Off"))
+    end
+})
+
+-- Carpet Speed Input di Tab Stealer
+MainHub:AddInput({
+    Tab = "Stealer",
+    Title = "Carpet Speed Value",
+    Placeholder = "Enter speed (max 1300)...",
+    Min = 1,
+    Max = 1300,
+    Callback = function(value)
+        carpetSpeed = tonumber(value) or 190
+        MainHub:Notify("Carpet Speed set to: " .. carpetSpeed)
     end
 })
