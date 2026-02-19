@@ -14,6 +14,7 @@ local S = {
     Lighting = game:GetService("Lighting")
 }
 local player = S.Players.LocalPlayer
+
 -- Load Modules
 local AnimalsModule, TraitsModule, MutationsModule
 pcall(function()
@@ -21,7 +22,6 @@ pcall(function()
     TraitsModule = require(S.ReplicatedStorage.Datas.Traits)
     MutationsModule = require(S.ReplicatedStorage.Datas.Mutations)
 end)
-
 -- ==================== VARIABLES ====================
 local infiniteJumpEnabled = false
 local lowGravityEnabled = false
