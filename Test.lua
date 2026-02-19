@@ -123,6 +123,10 @@ local MEDUSA_COOLDOWN = 25
 local lastMedusaActivate = 0
 local serverTimeOffset = 0
 
+-- Touch Fling variables
+local touchFlingEnabled = false
+local touchFlingConnection = nil
+
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
     local char = player.Character
@@ -1831,6 +1835,100 @@ local function toggleAutoMedusa(state)
     end
 end
 
+-- ==================== TOUCH FLING FUNCTIONS ====================
+local function enableTouchFling()
+    if touchFlingEnabled then return end
+    
+    -- Matikan AutoJump untuk mengelakkan gangguan
+    pcall(function()
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+            if humanoid and humanoid.AutoJumpEnabled ~= nil then
+                humanoid.AutoJumpEnabled = false
+            end
+        end
+    end)
+
+    -- Cipta penanda di ReplicatedStorage (sebagai flag)
+    if not S.ReplicatedStorage:FindFirstChild("juisdfj0i32i0eidsuf0iok") then
+        local marker = Instance.new("Decal")
+        marker.Name = "juisdfj0i32i0eidsuf0iok"
+        marker.Parent = S.ReplicatedStorage
+    end
+
+    -- Logik utama fling
+    touchFlingConnection = S.RunService.Heartbeat:Connect(function()
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local v = hrp.Velocity
+            
+            -- Langkah 1: Terapkan daya yang sangat besar
+            hrp.Velocity = v * 10000 + Vector3.new(0, 10000, 0)
+            
+            -- Langkah 2: Tunggu sehingga frame selesai diproses
+            S.RunService.RenderStepped:Wait()
+            
+            -- Langkah 3: Kembalikan halaju kepada asal
+            hrp.Velocity = v
+            
+            -- Langkah 4: Tunggu langkah fizikal seterusnya
+            S.RunService.Stepped:Wait()
+            
+            -- Langkah 5: Tambah sedikit daya ke atas untuk mengelakkan tersekat di tanah
+            hrp.Velocity = v + Vector3.new(0, 0.1, 0)
+        end
+    end)
+    
+    touchFlingEnabled = true
+end
+
+local function disableTouchFling()
+    if not touchFlingEnabled then return end
+    
+    if touchFlingConnection then
+        touchFlingConnection:Disconnect()
+        touchFlingConnection = nil
+    end
+    
+    -- Padam penanda
+    local marker = S.ReplicatedStorage:FindFirstChild("juisdfj0i32i0eidsuf0iok")
+    if marker then
+        marker:Destroy()
+    end
+    
+    -- Pulihkan AutoJump
+    pcall(function()
+        local character = player.Character
+        if character then
+            local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+            if humanoid then
+                humanoid.AutoJumpEnabled = true
+            end
+        end
+    end)
+    
+    touchFlingEnabled = false
+end
+
+local function toggleTouchFling(state)
+    if state then
+        enableTouchFling()
+    else
+        disableTouchFling()
+    end
+end
+
+-- Auto reload bila respawn
+player.CharacterAdded:Connect(function()
+    if touchFlingEnabled then
+        task.wait(1)
+        disableTouchFling()
+        enableTouchFling()
+    end
+end)
+
 -- ========== QUICK PANEL ==========
 
 -- Inf Jump Toggle
@@ -2025,5 +2123,16 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleAutoMedusa(value)
         MainHub:Notify("Auto Medusa: " .. (value and "On" or "Off"))
+    end
+})
+
+-- Touch Fling Toggle di Tab Stealer
+MainHub:AddToggle({
+    Tab = "Stealer",
+    Title = "Touch Fling",
+    Default = false,
+    Callback = function(value)
+        toggleTouchFling(value)
+        MainHub:Notify("Touch Fling: " .. (value and "On" or "Off"))
     end
 })
