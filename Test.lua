@@ -35,6 +35,7 @@ local defaultGravity = S.Workspace.Gravity
 local speedConn
 local baseSpeed = 28
 local speedEnabled = false
+local isStealingActive = false
 
 -- ESP variables
 local espPlayersEnabled = false
@@ -218,27 +219,12 @@ local function toggleInfJump(enabled)
     end
 end
 
--- ==================== SPEED FUNCTIONS ====================
-local function GetCharacter()
-    local Char = player.Character or player.CharacterAdded:Wait()
-    local HRP = Char:WaitForChild("HumanoidRootPart")
-    local Hum = Char:FindFirstChildOfClass("Humanoid")
-    return Char, HRP, Hum
-end
-
-local function getMovementInput()
-    local Char, HRP, Hum = GetCharacter()
-    if not Char or not HRP or not Hum then return Vector3.new(0,0,0) end
-    local moveVector = Hum.MoveDirection
-    if moveVector.Magnitude > 0.1 then
-        return Vector3.new(moveVector.X, 0, moveVector.Z).Unit
-    end
-    return Vector3.new(0,0,0)
-end
-
 local function startSpeedControl()
     if speedConn then return end
     speedConn = S.RunService.Heartbeat:Connect(function()
+        -- Stop kalau speed disabled DAN tak stealing
+        if not speedEnabled and not isStealingActive then return end
+
         local Char, HRP, Hum = GetCharacter()
         if not Char or not HRP or not Hum then return end
         
@@ -257,6 +243,9 @@ local function startSpeedControl()
 end
 
 local function stopSpeedControl()
+    -- Jangan stop kalau salah satu masih active
+    if speedEnabled or isStealingActive then return end
+
     if speedConn then 
         speedConn:Disconnect() 
         speedConn = nil 
@@ -275,6 +264,23 @@ local function toggleSpeed(enabled)
         stopSpeedControl()
     end
 end
+
+-- ==================== STEAL DETECTION ====================
+local function onStealingChanged()
+    isStealingActive = player:GetAttribute("Stealing") == true
+
+    if isStealingActive then
+        startSpeedControl()
+    else
+        stopSpeedControl()
+    end
+end
+
+-- Listen bila attribute "Stealing" berubah
+player:GetAttributeChangedSignal("Stealing"):Connect(onStealingChanged)
+
+-- Check masa mula-mula run (kalau dah Stealing sebelum script load)
+onStealingChanged()
 
 -- ==================== ESP FUNCTIONS ====================
 local function getEquippedItem(character)
