@@ -128,6 +128,15 @@ local carpetSpeedEnabled = false
 local carpetSpeed = 260
 local carpetConn = nil
 
+-- Auto Kick After Steal variables
+local autoKickEnabled = false
+local lastStolenName = "a Brainrot"
+local uiNameConn = nil
+local uiNameChanged = {}
+local isMonitoring = false
+local lastStealCount = 0
+local monitoringLoop = nil
+
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
     local char = player.Character
@@ -1941,6 +1950,150 @@ local function toggleCarpetSpeed(state)
     end
 end
 
+-- ==================== AUTO KICK AFTER STEAL FUNCTIONS ====================
+local function disconnect(conn)
+    if conn and typeof(conn) == "RBXScriptConnection" then
+        conn:Disconnect()
+    end
+end
+
+local function toTitleCase(str)
+    if type(str) ~= "string" then return str end
+    return str:gsub("(%a)([%w_']*)", function(a, b)
+        return a:upper() .. b:lower()
+    end)
+end
+
+local function stripRichText(text)
+    if type(text) ~= "string" then return "" end
+    return text:gsub("%b<>", "")
+end
+
+local function extractNameFromText(text)
+    if type(text) ~= "string" then return nil end
+    local plain = stripRichText(text)
+    local match = plain:match("[Yy]ou%s+[Ss]tole%s+(.*)")
+    if not match or match == "" then return nil end
+    match = match:gsub("^%s+", ""):gsub("%s+$", ""):gsub("[^%w%p%s]", "")
+    if match == "" then return nil end
+    return toTitleCase(match)
+end
+
+local function watchUiForName(inst)
+    if not (inst and (inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox"))) then return end
+    local function check()
+        local txt = inst.ContentText
+        if type(txt) ~= "string" or txt == "" then txt = inst.Text end
+        if type(txt) ~= "string" then return end
+        local name = extractNameFromText(txt)
+        if name then
+            lastStolenName = name
+        end
+    end
+    check()
+    disconnect(uiNameChanged[inst])
+    uiNameChanged[inst] = inst:GetPropertyChangedSignal("Text"):Connect(check)
+    inst.Destroying:Connect(function()
+        disconnect(uiNameChanged[inst])
+        uiNameChanged[inst] = nil
+    end)
+end
+
+local function startUiNameScanner()
+    task.spawn(function()
+        local gui = player:FindFirstChild("PlayerGui") or player:WaitForChild("PlayerGui", 5)
+        if not gui then return end
+        for _, desc in ipairs(gui:GetDescendants()) do
+            watchUiForName(desc)
+        end
+        disconnect(uiNameConn)
+        uiNameConn = gui.DescendantAdded:Connect(watchUiForName)
+    end)
+end
+
+local function resolveStolenName()
+    local attr = player and (
+        player:GetAttribute("StealingIndex") or
+        player:GetAttribute("StealingName") or
+        player:GetAttribute("StealingAnimal")
+    )
+    if type(attr) == "string" and attr ~= "" then return toTitleCase(attr) end
+    return lastStolenName
+end
+
+local function getStealCount()
+    local success, result = pcall(function()
+        if not player or not player:FindFirstChild("leaderstats") then return 0 end
+        local stealsObject = player.leaderstats:FindFirstChild("Steals")
+        if not stealsObject then return 0 end
+        if stealsObject:IsA("IntValue") or stealsObject:IsA("NumberValue") then
+            return stealsObject.Value
+        elseif stealsObject:IsA("StringValue") then
+            return tonumber(stealsObject.Value) or 0
+        else
+            return tonumber(tostring(stealsObject.Value)) or 0
+        end
+    end)
+    return success and result or 0
+end
+
+local function kickPlayer()
+    local stolenName = resolveStolenName()
+    local msg = "You Stole " .. stolenName
+    local success = pcall(function()
+        player:Kick(msg)
+    end)
+    if not success then
+        warn("Kick gagal, cuba shutdown...")
+        game:Shutdown()
+    end
+end
+
+local function enableAutoKick()
+    if autoKickEnabled then return end
+    autoKickEnabled = true
+    isMonitoring = true
+    lastStealCount = getStealCount()
+    startUiNameScanner()
+
+    monitoringLoop = S.RunService.Heartbeat:Connect(function()
+        if not isMonitoring then return end
+        local currentStealCount = getStealCount()
+        if currentStealCount > lastStealCount then
+            isMonitoring = false
+            disconnect(monitoringLoop)
+            monitoringLoop = nil
+            task.wait(0.1)
+            kickPlayer()
+        end
+        lastStealCount = currentStealCount
+    end)
+end
+
+local function disableAutoKick()
+    if not autoKickEnabled then return end
+    autoKickEnabled = false
+    isMonitoring = false
+    
+    disconnect(monitoringLoop)
+    monitoringLoop = nil
+    disconnect(uiNameConn)
+    uiNameConn = nil
+    
+    for inst, conn in pairs(uiNameChanged) do
+        disconnect(conn)
+    end
+    uiNameChanged = {}
+end
+
+local function toggleAutoKick(state)
+    if state then
+        enableAutoKick()
+    else
+        disableAutoKick()
+    end
+end
+
 -- ========== QUICK PANEL ==========
 
 -- Inf Jump Toggle
@@ -2146,5 +2299,16 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleCarpetSpeed(value)
         MainHub:Notify("Carpet Speed: " .. (value and "On" or "Off"))
+    end
+})
+
+-- Auto Kick After Steal Toggle di Tab Stealer
+MainHub:AddToggle({
+    Tab = "Stealer",
+    Title = "Auto Kick After Steal",
+    Default = false,
+    Callback = function(value)
+        toggleAutoKick(value)
+        MainHub:Notify("Auto Kick After Steal: " .. (value and "On" or "Off"))
     end
 })
