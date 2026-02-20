@@ -144,6 +144,7 @@ local espBestEnabled = false
 local espBestConn = nil
 local highestValueESP = nil
 local highestValueData = nil
+local espBestRunning = false
 
 local AnimalsModule, TraitsModule, MutationsModule
 pcall(function()
@@ -2488,26 +2489,30 @@ local function enableEspBest()
     if espBestEnabled then return end
     espBestEnabled = true
 
-    espBestConn = S.RunService.Heartbeat:Connect(function()
-        if not espBestEnabled then return end
-        pcall(updateHighestValueESP)
+    espBestConn = task.spawn(function()
+        while espBestEnabled do
+            -- Lock: kalau tengah running, skip
+            if not espBestRunning then
+                espBestRunning = true
+                pcall(updateHighestValueESP)
+                espBestRunning = false
+            end
+            task.wait(2)
+        end
     end)
 end
 
 local function disableEspBest()
     if not espBestEnabled then return end
     espBestEnabled = false
+    espBestRunning = false
 
     if espBestConn then
-        espBestConn:Disconnect()
+        task.cancel(espBestConn)
         espBestConn = nil
     end
 
     cleanupEspBest()
-end
-
-local function toggleEspBest(state)
-    if state then enableEspBest() else disableEspBest() end
 end
 
 -- ========== QUICK PANEL ==========
