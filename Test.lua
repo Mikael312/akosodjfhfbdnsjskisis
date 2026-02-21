@@ -50,14 +50,6 @@ local eventConnections = {}
 local timerEspEnabled = false
 local timerEspConnections = {}
 
--- Esp Base Line variables
-local baseLineEnabled = false
-local baseLineConnection = nil
-local baseBeamPart = nil
-local baseTargetPart = nil
-local baseBeam = nil
-local baseLineRespawnConn = nil
-
 -- Anti Ragdoll variables
 local antiRagdollEnabled = false
 local humanoidWatchConnection, ragdollTimer
@@ -606,139 +598,6 @@ local function toggleTimerESP(state)
         enableTimerESP()
     else
         disableTimerESP()
-    end
-end
-
--- ==================== ESP BASE LINE FUNCTIONS ====================
-local function FindDelivery()
-    local plots = S.Workspace:WaitForChild("Plots", 5)
-    if not plots then return nil end
-    
-    for _, plot in pairs(plots:GetChildren()) do
-        local sign = plot:FindFirstChild("PlotSign")
-        if sign then
-            local yourBase = sign:FindFirstChild("YourBase")
-            if yourBase and yourBase.Enabled then
-                local hitbox = plot:FindFirstChild("DeliveryHitbox")
-                if hitbox then 
-                    return hitbox 
-                end
-            end
-        end
-    end
-    return nil
-end
-
-local function createPlotLine()
-    local Character = player.Character
-    if not Character then return false end
-    local RootPart = Character:FindFirstChild("HumanoidRootPart")
-    if not RootPart then return false end
-
-    local deliveryHitbox = FindDelivery()
-    if not deliveryHitbox then return false end
-
-    local targetPosition = deliveryHitbox.Position
-
-    baseTargetPart = Instance.new("Part")
-    baseTargetPart.Name = "PlotLineTarget"
-    baseTargetPart.Size = Vector3.new(0.1, 0.1, 0.1)
-    baseTargetPart.Position = targetPosition
-    baseTargetPart.Anchored = true
-    baseTargetPart.CanCollide = false
-    baseTargetPart.Transparency = 1
-    baseTargetPart.Parent = S.Workspace
-
-    baseBeamPart = Instance.new("Part")
-    baseBeamPart.Name = "PlotLineBeam"
-    baseBeamPart.Size = Vector3.new(0.1, 0.1, 0.1)
-    baseBeamPart.Transparency = 1
-    baseBeamPart.CanCollide = false
-    baseBeamPart.Parent = S.Workspace
-
-    local att0 = Instance.new("Attachment")
-    att0.Name = "Att0"
-    att0.Parent = baseBeamPart
-
-    local att1 = Instance.new("Attachment")
-    att1.Name = "Att1"
-    att1.Parent = baseTargetPart
-
-    baseBeam = Instance.new("Beam")
-    baseBeam.Name = "PlotLineBeam"
-    baseBeam.Attachment0 = att0
-    baseBeam.Attachment1 = att1
-    baseBeam.FaceCamera = true
-    baseBeam.Width0 = 0.3
-    baseBeam.Width1 = 0.3
-    baseBeam.Color = ColorSequence.new(Color3.fromRGB(100, 0, 0))
-    baseBeam.Transparency = NumberSequence.new(0)
-    baseBeam.LightEmission = 0.5
-    baseBeam.Parent = baseBeamPart
-
-    local pulseTime = 0
-    local animateConnection
-    animateConnection = S.RunService.Heartbeat:Connect(function(dt)
-        if baseBeam and baseBeam.Parent then
-            pulseTime = pulseTime + dt
-            local pulse = (math.sin(pulseTime * 2) + 1) / 2
-            local r = 100 + (155 * pulse)
-            baseBeam.Color = ColorSequence.new(Color3.fromRGB(r, 0, 0))
-        else
-            if animateConnection then animateConnection:Disconnect() end
-        end
-    end)
-
-    baseLineConnection = S.RunService.Heartbeat:Connect(function()
-        local char = player.Character
-        if not char or not char.Parent then
-            stopPlotLine()
-            return
-        end
-        local root = char:FindFirstChild("HumanoidRootPart")
-        if root and baseBeamPart and baseBeamPart.Parent then
-            baseBeamPart.CFrame = root.CFrame
-        end
-    end)
-
-    return true
-end
-
-local function stopPlotLine()
-    if baseLineConnection then baseLineConnection:Disconnect(); baseLineConnection = nil end
-    if baseBeamPart then baseBeamPart:Destroy(); baseBeamPart = nil end
-    if baseTargetPart then baseTargetPart:Destroy(); baseTargetPart = nil end
-    if baseBeam then baseBeam:Destroy(); baseBeam = nil end
-end
-
-local function enableBaseLine()
-    if baseLineEnabled then return end
-    baseLineEnabled = true
-    pcall(createPlotLine)
-end
-
-local function disableBaseLine()
-    if not baseLineEnabled then return end
-    baseLineEnabled = false
-    pcall(stopPlotLine)
-end
-
-local function toggleBaseLine(state)
-    if state then
-        enableBaseLine()
-        
-        baseLineRespawnConn = player.CharacterAdded:Connect(function()
-            if baseLineEnabled then
-                task.wait(1)
-                pcall(createPlotLine)
-            end
-        end)
-    else
-        disableBaseLine()
-        if baseLineRespawnConn then
-            baseLineRespawnConn:Disconnect()
-            baseLineRespawnConn = nil
-        end
     end
 end
 
@@ -2490,17 +2349,6 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleTimerESP(value)
         MainHub:Notify("Timer Esp: " .. (value and "On" or "Off"))
-    end
-})
-
--- Esp Base Line Toggle di Tab Visual
-MainHub:AddToggle({
-    Tab = "Visual",
-    Title = "Esp Base Line",
-    Default = false,
-    Callback = function(value)
-        toggleBaseLine(value)
-        MainHub:Notify("Esp Base Line: " .. (value and "On" or "Off"))
     end
 })
 
