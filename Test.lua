@@ -13,7 +13,9 @@ local S = {
     Workspace = game:GetService("Workspace"),
     Lighting = game:GetService("Lighting"),
     ReplicatedStorage = game:GetService("ReplicatedStorage"),
-    HttpService = game:GetService("HttpService")
+    HttpService = game:GetService("HttpService"),
+    TweenService = game:GetService("TweenService"),
+    SoundService = game:GetService("SoundService")
 }
 local player = S.Players.LocalPlayer
 
@@ -136,6 +138,10 @@ local espBestEnabled = false
 local espBestConnection = nil
 local highestValueESP = nil
 local highestValueData = nil
+
+-- High Value Notify variables
+local highValueNotifyEnabled = false
+local lastNotifiedPet = nil
 
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
@@ -1970,6 +1976,7 @@ local function clearHighestValueESP()
         highestValueESP = nil
     end
     highestValueData = nil
+    lastNotifiedPet = nil  -- TAMBAH INI
 end
 
 local function createHighestValueESP(brainrotData)
@@ -2186,6 +2193,15 @@ local function createHighestValueESP(brainrotData)
         espContainer.updateConnection = updateConnection
         highestValueESP = espContainer
         highestValueData = brainrotData
+
+        -- NOTIFY
+        if highValueNotifyEnabled then
+            local petKey = brainrotData.petName .. "_" .. brainrotData.plotOwner
+            if lastNotifiedPet ~= petKey then
+                lastNotifiedPet = petKey
+                playNotifySound()
+            end
+        end
     end)
 end
 
@@ -2247,7 +2263,43 @@ local function toggleEspBest(state)
         disableEspBest()
     end
 end
-        
+
+-- ==================== HIGH VALUE NOTIFY FUNCTIONS ====================
+local notifySound = Instance.new("Sound")
+notifySound.SoundId = "rbxassetid://138118203571469"
+notifySound.Volume = 1.5
+notifySound.Parent = S.SoundService
+
+local function playNotifySound()
+    pcall(function()
+        notifySound:Stop()
+        notifySound:Play()
+        task.delay(5, function()
+            notifySound:Stop()
+        end)
+    end)
+end
+
+local function enableHighValueNotify()
+    if highValueNotifyEnabled then return end
+    highValueNotifyEnabled = true
+end
+
+local function disableHighValueNotify()
+    if not highValueNotifyEnabled then return end
+    highValueNotifyEnabled = false
+    pcall(function() notifySound:Stop() end)
+    lastNotifiedPet = nil
+end
+
+local function toggleHighValueNotify(state)
+    if state then
+        enableHighValueNotify()
+    else
+        disableHighValueNotify()
+    end
+end
+
 -- ========== QUICK PANEL ==========
 
 -- Inf Jump Toggle
@@ -2360,6 +2412,17 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleEspBest(value)
         MainHub:Notify("Esp Best: " .. (value and "On" or "Off"))
+    end
+})
+
+-- High Value Notify Toggle di Tab Visual
+MainHub:AddToggle({
+    Tab = "Visual",
+    Title = "High Value Notify",
+    Default = false,
+    Callback = function(value)
+        toggleHighValueNotify(value)
+        MainHub:Notify("High Value Notify: " .. (value and "On" or "Off"))
     end
 })
 
