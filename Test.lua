@@ -137,6 +137,11 @@ local espBestConnection = nil
 local highestValueESP = nil
 local highestValueData = nil
 
+-- High Value Notify variables
+local highValueNotifyEnabled = false
+local notifySound = nil
+local lastNotifiedModel = nil
+
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
     local char = player.Character
@@ -2210,6 +2215,12 @@ local function updateHighestValueESP()
     if newHighest then
         if not highestValueData or newHighest.value > highestValueData.value then
             createHighestValueESP(newHighest)
+            
+            -- Trigger notify kalau high value notify on dan model berbeza
+            if highValueNotifyEnabled and lastNotifiedModel ~= newHighest.model then
+                lastNotifiedModel = newHighest.model
+                playNotifySound()
+            end
         end
     end
 end
@@ -2247,7 +2258,51 @@ local function toggleEspBest(state)
         disableEspBest()
     end
 end
-        
+
+-- ==================== HIGH VALUE NOTIFY FUNCTIONS ====================
+local function playNotifySound()
+    if notifySound and notifySound.Parent then
+        notifySound:Stop()
+        notifySound:Destroy()
+    end
+    
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://138118203571469"
+    sound.Volume = 1.5
+    sound.Parent = S.Workspace
+    sound:Play()
+    notifySound = sound
+    
+    task.delay(5, function()
+        if sound and sound.Parent then
+            sound:Stop()
+            sound:Destroy()
+        end
+    end)
+end
+
+local function enableHighValueNotify()
+    highValueNotifyEnabled = true
+end
+
+local function disableHighValueNotify()
+    highValueNotifyEnabled = false
+    lastNotifiedModel = nil
+    if notifySound and notifySound.Parent then
+        notifySound:Stop()
+        notifySound:Destroy()
+        notifySound = nil
+    end
+end
+
+local function toggleHighValueNotify(state)
+    if state then
+        enableHighValueNotify()
+    else
+        disableHighValueNotify()
+    end
+end
+
 -- ========== QUICK PANEL ==========
 
 -- Inf Jump Toggle
@@ -2360,6 +2415,17 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleEspBest(value)
         MainHub:Notify("Esp Best: " .. (value and "On" or "Off"))
+    end
+})
+
+-- High Value Notify Toggle di Tab Visual
+MainHub:AddToggle({
+    Tab = "Visual",
+    Title = "High Value Notify",
+    Default = false,
+    Callback = function(value)
+        toggleHighValueNotify(value)
+        MainHub:Notify("High Value Notify: " .. (value and "On" or "Off"))
     end
 })
 
