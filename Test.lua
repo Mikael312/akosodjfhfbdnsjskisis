@@ -143,6 +143,13 @@ local highestValueData = nil
 local highValueNotifyEnabled = false
 local lastNotifiedPet = nil
 
+-- Auto Destroy Sentry variables
+local sentryEnabled = false
+local sentryConn = nil
+local spamEquipRunning = false
+local spamAttackConn = nil
+local myUserId = tostring(player.UserId)
+
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
     local char = player.Character
@@ -443,6 +450,182 @@ local function toggleEspPlayers(state)
         enableESPPlayers()
     else
         disableESPPlayers()
+    end
+end
+
+-- ==================== AUTO DESTROY SENTRY FUNCTIONS ====================
+local function isMySentry(sentryName)
+    return string.find(sentryName, myUserId) ~= nil
+end
+
+local function isSentryPlaced(desc)
+    if not desc or not desc.Parent then return false end
+    if not desc:IsDescendantOf(S.Workspace) then return false end
+
+    for _, playerObj in pairs(S.Players:GetPlayers()) do
+        if playerObj.Character and desc:IsDescendantOf(playerObj.Character) then return false end
+        if playerObj.Backpack and desc:IsDescendantOf(playerObj.Backpack) then return false end
+    end
+
+    local isAnchored = false
+    pcall(function()
+        if desc:IsA("Model") and desc.PrimaryPart then
+            isAnchored = desc.PrimaryPart.Anchored
+        elseif desc:IsA("BasePart") then
+            isAnchored = desc.Anchored
+        end
+    end)
+    return isAnchored
+end
+
+local function findBat()
+    local tool = nil
+    pcall(function()
+        tool = player.Backpack:FindFirstChild("Bat")
+        if not tool and player.Character then
+            tool = player.Character:FindFirstChild("Bat")
+        end
+    end)
+    return tool
+end
+
+local function setCanCollide(desc, state)
+    if desc:IsA("BasePart") then
+        desc.CanCollide = state
+    elseif desc:IsA("Model") then
+        for _, part in ipairs(desc:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = state
+            end
+        end
+    end
+end
+
+local function destroySentry(desc)
+    if not desc.Parent then return end
+    if isMySentry(desc.Name) then return end
+    if not isSentryPlaced(desc) then return end
+
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    local spawnOffset = hrp.CFrame.LookVector * 3.5 + Vector3.new(0, 1.2, 0)
+
+    setCanCollide(desc, false)
+
+    if desc:IsA("Model") and desc.PrimaryPart then
+        desc:SetPrimaryPartCFrame(hrp.CFrame + spawnOffset)
+    elseif desc:IsA("BasePart") then
+        desc.CFrame = hrp.CFrame + spawnOffset
+    end
+
+    spamEquipRunning = true
+    task.spawn(function()
+        while spamEquipRunning do
+            local bat = findBat()
+            if bat and bat.Parent == player.Backpack then
+                pcall(function() char.Humanoid:EquipTool(bat) end)
+            end
+            task.wait(0.02)
+            bat = findBat()
+            if bat and bat.Parent == char then
+                pcall(function() char.Humanoid:UnequipTools() end)
+            end
+            task.wait(0.02)
+        end
+    end)
+
+    task.spawn(function()
+        task.wait(0.03)
+        spamAttackConn = S.RunService.Heartbeat:Connect(function()
+            if isMySentry(desc.Name) or not desc.Parent then
+                spamEquipRunning = false
+                if spamAttackConn then spamAttackConn:Disconnect() spamAttackConn = nil end
+                return
+            end
+            local bat = findBat()
+            if bat and bat.Parent == char then
+                for i = 1, 12 do
+                    if bat.Parent == char then bat:Activate() else break end
+                end
+            end
+        end)
+    end)
+
+    local elapsed = 0
+    while desc.Parent and sentryEnabled and elapsed < 5 do
+        task.wait(0.1)
+        elapsed += 0.1
+        if isMySentry(desc.Name) then break end
+    end
+
+    spamEquipRunning = false
+    if spamAttackConn then spamAttackConn:Disconnect() spamAttackConn = nil end
+    local bat = findBat()
+    if bat and bat.Parent == char then
+        pcall(function() char.Humanoid:UnequipTools() end)
+    end
+end
+
+local function startSentryWatch()
+    if sentryConn then sentryConn:Disconnect() end
+    sentryConn = S.Workspace.DescendantAdded:Connect(function(desc)
+        if not sentryEnabled then return end
+        if not desc:IsA("Model") and not desc:IsA("BasePart") then return end
+        if not string.find(desc.Name:lower(), "sentry") then return end
+        if isMySentry(desc.Name) then return end
+
+        local char = player.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
+        if not isSentryPlaced(desc) then
+            task.spawn(function()
+                local t = 0
+                while t < 10 and not isSentryPlaced(desc) and desc.Parent and sentryEnabled do
+                    task.wait(0.5)
+                    t += 0.5
+                end
+                if isSentryPlaced(desc) and desc.Parent and sentryEnabled then
+                    task.wait(4.2)
+                    if not desc.Parent or not sentryEnabled then return end
+                    if isMySentry(desc.Name) then return end
+                    destroySentry(desc)
+                end
+            end)
+            return
+        end
+
+        task.wait(4.2)
+        if not desc.Parent or not sentryEnabled then return end
+        if isMySentry(desc.Name) then return end
+        destroySentry(desc)
+    end)
+end
+
+local function enableAutoDestroySentry()
+    if sentryEnabled then return end
+    sentryEnabled = true
+    startSentryWatch()
+end
+
+local function disableAutoDestroySentry()
+    if not sentryEnabled then return end
+    sentryEnabled = false
+    spamEquipRunning = false
+    if sentryConn then sentryConn:Disconnect() sentryConn = nil end
+    if spamAttackConn then spamAttackConn:Disconnect() spamAttackConn = nil end
+    local char = player.Character
+    local bat = findBat()
+    if bat and char and bat.Parent == char then
+        pcall(function() char.Humanoid:UnequipTools() end)
+    end
+end
+
+local function toggleAutoDestroySentry(state)
+    if state then
+        enableAutoDestroySentry()
+    else
+        disableAutoDestroySentry()
     end
 end
 
@@ -2500,6 +2683,17 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleAutoMedusa(value)
         MainHub:Notify("Auto Medusa: " .. (value and "On" or "Off"))
+    end
+})
+
+-- Auto Destroy Sentry Toggle di Tab Stealer
+MainHub:AddToggle({
+    Tab = "Stealer",
+    Title = "Auto Destroy Sentry",
+    Default = false,
+    Callback = function(value)
+        toggleAutoDestroySentry(value)
+        MainHub:Notify("Auto Destroy Sentry: " .. (value and "On" or "Off"))
     end
 })
 
