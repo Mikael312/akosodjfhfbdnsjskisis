@@ -143,6 +143,10 @@ local highestValueData = nil
 local highValueNotifyEnabled = false
 local lastNotifiedPet = nil
 
+-- Auto Destroy Sentry variables
+local sentryEnabled = false
+local sentryConn = nil
+
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
     local char = player.Character
@@ -2300,6 +2304,99 @@ local function toggleEspBest(state)
     end
 end
 
+-- ==================== AUTO DESTROY SENTRY FUNCTIONS ====================
+local function startSentryWatch()
+    if sentryConn then sentryConn:Disconnect() end
+    
+    sentryConn = S.Workspace.DescendantAdded:Connect(function(desc)
+        if not sentryEnabled then return end
+        if not desc:IsA("Model") and not desc:IsA("BasePart") then return end
+        if not string.find(desc.Name:lower(), "sentry") then return end
+        
+        local char = player.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        
+        local hrp = char.HumanoidRootPart
+        
+        local playerOwnsSentry = false
+        for _, playerObj in pairs(S.Players:GetPlayers()) do
+            if playerObj.Character and desc:IsDescendantOf(playerObj.Character) then
+                if playerObj == player then
+                    playerOwnsSentry = true
+                end
+                break
+            end
+        end
+        
+        if playerOwnsSentry then return end
+        
+        task.wait(4.1)
+        
+        if not desc.Parent or not sentryEnabled then return end
+        
+        local backpack = player.Backpack
+        local batTool = backpack:FindFirstChild("Bat") or char:FindFirstChild("Bat")
+        
+        if not batTool then return end
+        
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if batTool.Parent == backpack and humanoid then
+            humanoid:EquipTool(batTool)
+            task.wait(0.25)
+        end
+        
+        local lookDir = hrp.CFrame.LookVector
+        local spawnOffset = lookDir * 3.5 + Vector3.new(0, 1.2, 0)
+        
+        if desc:IsA("Model") and desc.PrimaryPart then
+            desc:SetPrimaryPartCFrame(hrp.CFrame + spawnOffset)
+        elseif desc:IsA("BasePart") then
+            desc.CFrame = hrp.CFrame + spawnOffset
+        end
+        
+        if batTool.Parent == char and desc.Parent then
+            batTool:Activate()
+        end
+        
+        local maxHits = 5
+        local hitCount = 0
+        while batTool.Parent == char and desc.Parent and sentryEnabled and hitCount < maxHits do
+            task.wait(0.12)
+            if desc.Parent then
+                batTool:Activate()
+                hitCount += 1
+            else
+                break
+            end
+        end
+        
+        task.wait(0.1)
+        if batTool.Parent == char then
+            batTool.Parent = backpack
+        end
+    end)
+end
+
+local function enableAutoDestroySentry()
+    if sentryEnabled then return end
+    sentryEnabled = true
+    startSentryWatch()
+end
+
+local function disableAutoDestroySentry()
+    if not sentryEnabled then return end
+    sentryEnabled = false
+    if sentryConn then sentryConn:Disconnect() sentryConn = nil end
+end
+
+local function toggleAutoDestroySentry(state)
+    if state then
+        enableAutoDestroySentry()
+    else
+        disableAutoDestroySentry()
+    end
+end
+
 -- ========== QUICK PANEL ==========
 
 -- Inf Jump Toggle
@@ -2511,5 +2608,16 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleCarpetSpeed(value)
         MainHub:Notify("Carpet Speed: " .. (value and "On" or "Off"))
+    end
+})
+
+-- Auto Destroy Sentry Toggle di Tab Stealer
+MainHub:AddToggle({
+    Tab = "Stealer",
+    Title = "Auto Destroy Sentry",
+    Default = false,
+    Callback = function(value)
+        toggleAutoDestroySentry(value)
+        MainHub:Notify("Auto Destroy Sentry: " .. (value and "On" or "Off"))
     end
 })
