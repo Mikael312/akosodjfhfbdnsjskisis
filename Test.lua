@@ -1818,6 +1818,42 @@ local function toggleCarpetSpeed(state)
     end
 end
 
+-- ==================== HIGH VALUE NOTIFY FUNCTIONS ====================
+local notifySound = Instance.new("Sound")
+notifySound.SoundId = "rbxassetid://124951621656853"
+notifySound.Volume = 1.5
+notifySound.Parent = S.SoundService
+
+local function playNotifySound()
+    pcall(function()
+        notifySound:Stop()
+        notifySound:Play()
+        task.delay(0, function()
+            notifySound:Stop()
+        end)
+    end)
+end
+
+local function enableHighValueNotify()
+    if highValueNotifyEnabled then return end
+    highValueNotifyEnabled = true
+end
+
+local function disableHighValueNotify()
+    if not highValueNotifyEnabled then return end
+    highValueNotifyEnabled = false
+    pcall(function() notifySound:Stop() end)
+    lastNotifiedPet = nil
+end
+
+local function toggleHighValueNotify(state)
+    if state then
+        enableHighValueNotify()
+    else
+        disableHighValueNotify()
+    end
+end
+
 -- ==================== ESP BEST FUNCTIONS ====================
 local function getTraitMultiplier(model)
     if not TraitsModule then return 0 end
@@ -2261,42 +2297,6 @@ local function toggleEspBest(state)
         enableEspBest()
     else
         disableEspBest()
-    end
-end
-
--- ==================== HIGH VALUE NOTIFY FUNCTIONS ====================
-local notifySound = Instance.new("Sound")
-notifySound.SoundId = "rbxassetid://124951621656853"
-notifySound.Volume = 1.5
-notifySound.Parent = S.SoundService
-
-local function playNotifySound()
-    pcall(function()
-        notifySound:Stop()
-        notifySound:Play()
-        task.delay(0, function()
-            notifySound:Stop()
-        end)
-    end)
-end
-
-local function enableHighValueNotify()
-    if highValueNotifyEnabled then return end
-    highValueNotifyEnabled = true
-end
-
-local function disableHighValueNotify()
-    if not highValueNotifyEnabled then return end
-    highValueNotifyEnabled = false
-    pcall(function() notifySound:Stop() end)
-    lastNotifiedPet = nil
-end
-
-local function toggleHighValueNotify(state)
-    if state then
-        enableHighValueNotify()
-    else
-        disableHighValueNotify()
     end
 end
 
