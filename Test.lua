@@ -2266,7 +2266,7 @@ end
 
 -- ==================== HIGH VALUE NOTIFY FUNCTIONS ====================
 local notifySound = Instance.new("Sound")
-notifySound.SoundId = "rbxassetid://138118203571469"
+notifySound.SoundId = "rbxassetid://124951621656853"
 notifySound.Volume = 1.5
 notifySound.Parent = S.SoundService
 
