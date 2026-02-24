@@ -1036,7 +1036,7 @@ local function destroySentry(desc)
     
     -- Thread 3: Continuous spam attack
     task.spawn(function()
-        task.wait(0.1)
+        task.wait(0.01)
         
         local spamConnection
         spamConnection = RunService.Heartbeat:Connect(function()
