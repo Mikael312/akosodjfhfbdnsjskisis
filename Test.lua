@@ -2422,28 +2422,14 @@ end
 
 -- ==================== AUTO KICK AFTER STEAL FUNCTIONS ====================
 local function getStealCount()
-    local success, result = pcall(function()
-        if not player or not player:FindFirstChild("leaderstats") then return 0 end
-        local stealsObject = player.leaderstats:FindFirstChild("Steals")
-        if not stealsObject then return 0 end
-        if stealsObject:IsA("IntValue") or stealsObject:IsA("NumberValue") then
-            return stealsObject.Value
-        elseif stealsObject:IsA("StringValue") then
-            return tonumber(stealsObject.Value) or 0
-        else
-            return tonumber(tostring(stealsObject.Value)) or 0
-        end
+    local ok, result = pcall(function()
+        local stats = player:FindFirstChild("leaderstats")
+        if not stats then return 0 end
+        local steals = stats:FindFirstChild("Steals")
+        if not steals then return 0 end
+        return tonumber(steals.Value) or 0
     end)
-    return success and result or 0
-end
-
-local function kickPlayer()
-    local success = pcall(function()
-        player:Kick("Steal Success!")
-    end)
-    if not success then
-        pcall(function() game:Shutdown() end)
-    end
+    return ok and result or 0
 end
 
 local function enableAutoKickAfterSteal()
@@ -2453,20 +2439,17 @@ local function enableAutoKickAfterSteal()
 
     kickMonitorConn = S.RunService.Heartbeat:Connect(function()
         if not kickAfterStealEnabled then return end
-
-        local currentStealCount = getStealCount()
-
-        if currentStealCount > lastStealCount then
+        local current = getStealCount()
+        if current > lastStealCount then
             kickAfterStealEnabled = false
             if kickMonitorConn then
                 kickMonitorConn:Disconnect()
                 kickMonitorConn = nil
             end
             task.wait(0.1)
-            kickPlayer()
+            pcall(function() player:Kick("Steal Success!") end)
         end
-
-        lastStealCount = currentStealCount
+        lastStealCount = current
     end)
 end
 
