@@ -2429,17 +2429,19 @@ local function enableAutoKickAfterSteal()
     lastStealCount = stats and tonumber(stats:FindFirstChild("Steals") and stats.Steals.Value) or 0
 
     kickMonitorConn = S.RunService.Heartbeat:Connect(function()
-        if not kickAfterStealEnabled then return end
-        local stats = player:FindFirstChild("leaderstats")
-        local current = stats and tonumber(stats:FindFirstChild("Steals") and stats.Steals.Value) or 0
-        if current > lastStealCount then
-            kickAfterStealEnabled = false
-            if kickMonitorConn then kickMonitorConn:Disconnect() kickMonitorConn = nil end
+    if not kickAfterStealEnabled then return end
+    local stats = player:FindFirstChild("leaderstats")
+    local current = stats and tonumber(stats:FindFirstChild("Steals") and stats.Steals.Value) or 0
+    if current > lastStealCount then
+        kickAfterStealEnabled = false
+        if kickMonitorConn then kickMonitorConn:Disconnect() kickMonitorConn = nil end
+        task.spawn(function()
             task.wait(0.1)
             pcall(function() player:Kick("Steal Success!") end)
-        end
-        lastStealCount = current
-    end)
+        end)
+    end
+    lastStealCount = current
+end)
 end
 
 local function disableAutoKickAfterSteal()
