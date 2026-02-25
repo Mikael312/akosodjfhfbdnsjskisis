@@ -19,15 +19,6 @@ local S = {
 }
 local player = S.Players.LocalPlayer
 
--- ==================== MODULES ====================
-local AnimalsModule, TraitsModule, MutationsModule
-
-pcall(function()
-    AnimalsModule = require(S.ReplicatedStorage.Datas.Animals)
-    TraitsModule = require(S.ReplicatedStorage.Datas.Traits)
-    MutationsModule = require(S.ReplicatedStorage.Datas.Mutations)
-end)
-
 -- ==================== VARIABLES ====================
 local infiniteJumpEnabled = false
 local lowGravityEnabled = false
@@ -132,16 +123,6 @@ local serverTimeOffset = 0
 local carpetSpeedEnabled = false
 local carpetSpeed = 260
 local carpetConn = nil
-
--- Esp Best variables
-local espBestEnabled = false
-local espBestConnection = nil
-local highestValueESP = nil
-local highestValueData = nil
-
--- High Value Notify variables
-local highValueNotifyEnabled = false
-local lastNotifiedPet = nil
 
 -- Auto Destroy Sentry variables
 local sentryEnabled = false
@@ -1828,488 +1809,6 @@ local function toggleCarpetSpeed(state)
     end
 end
 
--- ==================== HIGH VALUE NOTIFY FUNCTIONS ====================
-local notifySound = Instance.new("Sound")
-notifySound.SoundId = "rbxassetid://138118203571469"
-notifySound.Volume = 2.0
-notifySound.Parent = S.SoundService
-
-local function playNotifySound()
-    pcall(function()
-        notifySound:Stop()
-        notifySound:Play()
-        task.delay(3, function()
-            notifySound:Stop()
-        end)
-    end)
-end
-
-local function enableHighValueNotify()
-    if highValueNotifyEnabled then return end
-    highValueNotifyEnabled = true
-end
-
-local function disableHighValueNotify()
-    if not highValueNotifyEnabled then return end
-    highValueNotifyEnabled = false
-    pcall(function() notifySound:Stop() end)
-    lastNotifiedPet = nil
-end
-
-local function toggleHighValueNotify(state)
-    if state then
-        enableHighValueNotify()
-    else
-        disableHighValueNotify()
-    end
-end
-
--- ==================== ESP BEST FUNCTIONS ====================
-local function getTraitMultiplier(model)
-    if not TraitsModule then return 0 end
-    
-    local traitJson = model:GetAttribute("Traits")
-    if not traitJson or traitJson == "" then return 0 end
-
-    local traits = {}
-    local ok, decoded = pcall(function()
-        return S.HttpService:JSONDecode(traitJson)
-    end)
-
-    if ok and typeof(decoded) == "table" then
-        traits = decoded
-    else
-        for t in string.gmatch(traitJson, "[^,]+") do
-            table.insert(traits, t)
-        end
-    end
-
-    local mult = 0
-    for _, entry in pairs(traits) do
-        local name = typeof(entry) == "table" and entry.Name or tostring(entry)
-        name = name:gsub("^_Trait%.", "")
-        local trait = TraitsModule[name]
-        if trait and trait.MultiplierModifier then
-            mult += tonumber(trait.MultiplierModifier) or 0
-        end
-    end
-
-    return mult
-end
-
-local function getFinalGeneration(model)
-    if not AnimalsModule then return 0 end
-    
-    local animalData = AnimalsModule[model.Name]
-    if not animalData then return 0 end
-
-    local baseGen = tonumber(animalData.Generation) or tonumber(animalData.Price or 0)
-    local traitMult = getTraitMultiplier(model)
-
-    local mutationMult = 0
-    if MutationsModule then
-        local mutation = model:GetAttribute("Mutation")
-        if mutation and MutationsModule[mutation] then
-            mutationMult = tonumber(MutationsModule[mutation].Modifier or 0)
-        end
-    end
-
-    local final = baseGen * (1 + traitMult + mutationMult)
-    return math.max(1, math.round(final))
-end
-
-local function formatNumber(num)
-    local value, suffix
-    
-    if num >= 1e12 then
-        value = num / 1e12
-        suffix = "T/s"
-    elseif num >= 1e9 then
-        value = num / 1e9
-        suffix = "B/s"
-    elseif num >= 1e6 then
-        value = num / 1e6
-        suffix = "M/s"
-    elseif num >= 1e3 then
-        value = num / 1e3
-        suffix = "K/s"
-    else
-        return string.format("%.0f/s", num)
-    end
-    
-    local rounded = math.floor(value * 10 + 0.5) / 10
-    if rounded == math.floor(rounded) then
-        return string.format("%.0f%s", rounded, suffix)
-    else
-        return string.format("%.1f%s", rounded, suffix)
-    end
-end
-
-local function getPlotOwner(plot)
-    local plotSign = plot:FindFirstChild("PlotSign")
-    if plotSign then
-        local surfaceGui = plotSign:FindFirstChild("SurfaceGui")
-        if surfaceGui then
-            local frame = surfaceGui:FindFirstChild("Frame")
-            if frame then
-                local textLabel = frame:FindFirstChild("TextLabel")
-                if textLabel then return textLabel.Text end
-            end
-        end
-    end
-    return "Unknown"
-end
-
-local function calculateDistance(part1, part2)
-    if not part1 or not part2 then return 0 end
-    return math.floor((part1.Position - part2.Position).Magnitude)
-end
-
-local function isPlayerPlot(plot)
-    local plotSign = plot:FindFirstChild("PlotSign")
-    if plotSign then
-        local yourBase = plotSign:FindFirstChild("YourBase")
-        if yourBase and yourBase.Enabled then return true end
-    end
-    return false
-end
-
-local function findHighestBrainrot()
-    local plots = S.Workspace:FindFirstChild("Plots")
-    if not plots then return nil end
-    
-    local highest = {value = 0}
-    
-    for _, plot in pairs(plots:GetChildren()) do
-        if not isPlayerPlot(plot) then
-            for _, obj in pairs(plot:GetDescendants()) do
-                if obj:IsA("Model") and AnimalsModule and AnimalsModule[obj.Name] then
-                    pcall(function()
-                        local gen = getFinalGeneration(obj)
-                        if gen > 0 and gen > highest.value then
-                            local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-                            if root then
-                                highest = {
-                                    plot = plot,
-                                    plotName = plot.Name,
-                                    plotOwner = getPlotOwner(plot),
-                                    petName = obj.Name,
-                                    generation = gen,
-                                    formattedValue = formatNumber(gen),
-                                    model = obj,
-                                    value = gen
-                                }
-                            end
-                        end
-                    end)
-                end
-            end
-        end
-    end
-    
-    return highest.value > 0 and highest or nil
-end
-
-local function clearHighestValueESP()
-    if highestValueESP then
-        if highestValueESP.highlight then highestValueESP.highlight:Destroy() end
-        if highestValueESP.billboard then highestValueESP.billboard:Destroy() end
-        if highestValueESP.updateConnection then highestValueESP.updateConnection:Disconnect() end
-        if highestValueESP.beamUpdateConnection then highestValueESP.beamUpdateConnection:Disconnect() end
-        if highestValueESP.beam then highestValueESP.beam:Destroy() end
-        if highestValueESP.attachment0 then highestValueESP.attachment0:Destroy() end
-        if highestValueESP.attachment1 then highestValueESP.attachment1:Destroy() end
-        highestValueESP = nil
-    end
-    highestValueData = nil
-    lastNotifiedPet = nil  -- TAMBAH INI
-end
-
-local function createHighestValueESP(brainrotData)
-    if not brainrotData or not brainrotData.model then return end
-    
-    pcall(function()
-        clearHighestValueESP()
-        
-        local espContainer = {}
-        local model = brainrotData.model
-        local part = model.PrimaryPart or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA('BasePart')
-        
-        if not part then return end
-
-        -- Highlight
-        local highlight = Instance.new("Highlight", model)
-        highlight.Name = "BrainrotESPHighlight"
-        highlight.Adornee = model
-        highlight.FillColor = Color3.fromRGB(255, 0, 0)
-        highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
-        highlight.FillTransparency = 0.6
-        highlight.OutlineTransparency = 0
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        espContainer.highlight = highlight
-
-        -- Tracer Beam
-        local playerRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-
-        local attachment0 = Instance.new("Attachment")
-        attachment0.Parent = playerRoot or S.Workspace.Terrain
-
-        local attachment1 = Instance.new("Attachment")
-        attachment1.Parent = part
-
-        local beam = Instance.new("Beam")
-        beam.Attachment0 = attachment0
-        beam.Attachment1 = attachment1
-        beam.Color = ColorSequence.new(Color3.fromRGB(255, 200, 0))
-        beam.Width0 = 0.05
-        beam.Width1 = 0.05
-        beam.FaceCamera = true
-        beam.Segments = 1
-        beam.Transparency = NumberSequence.new(0)
-        beam.LightEmission = 0.5
-        beam.Parent = part
-
-        espContainer.beam = beam
-        espContainer.attachment0 = attachment0
-        espContainer.attachment1 = attachment1
-
-        local beamUpdateConnection = S.RunService.Heartbeat:Connect(function()
-            if not player.Character then return end
-            local root = player.Character:FindFirstChild("HumanoidRootPart")
-            if root and attachment0.Parent ~= root then
-                attachment0.Parent = root
-            end
-        end)
-        espContainer.beamUpdateConnection = beamUpdateConnection
-
-        -- Billboard GUI
-        local bb = Instance.new("BillboardGui")
-        bb.Name = "BrainrotESP"
-        bb.Adornee = part
-        bb.AlwaysOnTop = true
-        bb.Size = UDim2.new(0, 200, 0, 65)
-        bb.StudsOffset = Vector3.new(0, 5, 0)
-        bb.Parent = part
-        
-        local bgFrame = Instance.new("Frame")
-        bgFrame.Size = UDim2.new(1, 0, 1, 0)
-        bgFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        bgFrame.BackgroundTransparency = 0.5
-        bgFrame.BorderSizePixel = 0
-        bgFrame.Parent = bb
-        
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 8)
-        corner.Parent = bgFrame
-        
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(255, 0, 0)
-        stroke.Thickness = 3
-        stroke.Transparency = 0
-        stroke.Parent = bgFrame
-        
-        local bestBadge = Instance.new("Frame")
-        bestBadge.Size = UDim2.new(0, 50, 0, 16)
-        bestBadge.Position = UDim2.new(1, -53, 0, 4)
-        bestBadge.BackgroundColor3 = Color3.fromRGB(120, 20, 20)
-        bestBadge.BorderSizePixel = 0
-        bestBadge.Parent = bgFrame
-        
-        local bestCorner = Instance.new("UICorner")
-        bestCorner.CornerRadius = UDim.new(0, 5)
-        bestCorner.Parent = bestBadge
-        
-        local bestLabel = Instance.new("TextLabel")
-        bestLabel.Size = UDim2.new(1, -8, 1, 0)
-        bestLabel.Position = UDim2.new(0, 7, 0, 0)
-        bestLabel.BackgroundTransparency = 1
-        bestLabel.Text = "★ BEST"
-        bestLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        bestLabel.TextSize = 9
-        bestLabel.Font = Enum.Font.FredokaOne
-        bestLabel.TextXAlignment = Enum.TextXAlignment.Left
-        bestLabel.Parent = bestBadge
-        
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(1, -65, 0, 16)
-        nameLabel.Position = UDim2.new(0, 8, 0, 4)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = brainrotData.petName or "Unknown"
-        nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        nameLabel.TextSize = 14
-        nameLabel.Font = Enum.Font.GothamBold
-        nameLabel.TextStrokeTransparency = 1
-        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-        nameLabel.TextYAlignment = Enum.TextYAlignment.Center
-        nameLabel.TextScaled = true
-        nameLabel.Parent = bgFrame
-        
-        local nameStroke = Instance.new("UIStroke")
-        nameStroke.Color = Color3.fromRGB(0, 0, 0)
-        nameStroke.Thickness = 1
-        nameStroke.Transparency = 0
-        nameStroke.Parent = nameLabel
-        
-        local nameGradient = Instance.new("UIGradient")
-        nameGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 215, 0))
-        })
-        nameGradient.Rotation = 0
-        nameGradient.Parent = nameLabel
-        
-        local ownerLabel = Instance.new("TextLabel")
-        ownerLabel.Size = UDim2.new(1, -65, 0, 13)
-        ownerLabel.Position = UDim2.new(0, 8, 0, 22)
-        ownerLabel.BackgroundTransparency = 1
-        ownerLabel.Text = "@ " .. (brainrotData.plotOwner or "Unknown")
-        ownerLabel.TextColor3 = Color3.fromRGB(255, 253, 208)
-        ownerLabel.TextSize = 11
-        ownerLabel.Font = Enum.Font.Gotham
-        ownerLabel.TextStrokeTransparency = 1
-        ownerLabel.TextXAlignment = Enum.TextXAlignment.Left
-        ownerLabel.TextYAlignment = Enum.TextYAlignment.Center
-        ownerLabel.TextScaled = true
-        ownerLabel.Parent = bgFrame
-        
-        local ownerStroke = Instance.new("UIStroke")
-        ownerStroke.Color = Color3.fromRGB(0, 0, 0)
-        ownerStroke.Thickness = 1
-        ownerStroke.Transparency = 0
-        ownerStroke.Parent = ownerLabel
-        
-        local divider = Instance.new("Frame")
-        divider.Size = UDim2.new(1, -16, 0, 1)
-        divider.Position = UDim2.new(0, 8, 0, 40)
-        divider.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        divider.BorderSizePixel = 0
-        divider.Parent = bgFrame
-        
-        local genLabel = Instance.new("TextLabel")
-        genLabel.Size = UDim2.new(0.6, 0, 0, 16)
-        genLabel.Position = UDim2.new(0, 8, 1, -19)
-        genLabel.BackgroundTransparency = 1
-        genLabel.Text = brainrotData.formattedValue or formatNumber(brainrotData.generation or 0)
-        genLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        genLabel.TextSize = 14
-        genLabel.Font = Enum.Font.GothamBold
-        genLabel.TextStrokeTransparency = 1
-        genLabel.TextXAlignment = Enum.TextXAlignment.Left
-        genLabel.TextYAlignment = Enum.TextYAlignment.Center
-        genLabel.TextScaled = true
-        genLabel.Parent = bgFrame
-        
-        local genStroke = Instance.new("UIStroke")
-        genStroke.Color = Color3.fromRGB(0, 0, 0)
-        genStroke.Thickness = 1
-        genStroke.Transparency = 0
-        genStroke.Parent = genLabel
-        
-        local distanceLabel = Instance.new("TextLabel")
-        distanceLabel.Size = UDim2.new(0.35, 0, 0, 16)
-        distanceLabel.Position = UDim2.new(1, -78, 1, -19)
-        distanceLabel.BackgroundTransparency = 1
-        distanceLabel.TextColor3 = Color3.fromHex("#D2B48C")
-        distanceLabel.TextSize = 12
-        distanceLabel.Font = Enum.Font.GothamBold
-        distanceLabel.TextStrokeTransparency = 1
-        distanceLabel.TextXAlignment = Enum.TextXAlignment.Right
-        distanceLabel.TextYAlignment = Enum.TextYAlignment.Center
-        distanceLabel.TextScaled = true
-        distanceLabel.Parent = bgFrame
-        
-        local distanceStroke = Instance.new("UIStroke")
-        distanceStroke.Color = Color3.fromRGB(0, 0, 0)
-        distanceStroke.Thickness = 1
-        distanceStroke.Transparency = 0
-        distanceStroke.Parent = distanceLabel
-        
-        local updateConnection = S.RunService.Heartbeat:Connect(function()
-            if not distanceLabel.Parent or not player.Character then
-                return
-            end
-            local playerRoot = player.Character:FindFirstChild("HumanoidRootPart")
-            if playerRoot and part and part.Parent then
-                local distance = calculateDistance(playerRoot, part)
-                distanceLabel.Text = distance .. "m"
-            end
-        end)
-        
-        espContainer.billboard = bb
-        espContainer.updateConnection = updateConnection
-        highestValueESP = espContainer
-        highestValueData = brainrotData
-
-        -- NOTIFY
-        if highValueNotifyEnabled then
-            local petKey = brainrotData.petName .. "_" .. brainrotData.plotOwner
-            if lastNotifiedPet ~= petKey then
-                lastNotifiedPet = petKey
-                playNotifySound()
-            end
-        end
-    end)
-end
-
-local function checkPetExists()
-    if not highestValueData then return false end
-    local exists = false
-    pcall(function()
-        if highestValueData.model and highestValueData.model.Parent then
-            exists = true
-        end
-    end)
-    return exists
-end
-
-local function updateHighestValueESP()
-    if highestValueData and not checkPetExists() then
-        clearHighestValueESP()
-    end
-    
-    local newHighest = findHighestBrainrot()
-    
-    if newHighest then
-        if not highestValueData or newHighest.value > highestValueData.value then
-            createHighestValueESP(newHighest)
-        end
-    end
-end
-
-local function enableEspBest()
-    if espBestEnabled then return end
-    espBestEnabled = true
-    
-    updateHighestValueESP()
-    
-    espBestConnection = task.spawn(function()
-        while espBestEnabled do
-            task.wait(1)
-            updateHighestValueESP()
-        end
-    end)
-end
-
-local function disableEspBest()
-    if not espBestEnabled then return end
-    espBestEnabled = false
-    
-    if espBestConnection then
-        task.cancel(espBestConnection)
-        espBestConnection = nil
-    end
-    
-    clearHighestValueESP()
-end
-
-local function toggleEspBest(state)
-    if state then
-        enableEspBest()
-    else
-        disableEspBest()
-    end
-end
-
 -- ==================== AUTO DESTROY SENTRY FUNCTIONS ====================
 local function isMySentry(sentryName)
     return string.find(sentryName, myUserId) ~= nil
@@ -2421,27 +1920,53 @@ local function toggleAutoDestroySentry(state)
 end
 
 -- ==================== AUTO KICK AFTER STEAL FUNCTIONS ====================
+local function getStealCount()
+    local success, result = pcall(function()
+        if not player or not player:FindFirstChild("leaderstats") then return 0 end
+        local stealsObject = player.leaderstats:FindFirstChild("Steals")
+        if not stealsObject then return 0 end
+        if stealsObject:IsA("IntValue") or stealsObject:IsA("NumberValue") then
+            return stealsObject.Value
+        elseif stealsObject:IsA("StringValue") then
+            return tonumber(stealsObject.Value) or 0
+        else
+            return tonumber(tostring(stealsObject.Value)) or 0
+        end
+    end)
+    return success and result or 0
+end
+
+local function kickPlayer()
+    local success = pcall(function()
+        player:Kick("Steal Success!")
+    end)
+    if not success then
+        pcall(function() game:Shutdown() end)
+    end
+end
+
 local function enableAutoKickAfterSteal()
     if kickAfterStealEnabled then return end
     kickAfterStealEnabled = true
-    
-    local stats = player:FindFirstChild("leaderstats")
-    lastStealCount = stats and tonumber(stats:FindFirstChild("Steals") and stats.Steals.Value) or 0
+    lastStealCount = getStealCount()
 
     kickMonitorConn = S.RunService.Heartbeat:Connect(function()
-    if not kickAfterStealEnabled then return end
-    local stats = player:FindFirstChild("leaderstats")
-    local current = stats and tonumber(stats:FindFirstChild("Steals") and stats.Steals.Value) or 0
-    if current > lastStealCount then
-        kickAfterStealEnabled = false
-        if kickMonitorConn then kickMonitorConn:Disconnect() kickMonitorConn = nil end
-        task.spawn(function()
+        if not kickAfterStealEnabled then return end
+
+        local currentStealCount = getStealCount()
+
+        if currentStealCount > lastStealCount then
+            kickAfterStealEnabled = false
+            if kickMonitorConn then
+                kickMonitorConn:Disconnect()
+                kickMonitorConn = nil
+            end
             task.wait(0.1)
-            pcall(function() player:Kick("Steal Success!") end)
-        end)
-    end
-    lastStealCount = current
-end)
+            kickPlayer()
+        end
+
+        lastStealCount = currentStealCount
+    end)
 end
 
 local function disableAutoKickAfterSteal()
@@ -2562,28 +2087,6 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleTimerESP(value)
         MainHub:Notify("Timer Esp: " .. (value and "On" or "Off"))
-    end
-})
-
--- Esp Best Toggle di Tab Visual
-MainHub:AddToggle({
-    Tab = "Visual",
-    Title = "Esp Best",
-    Default = false,
-    Callback = function(value)
-        toggleEspBest(value)
-        MainHub:Notify("Esp Best: " .. (value and "On" or "Off"))
-    end
-})
-
--- High Value Notify Toggle di Tab Visual
-MainHub:AddToggle({
-    Tab = "Visual",
-    Title = "High Value Notify",
-    Default = false,
-    Callback = function(value)
-        toggleHighValueNotify(value)
-        MainHub:Notify("High Value Notify: " .. (value and "On" or "Off"))
     end
 })
 
