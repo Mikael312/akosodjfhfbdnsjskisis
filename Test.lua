@@ -2421,31 +2421,20 @@ local function toggleAutoDestroySentry(state)
 end
 
 -- ==================== AUTO KICK AFTER STEAL FUNCTIONS ====================
-local function getStealCount()
-    local ok, result = pcall(function()
-        local stats = player:FindFirstChild("leaderstats")
-        if not stats then return 0 end
-        local steals = stats:FindFirstChild("Steals")
-        if not steals then return 0 end
-        return tonumber(steals.Value) or 0
-    end)
-    return ok and result or 0
-end
-
 local function enableAutoKickAfterSteal()
     if kickAfterStealEnabled then return end
     kickAfterStealEnabled = true
-    lastStealCount = getStealCount()
+    
+    local stats = player:FindFirstChild("leaderstats")
+    lastStealCount = stats and tonumber(stats:FindFirstChild("Steals") and stats.Steals.Value) or 0
 
     kickMonitorConn = S.RunService.Heartbeat:Connect(function()
         if not kickAfterStealEnabled then return end
-        local current = getStealCount()
+        local stats = player:FindFirstChild("leaderstats")
+        local current = stats and tonumber(stats:FindFirstChild("Steals") and stats.Steals.Value) or 0
         if current > lastStealCount then
             kickAfterStealEnabled = false
-            if kickMonitorConn then
-                kickMonitorConn:Disconnect()
-                kickMonitorConn = nil
-            end
+            if kickMonitorConn then kickMonitorConn:Disconnect() kickMonitorConn = nil end
             task.wait(0.1)
             pcall(function() player:Kick("Steal Success!") end)
         end
