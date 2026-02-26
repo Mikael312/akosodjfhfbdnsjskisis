@@ -15,6 +15,7 @@ local S = {
     ReplicatedStorage = game:GetService("ReplicatedStorage"),
     HttpService = game:GetService("HttpService"),
     TweenService = game:GetService("TweenService"),
+    PathfindingService = game:GetService("PathfindingService"),
     SoundService = game:GetService("SoundService")
 }
 local player = S.Players.LocalPlayer
@@ -133,6 +134,10 @@ local myUserId = tostring(player.UserId)
 local kickAfterStealEnabled = false
 local lastStealCount = 0
 local kickMonitorConn = nil
+
+-- Walk to Base variables
+local walkToBaseEnabled = false
+local walkToBaseConn = nil
 
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
@@ -1986,6 +1991,88 @@ local function toggleAutoKickAfterSteal(state)
     end
 end
 
+-- ==================== WALK TO BASE FUNCTIONS ====================
+local function findDelivery()
+    local plots = S.Workspace:FindFirstChild("Plots")
+    if not plots then return nil end
+    for _, plot in pairs(plots:GetChildren()) do
+        local sign = plot:FindFirstChild("PlotSign")
+        if sign then
+            local yourBase = sign:FindFirstChild("YourBase")
+            if yourBase and yourBase.Enabled then
+                local hitbox = plot:FindFirstChild("DeliveryHitbox")
+                if hitbox then return hitbox end
+            end
+        end
+    end
+    return nil
+end
+
+local function walkToBase()
+    local char = player.Character
+    if not char then return end
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not hrp then return end
+
+    local delivery = findDelivery()
+    if not delivery then return end
+
+    local path = game:GetService("PathfindingService"):CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true,
+        AgentJumpHeight = 8,
+        AgentMaxSlope = 45
+    })
+
+    local ok = pcall(function()
+        path:ComputeAsync(hrp.Position, delivery.Position)
+    end)
+    if not ok then return end
+
+    if path.Status == Enum.PathStatus.Success then
+        local waypoints = path:GetWaypoints()
+        for _, waypoint in ipairs(waypoints) do
+            if not walkToBaseEnabled then return end
+            if not humanoid or not humanoid.Parent then return end
+            humanoid:MoveTo(waypoint.Position)
+            pcall(function() humanoid.MoveToFinished:Wait(2) end)
+        end
+
+        -- Dah sampai, auto off
+        walkToBaseEnabled = false
+        if walkToBaseConn then
+            walkToBaseConn:Disconnect()
+            walkToBaseConn = nil
+        end
+    end
+end
+
+local function enableWalkToBase()
+    if walkToBaseEnabled then return end
+    walkToBaseEnabled = true
+    task.spawn(walkToBase)
+end
+
+local function disableWalkToBase()
+    if not walkToBaseEnabled then return end
+    walkToBaseEnabled = false
+    local char = player.Character
+    if char then
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid:MoveTo(char.HumanoidRootPart.Position) end
+    end
+end
+
+local function toggleWalkToBase(state)
+    if state then
+        enableWalkToBase()
+    else
+        disableWalkToBase()
+    end
+end
+
 -- ========== QUICK PANEL ==========
 
 -- Inf Jump Toggle
@@ -2063,6 +2150,17 @@ stealFloorToggle = QuickPanel:AddToggle({
                 stealFloorStealingMonitor = nil
             end
         end
+    end
+})
+
+-- Walk to Base Toggle
+local walkToBaseToggle
+walkToBaseToggle = QuickPanel:AddToggle({
+    Title = "Walk to Base",
+    Default = false,
+    Callback = function(value)
+        toggleWalkToBase(value)
+        QuickPanel:Notify("Walk to Base: " .. (value and "On" or "Off"))
     end
 })
 
