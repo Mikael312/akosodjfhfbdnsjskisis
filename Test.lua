@@ -2073,6 +2073,36 @@ local function toggleWalkToBase(state)
     end
 end
 
+-- ==================== INSTANT CLONE FUNCTIONS ====================
+local function performInstantClone()
+    pcall(function()
+        local backpack = player:WaitForChild("Backpack")
+        local char = player.Character or player.CharacterAdded:Wait()
+        local humanoid = char:WaitForChild("Humanoid")
+
+        local tool = backpack:FindFirstChild("Quantum Cloner") or char:FindFirstChild("Quantum Cloner")
+
+        if not tool then return end
+
+        if tool.Parent == backpack then
+            humanoid:EquipTool(tool)
+            task.wait(0.1)
+        end
+
+        tool:Activate()
+
+        local clone = S.Workspace:WaitForChild(player.UserId .. "_Clone", 10)
+
+        if clone then
+            local teleportBtn = player.PlayerGui:WaitForChild("ToolsFrames")
+                :WaitForChild("QuantumCloner")
+                :WaitForChild("TeleportToClone")
+
+            firesignal(teleportBtn.MouseButton1Up)
+        end
+    end)
+end
+
 -- ========== QUICK PANEL ==========
 
 -- Inf Jump Toggle
@@ -2161,6 +2191,15 @@ walkToBaseToggle = QuickPanel:AddToggle({
     Callback = function(value)
         toggleWalkToBase(value)
         QuickPanel:Notify("Walk to Base: " .. (value and "On" or "Off"))
+    end
+})
+
+-- Instant Clone Button
+QuickPanel:AddButton({
+    Title = "Instant Clone",
+    Callback = function()
+        QuickPanel:Notify("Instant Clone")
+        task.spawn(performInstantClone)
     end
 })
 
