@@ -135,6 +135,10 @@ local kickAfterStealEnabled = false
 local lastStealCount = 0
 local kickMonitorConn = nil
 
+-- Walk to Base variables
+local walkToBaseEnabled = false
+local walkToBaseConn = nil
+
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
     local char = player.Character
@@ -2030,10 +2034,42 @@ local function walkToBase()
     if path.Status == Enum.PathStatus.Success then
         local waypoints = path:GetWaypoints()
         for _, waypoint in ipairs(waypoints) do
+            if not walkToBaseEnabled then return end
             if not humanoid or not humanoid.Parent then return end
             humanoid:MoveTo(waypoint.Position)
             pcall(function() humanoid.MoveToFinished:Wait(2) end)
         end
+
+        -- Dah sampai, auto off
+        walkToBaseEnabled = false
+        if walkToBaseConn then
+            walkToBaseConn:Disconnect()
+            walkToBaseConn = nil
+        end
+    end
+end
+
+local function enableWalkToBase()
+    if walkToBaseEnabled then return end
+    walkToBaseEnabled = true
+    task.spawn(walkToBase)
+end
+
+local function disableWalkToBase()
+    if not walkToBaseEnabled then return end
+    walkToBaseEnabled = false
+    local char = player.Character
+    if char then
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid:MoveTo(char.HumanoidRootPart.Position) end
+    end
+end
+
+local function toggleWalkToBase(state)
+    if state then
+        enableWalkToBase()
+    else
+        disableWalkToBase()
     end
 end
 
@@ -2147,12 +2183,14 @@ stealFloorToggle = QuickPanel:AddToggle({
     end
 })
 
--- Walk to Base Button
-QuickPanel:AddButton({
+-- Walk to Base Toggle
+local walkToBaseToggle
+walkToBaseToggle = QuickPanel:AddToggle({
     Title = "Walk to Base",
-    Callback = function()
-        QuickPanel:Notify("Walk to Base")
-        task.spawn(walkToBase)
+    Default = false,
+    Callback = function(value)
+        toggleWalkToBase(value)
+        QuickPanel:Notify("Walk to Base: " .. (value and "On" or "Off"))
     end
 })
 
