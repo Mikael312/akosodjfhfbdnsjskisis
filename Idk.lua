@@ -142,11 +142,6 @@ local sentryEnabled = false
 local sentryConn = nil
 local myUserId = tostring(player.UserId)
 
--- Auto Kick After Steal variables
-local kickAfterStealEnabled = false
-local lastStealCount = 0
-local kickMonitorConn = nil
-
 -- Walk to Base variables
 local walkToBaseEnabled = false
 local walkToBaseConn = nil
@@ -1957,73 +1952,6 @@ local function toggleAutoDestroySentry(state)
     end
 end
 
--- ==================== AUTO KICK AFTER STEAL FUNCTIONS ====================
-local function getStealCount()
-    local success, result = pcall(function()
-        if not player or not player:FindFirstChild("leaderstats") then return 0 end
-        local stealsObject = player.leaderstats:FindFirstChild("Steals")
-        if not stealsObject then return 0 end
-        if stealsObject:IsA("IntValue") or stealsObject:IsA("NumberValue") then
-            return stealsObject.Value
-        elseif stealsObject:IsA("StringValue") then
-            return tonumber(stealsObject.Value) or 0
-        else
-            return tonumber(tostring(stealsObject.Value)) or 0
-        end
-    end)
-    return success and result or 0
-end
-
-local function kickPlayer()
-    local success = pcall(function()
-        player:Kick("Steal Success!")
-    end)
-    if not success then
-        pcall(function() game:Shutdown() end)
-    end
-end
-
-local function enableAutoKickAfterSteal()
-    if kickAfterStealEnabled then return end
-    kickAfterStealEnabled = true
-    lastStealCount = getStealCount()
-
-    kickMonitorConn = S.RunService.Heartbeat:Connect(function()
-        if not kickAfterStealEnabled then return end
-
-        local currentStealCount = getStealCount()
-
-        if currentStealCount > lastStealCount then
-            kickAfterStealEnabled = false
-            if kickMonitorConn then
-                kickMonitorConn:Disconnect()
-                kickMonitorConn = nil
-            end
-            task.wait(0.1)
-            kickPlayer()
-        end
-
-        lastStealCount = currentStealCount
-    end)
-end
-
-local function disableAutoKickAfterSteal()
-    if not kickAfterStealEnabled then return end
-    kickAfterStealEnabled = false
-    if kickMonitorConn then
-        kickMonitorConn:Disconnect()
-        kickMonitorConn = nil
-    end
-end
-
-local function toggleAutoKickAfterSteal(state)
-    if state then
-        enableAutoKickAfterSteal()
-    else
-        disableAutoKickAfterSteal()
-    end
-end
-
 -- ==================== WALK TO BASE FUNCTIONS ====================
 local function findDelivery()
     local plots = S.Workspace:FindFirstChild("Plots")
@@ -2888,16 +2816,5 @@ MainHub:AddToggle({
     Callback = function(value)
         toggleAutoDestroySentry(value)
         MainHub:Notify("Auto Destroy Sentry: " .. (value and "On" or "Off"))
-    end
-})
-
--- Auto Kick After Steal Toggle di Tab Stealer
-MainHub:AddToggle({
-    Tab = "Stealer",
-    Title = "Auto Kick After Steal",
-    Default = false,
-    Callback = function(value)
-        toggleAutoKickAfterSteal(value)
-        MainHub:Notify("Auto Kick After Steal: " .. (value and "On" or "Off"))
     end
 })
