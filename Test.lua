@@ -19,6 +19,17 @@ local S = {
     SoundService = game:GetService("SoundService")
 }
 local player = S.Players.LocalPlayer
+-- Tambah selepas S declaration
+local Packages = S.ReplicatedStorage:WaitForChild("Packages")
+local Datas = S.ReplicatedStorage:WaitForChild("Datas")
+local Shared = S.ReplicatedStorage:WaitForChild("Shared")
+local Utils = S.ReplicatedStorage:WaitForChild("Utils")
+
+S.Synchronizer = require(Packages:WaitForChild("Synchronizer"))
+S.AnimalsData = require(Datas:WaitForChild("Animals"))
+S.AnimalsShared = require(Shared:WaitForChild("Animals"))
+S.NumberUtils = require(Utils:WaitForChild("NumberUtils"))
+S.RaritiesData = require(Datas:WaitForChild("Rarities"))
 
 -- ==================== VARIABLES ====================
 local infiniteJumpEnabled = false
@@ -138,6 +149,13 @@ local kickMonitorConn = nil
 -- Walk to Base variables
 local walkToBaseEnabled = false
 local walkToBaseConn = nil
+
+-- Scanner variables
+local allAnimalsCache = {}
+local scannerConnections = {}
+local plotChannels = {}
+local lastAnimalData = {}
+local highestAnimal = nil
 
 -- ==================== INF JUMP FUNCTIONS ====================
 local function doJump()
@@ -2102,6 +2120,140 @@ local function performInstantClone()
         end
     end)
 end
+
+-- ==================== SCANNER FUNCTIONS ====================
+local function getAnimalHash(animalList)
+    if not animalList then return "" end
+    local hash = ""
+    for slot, data in pairs(animalList) do
+        if type(data) == "table" then
+            hash = hash .. tostring(slot) .. tostring(data.Index) .. tostring(data.Mutation)
+        end
+    end
+    return hash
+end
+
+local function scanSinglePlot(plot)
+    pcall(function()
+        local plotUID = plot.Name
+        local channel = S.Synchronizer:Get(plotUID)
+        if not channel then return end
+
+        local animalList = channel:Get("AnimalList")
+        local currentHash = getAnimalHash(animalList)
+        if lastAnimalData[plotUID] == currentHash then return end
+        lastAnimalData[plotUID] = currentHash
+
+        for i = #allAnimalsCache, 1, -1 do
+            if allAnimalsCache[i].plot == plot.Name then
+                table.remove(allAnimalsCache, i)
+            end
+        end
+
+        local owner = channel:Get("Owner")
+        if not owner or not S.Players:FindFirstChild(owner.Name) then
+            refreshAllESP()
+            return
+        end
+
+        local ownerName = owner and owner.Name or "Unknown"
+        if not animalList then return end
+
+        for slot, animalData in pairs(animalList) do
+            if type(animalData) == "table" then
+                local animalName = animalData.Index
+                local animalInfo = S.AnimalsData[animalName]
+                if not animalInfo then continue end
+
+                local mutation = animalData.Mutation or "None"
+                local traits = (animalData.Traits and #animalData.Traits > 0) and table.concat(animalData.Traits, ", ") or "None"
+                local genValue = S.AnimalsShared:GetGeneration(animalName, animalData.Mutation, animalData.Traits, nil)
+
+                table.insert(allAnimalsCache, {
+                    name = animalInfo.DisplayName or animalName,
+                    genValue = genValue,
+                    mutation = mutation,
+                    traits = traits,
+                    owner = ownerName,
+                    plot = plot.Name,
+                    slot = tostring(slot),
+                    uid = plot.Name .. "_" .. tostring(slot),
+                    modelName = animalName,
+                })
+            end
+        end
+
+        table.sort(allAnimalsCache, function(a, b) return a.genValue > b.genValue end)
+        highestAnimal = allAnimalsCache[1]
+    end)
+end
+
+local function setupPlotListener(plot)
+    if plotChannels[plot.Name] then return end
+
+    local channel
+    local retries = 0
+    while not channel and retries < 10 do
+        local ok, result = pcall(function() return S.Synchronizer:Get(plot.Name) end)
+        if ok and result then channel = result; break
+        else retries += 1; if retries < 10 then task.wait(0.5) end end
+    end
+
+    if not channel then return end
+    plotChannels[plot.Name] = true
+    scanSinglePlot(plot)
+
+    local c1 = plot.DescendantAdded:Connect(function() task.wait(0.1); scanSinglePlot(plot) end)
+    local c2 = plot.DescendantRemoving:Connect(function() task.wait(0.1); scanSinglePlot(plot) end)
+    table.insert(scannerConnections, c1)
+    table.insert(scannerConnections, c2)
+
+    task.spawn(function()
+        while plot.Parent and plotChannels[plot.Name] do
+            task.wait(5); scanSinglePlot(plot)
+        end
+    end)
+end
+
+local function initializePlotScanner()
+    local plots = S.Workspace:WaitForChild("Plots", 8)
+    if not plots then return end
+
+    for _, plot in ipairs(plots:GetChildren()) do
+        task.spawn(function() setupPlotListener(plot) end)
+    end
+
+    local newPlotConn = plots.ChildAdded:Connect(function(plot)
+        task.wait(0.5)
+        setupPlotListener(plot)
+    end)
+    table.insert(scannerConnections, newPlotConn)
+
+    local removedPlotConn = plots.ChildRemoved:Connect(function(plot)
+        plotChannels[plot.Name] = nil
+        lastAnimalData[plot.Name] = nil
+        for i = #allAnimalsCache, 1, -1 do
+            if allAnimalsCache[i].plot == plot.Name then
+                table.remove(allAnimalsCache, i)
+            end
+        end
+        highestAnimal = allAnimalsCache[1]
+    end)
+    table.insert(scannerConnections, removedPlotConn)
+end
+
+S.Players.PlayerRemoving:Connect(function(leavingPlayer)
+    for i = #allAnimalsCache, 1, -1 do
+        if allAnimalsCache[i].owner == leavingPlayer.Name then
+            table.remove(allAnimalsCache, i)
+        end
+    end
+    highestAnimal = allAnimalsCache[1]
+end)
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+task.wait(1)
+initializePlotScanner()
 
 -- ========== QUICK PANEL ==========
 
