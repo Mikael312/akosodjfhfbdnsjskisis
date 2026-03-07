@@ -64,9 +64,13 @@ if not ConfigSystem.CurrentConfig.toggles then
     ConfigSystem.CurrentConfig.toggles = {}
 end
 
--- Default "Enable Notification" = true kalau belum ada dalam config
 if ConfigSystem.CurrentConfig.toggles["Enable Notification"] == nil then
     ConfigSystem.CurrentConfig.toggles["Enable Notification"] = true
+    ConfigSystem:Save(ConfigSystem.CurrentConfig)
+end
+
+if ConfigSystem.CurrentConfig.toggles["Show Menu on Start"] == nil then
+    ConfigSystem.CurrentConfig.toggles["Show Menu on Start"] = false
     ConfigSystem:Save(ConfigSystem.CurrentConfig)
 end
 
@@ -134,9 +138,7 @@ local function removeNotification(notifData)
 end
 
 local function showNotification(opts)
-    -- Cek notifEnabled dulu, kalau off terus return
     if not notifEnabled then return end
-
     opts = opts or {}
     local message  = opts.message      or ""
     local subtext  = opts.subtext      or nil
@@ -468,17 +470,16 @@ mainTitleGrad.Color = ColorSequence.new{
 mainTitleGrad.Rotation = 90
 mainTitleGrad.Parent = mainTitle
 
--- Minimize button (background invisible)
 local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Size = UDim2.new(0, 24, 0, 18)
-minimizeBtn.Position = UDim2.new(1, -30, 0, 10)
+minimizeBtn.Size = UDim2.new(0, 24, 0, 20)
+minimizeBtn.Position = UDim2.new(1, -30, 0, 9)
 minimizeBtn.BackgroundTransparency = 1
 minimizeBtn.BorderSizePixel = 0
 minimizeBtn.Text = "–"
 minimizeBtn.TextColor3 = Color3.fromRGB(130, 130, 145)
 minimizeBtn.TextStrokeTransparency = 1
-minimizeBtn.TextSize = 16
-minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.TextSize = 18
+minimizeBtn.Font = Enum.Font.Gotham
 minimizeBtn.ZIndex = 3
 minimizeBtn.Parent = mainFrame
 
@@ -509,7 +510,7 @@ mainSubtitle.TextXAlignment = Enum.TextXAlignment.Left
 mainSubtitle.Parent = mainFrame
 
 -- =====================
--- MENU FRAME (custom drag)
+-- MENU FRAME
 -- =====================
 local menuFrame = Instance.new("Frame")
 menuFrame.Size = UDim2.new(0, MENU_BASE_W, 0, MENU_BASE_H)
@@ -616,34 +617,7 @@ do
 end
 
 -- =====================
--- GUI SCALE FUNCTION
--- =====================
-local function applyGuiScale(scale, silent)
-    currentScale = math.clamp(scale, GUI_SCALE_MIN, GUI_SCALE_MAX)
-    local ratio = currentScale / GUI_SCALE_DEFAULT
-    local newMainW = math.floor(MAIN_BASE_W * ratio)
-    local newMainH = math.floor(MAIN_BASE_H * ratio)
-    local newMenuW = math.floor(MENU_BASE_W * ratio)
-    local newMenuH = math.floor(MENU_BASE_H * ratio)
-    local mainCX = mainFrame.AbsolutePosition.X + mainFrame.AbsoluteSize.X / 2
-    local mainCY = mainFrame.AbsolutePosition.Y + mainFrame.AbsoluteSize.Y / 2
-    local menuCX = menuFrame.AbsolutePosition.X + menuFrame.AbsoluteSize.X / 2
-    local menuCY = menuFrame.AbsolutePosition.Y + menuFrame.AbsoluteSize.Y / 2
-    Services.Tween:Create(mainFrame, TweenInfo.new(0.05), {
-        Size     = UDim2.new(0, newMainW, 0, isMinimized and MAIN_MINIMIZED_H or newMainH),
-        Position = UDim2.new(0, mainCX - newMainW / 2, 0, mainCY - (isMinimized and MAIN_MINIMIZED_H or newMainH) / 2)
-    }):Play()
-    Services.Tween:Create(menuFrame, TweenInfo.new(0.05), {
-        Size     = UDim2.new(0, newMenuW, 0, newMenuH),
-        Position = UDim2.new(0, menuCX - newMenuW / 2, 0, menuCY - newMenuH / 2)
-    }):Play()
-    if not silent then
-        ConfigSystem:UpdateSetting(ConfigSystem.CurrentConfig, "guiScale", currentScale)
-    end
-end
-
--- =====================
--- TABS (fill rata)
+-- TABS
 -- =====================
 local tabNames = {"Features", "Misc", "Keybind", "Server", "Credits"}
 local tabBtns = {}
@@ -660,6 +634,11 @@ tabLayout.FillDirection = Enum.FillDirection.Horizontal
 tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 tabLayout.Padding = UDim.new(0, 2)
 tabLayout.Parent = tabBar
+
+local function calcTabW(menuW)
+    -- tabBar width = menuW - 20, gaps = 4 * 2 = 8
+    return math.floor((menuW - 20 - 8) / 5)
+end
 
 local function setActiveTab(name)
     for _, t in pairs(tabBtns) do
@@ -678,13 +657,11 @@ local function setActiveTab(name)
     end
 end
 
--- TAB_W: (tabBarWidth - gaps) / 5
--- tabBarWidth = MENU_BASE_W - 20 = 205, gaps = 4 * 2 = 8
-local TAB_W = math.floor((MENU_BASE_W - 20 - (4 * 2)) / 5)
+local initialTabW = calcTabW(MENU_BASE_W)
 
 for i, name in ipairs(tabNames) do
     local tabBtn = Instance.new("TextButton")
-    tabBtn.Size = UDim2.new(0, TAB_W, 0, 26)
+    tabBtn.Size = UDim2.new(0, initialTabW, 0, 26)
     tabBtn.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
     tabBtn.BorderSizePixel = 0
     tabBtn.Text = name
@@ -735,6 +712,42 @@ for i, name in ipairs(tabNames) do
 
     tabContents[name] = contentScroll
     tabBtn.MouseButton1Click:Connect(function() setActiveTab(name) end)
+end
+
+-- =====================
+-- GUI SCALE FUNCTION (tab resize included)
+-- =====================
+local function applyGuiScale(scale, silent)
+    currentScale = math.clamp(scale, GUI_SCALE_MIN, GUI_SCALE_MAX)
+    local ratio = currentScale / GUI_SCALE_DEFAULT
+    local newMainW = math.floor(MAIN_BASE_W * ratio)
+    local newMainH = math.floor(MAIN_BASE_H * ratio)
+    local newMenuW = math.floor(MENU_BASE_W * ratio)
+    local newMenuH = math.floor(MENU_BASE_H * ratio)
+
+    local mainCX = mainFrame.AbsolutePosition.X + mainFrame.AbsoluteSize.X / 2
+    local mainCY = mainFrame.AbsolutePosition.Y + mainFrame.AbsoluteSize.Y / 2
+    local menuCX = menuFrame.AbsolutePosition.X + menuFrame.AbsoluteSize.X / 2
+    local menuCY = menuFrame.AbsolutePosition.Y + menuFrame.AbsoluteSize.Y / 2
+
+    Services.Tween:Create(mainFrame, TweenInfo.new(0.05), {
+        Size     = UDim2.new(0, newMainW, 0, isMinimized and MAIN_MINIMIZED_H or newMainH),
+        Position = UDim2.new(0, mainCX - newMainW / 2, 0, mainCY - (isMinimized and MAIN_MINIMIZED_H or newMainH) / 2)
+    }):Play()
+    Services.Tween:Create(menuFrame, TweenInfo.new(0.05), {
+        Size     = UDim2.new(0, newMenuW, 0, newMenuH),
+        Position = UDim2.new(0, menuCX - newMenuW / 2, 0, menuCY - newMenuH / 2)
+    }):Play()
+
+    -- Update tab widths ikut newMenuW
+    local newTabW = calcTabW(newMenuW)
+    for _, t in ipairs(tabBtns) do
+        t.btn.Size = UDim2.new(0, newTabW, 0, 26)
+    end
+
+    if not silent then
+        ConfigSystem:UpdateSetting(ConfigSystem.CurrentConfig, "guiScale", currentScale)
+    end
 end
 
 -- =====================
@@ -1515,12 +1528,15 @@ makeIosToggle("Lock Gui", credScroll, 6, function(state)
     toggleBtn.Draggable   = not state
 end)
 
--- Enable Notification toggle (default ON)
 makeIosToggle("Enable Notification", credScroll, 7, function(state)
     notifEnabled = state
 end)
 
-makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 8, function()
+makeIosToggle("Show Menu on Start", credScroll, 8, function(state)
+    -- state disimpan auto dalam config, apply masa startup
+end)
+
+makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 9, function()
     mainFrame.Position   = MAIN_DEFAULT_POS
     menuFrame.Position   = MENU_DEFAULT_POS
     creditFrame.Position = CREDIT_DEFAULT_POS
@@ -1534,7 +1550,7 @@ scaleRow.Size = UDim2.new(1, 0, 0, 28)
 scaleRow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 scaleRow.BackgroundTransparency = 0.17
 scaleRow.BorderSizePixel = 0
-scaleRow.LayoutOrder = 9
+scaleRow.LayoutOrder = 10
 scaleRow.Parent = credScroll
 
 local scaleRowCorner = Instance.new("UICorner")
@@ -1666,6 +1682,13 @@ if guiLocked then
     toggleBtn.Draggable   = false
 end
 
+-- Apply Show Menu on Start
+local menuOpen = false
+if ConfigSystem.CurrentConfig.toggles["Show Menu on Start"] == true then
+    menuOpen = true
+    menuFrame.Visible = true
+end
+
 task.defer(function()
     if ConfigSystem.CurrentConfig.guiScale then
         applyGuiScale(ConfigSystem.CurrentConfig.guiScale, true)
@@ -1691,27 +1714,25 @@ minimizeBtn.MouseButton1Click:Connect(function()
             Size = UDim2.new(0, fullMainW, 0, MAIN_MINIMIZED_H)
         }):Play()
         minimizeBtn.Text = "+"
-        mainDivider.Visible   = false
-        mainSubtitle.Visible  = false
-        scrollFrame.Visible   = false
+        mainDivider.Visible  = false
+        mainSubtitle.Visible = false
+        scrollFrame.Visible  = false
         isMinimized = true
     else
         Services.Tween:Create(mainFrame, minimizeTween, {
             Size = UDim2.new(0, fullMainW, 0, fullMainH)
         }):Play()
         minimizeBtn.Text = "–"
-        mainDivider.Visible   = true
-        mainSubtitle.Visible  = true
-        scrollFrame.Visible   = true
+        mainDivider.Visible  = true
+        mainSubtitle.Visible = true
+        scrollFrame.Visible  = true
         isMinimized = false
     end
 end)
 
 -- =====================
--- TOGGLE BUTTON LOGIC (menuFrame only)
+-- TOGGLE BUTTON LOGIC
 -- =====================
-local menuOpen = false
-
 local function setMenuOpen(state)
     menuOpen = state
     menuFrame.Visible = state
