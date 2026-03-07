@@ -64,7 +64,14 @@ if not ConfigSystem.CurrentConfig.toggles then
     ConfigSystem.CurrentConfig.toggles = {}
 end
 
+-- Default "Enable Notification" = true kalau belum ada dalam config
+if ConfigSystem.CurrentConfig.toggles["Enable Notification"] == nil then
+    ConfigSystem.CurrentConfig.toggles["Enable Notification"] = true
+    ConfigSystem:Save(ConfigSystem.CurrentConfig)
+end
+
 local guiLocked = ConfigSystem.CurrentConfig.toggles["Lock Gui"] == true
+local notifEnabled = ConfigSystem.CurrentConfig.toggles["Enable Notification"] ~= false
 
 -- =====================
 -- GUI SCALE CONSTANTS
@@ -80,9 +87,8 @@ local currentScale = ConfigSystem.CurrentConfig.guiScale or GUI_SCALE_DEFAULT
 local MAIN_DEFAULT_POS   = UDim2.new(0.75, -92,  0.5, -145)
 local MENU_DEFAULT_POS   = UDim2.new(0,    85,   0,    115)
 local CREDIT_DEFAULT_POS = UDim2.new(0.5, -140,  0.5, -240)
-local TOGGLE_DEFAULT_POS = UDim2.new(1, -55, 0, 15)
+local TOGGLE_DEFAULT_POS = UDim2.new(1, -60, 0, 15)
 
--- Minimize state
 local isMinimized = false
 local MAIN_MINIMIZED_H = 38
 
@@ -128,6 +134,9 @@ local function removeNotification(notifData)
 end
 
 local function showNotification(opts)
+    -- Cek notifEnabled dulu, kalau off terus return
+    if not notifEnabled then return end
+
     opts = opts or {}
     local message  = opts.message      or ""
     local subtext  = opts.subtext      or nil
@@ -261,10 +270,10 @@ local function showNotification(opts)
 end
 
 -- =====================
--- TOGGLE BUTTON (kecil, no outline)
+-- TOGGLE BUTTON
 -- =====================
 local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0, 40, 0, 40)
+toggleBtn.Size = UDim2.new(0, 50, 0, 50)
 toggleBtn.Position = TOGGLE_DEFAULT_POS
 toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 toggleBtn.BackgroundTransparency = 0.23
@@ -459,37 +468,25 @@ mainTitleGrad.Color = ColorSequence.new{
 mainTitleGrad.Rotation = 90
 mainTitleGrad.Parent = mainTitle
 
--- Minimize button
+-- Minimize button (background invisible)
 local minimizeBtn = Instance.new("TextButton")
 minimizeBtn.Size = UDim2.new(0, 24, 0, 18)
 minimizeBtn.Position = UDim2.new(1, -30, 0, 10)
-minimizeBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+minimizeBtn.BackgroundTransparency = 1
 minimizeBtn.BorderSizePixel = 0
 minimizeBtn.Text = "–"
-minimizeBtn.TextColor3 = Color3.fromRGB(150, 150, 165)
+minimizeBtn.TextColor3 = Color3.fromRGB(130, 130, 145)
 minimizeBtn.TextStrokeTransparency = 1
-minimizeBtn.TextSize = 14
+minimizeBtn.TextSize = 16
 minimizeBtn.Font = Enum.Font.GothamBold
 minimizeBtn.ZIndex = 3
 minimizeBtn.Parent = mainFrame
 
-local minimizeBtnCorner = Instance.new("UICorner")
-minimizeBtnCorner.CornerRadius = UDim.new(0, 6)
-minimizeBtnCorner.Parent = minimizeBtn
-
-local minimizeBtnStroke = Instance.new("UIStroke")
-minimizeBtnStroke.Thickness = 1
-minimizeBtnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-minimizeBtnStroke.Color = Color3.fromRGB(70, 70, 85)
-minimizeBtnStroke.Parent = minimizeBtn
-
 minimizeBtn.MouseEnter:Connect(function()
     minimizeBtn.TextColor3 = Color3.fromRGB(220, 220, 235)
-    Services.Tween:Create(minimizeBtnStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(150, 150, 170)}):Play()
 end)
 minimizeBtn.MouseLeave:Connect(function()
-    minimizeBtn.TextColor3 = Color3.fromRGB(150, 150, 165)
-    Services.Tween:Create(minimizeBtnStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(70, 70, 85)}):Play()
+    minimizeBtn.TextColor3 = Color3.fromRGB(130, 130, 145)
 end)
 
 local mainDivider = Instance.new("Frame")
@@ -646,7 +643,7 @@ local function applyGuiScale(scale, silent)
 end
 
 -- =====================
--- TABS
+-- TABS (fill rata)
 -- =====================
 local tabNames = {"Features", "Misc", "Keybind", "Server", "Credits"}
 local tabBtns = {}
@@ -661,7 +658,7 @@ tabBar.Parent = menuFrame
 local tabLayout = Instance.new("UIListLayout")
 tabLayout.FillDirection = Enum.FillDirection.Horizontal
 tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-tabLayout.Padding = UDim.new(0, 3)
+tabLayout.Padding = UDim.new(0, 2)
 tabLayout.Parent = tabBar
 
 local function setActiveTab(name)
@@ -681,9 +678,13 @@ local function setActiveTab(name)
     end
 end
 
+-- TAB_W: (tabBarWidth - gaps) / 5
+-- tabBarWidth = MENU_BASE_W - 20 = 205, gaps = 4 * 2 = 8
+local TAB_W = math.floor((MENU_BASE_W - 20 - (4 * 2)) / 5)
+
 for i, name in ipairs(tabNames) do
     local tabBtn = Instance.new("TextButton")
-    tabBtn.Size = UDim2.new(0, 36, 0, 26)
+    tabBtn.Size = UDim2.new(0, TAB_W, 0, 26)
     tabBtn.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
     tabBtn.BorderSizePixel = 0
     tabBtn.Text = name
@@ -1502,6 +1503,9 @@ makeCardBtn("Join our Community!", "97462463002118", credScroll, 4, function()
     showNotification({ message = "Discord Copied!", barColor = "Blue", textColor = "Default" })
 end, true)
 
+-- =====================
+-- SETTINGS SECTION
+-- =====================
 makeSectionLabel("Settings", credScroll, 5)
 
 makeIosToggle("Lock Gui", credScroll, 6, function(state)
@@ -1511,7 +1515,12 @@ makeIosToggle("Lock Gui", credScroll, 6, function(state)
     toggleBtn.Draggable   = not state
 end)
 
-makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 7, function()
+-- Enable Notification toggle (default ON)
+makeIosToggle("Enable Notification", credScroll, 7, function(state)
+    notifEnabled = state
+end)
+
+makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 8, function()
     mainFrame.Position   = MAIN_DEFAULT_POS
     menuFrame.Position   = MENU_DEFAULT_POS
     creditFrame.Position = CREDIT_DEFAULT_POS
@@ -1519,12 +1528,13 @@ makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 7, function()
     showNotification({ message = "Gui Position Reset", barColor = "Default", textColor = "Default" })
 end, true)
 
+-- Gui Scale row
 local scaleRow = Instance.new("Frame")
 scaleRow.Size = UDim2.new(1, 0, 0, 28)
 scaleRow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 scaleRow.BackgroundTransparency = 0.17
 scaleRow.BorderSizePixel = 0
-scaleRow.LayoutOrder = 8
+scaleRow.LayoutOrder = 9
 scaleRow.Parent = credScroll
 
 local scaleRowCorner = Instance.new("UICorner")
@@ -1667,35 +1677,32 @@ task.defer(function()
 end)
 
 -- =====================
--- MINIMIZE LOGIC (tween size)
+-- MINIMIZE LOGIC
 -- =====================
-local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-local ratio = currentScale / GUI_SCALE_DEFAULT
-local fullMainW = math.floor(MAIN_BASE_W * ratio)
-local fullMainH = math.floor(MAIN_BASE_H * ratio)
+local minimizeTween = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+local fullMainW = math.floor(MAIN_BASE_W * (currentScale / GUI_SCALE_DEFAULT))
+local fullMainH = math.floor(MAIN_BASE_H * (currentScale / GUI_SCALE_DEFAULT))
 
 minimizeBtn.MouseButton1Click:Connect(function()
     if not isMinimized then
-        -- Minimize: tween ke header size sahaja
         fullMainW = math.floor(MAIN_BASE_W * (currentScale / GUI_SCALE_DEFAULT))
         fullMainH = math.floor(MAIN_BASE_H * (currentScale / GUI_SCALE_DEFAULT))
-        Services.Tween:Create(mainFrame, tweenInfo, {
+        Services.Tween:Create(mainFrame, minimizeTween, {
             Size = UDim2.new(0, fullMainW, 0, MAIN_MINIMIZED_H)
         }):Play()
         minimizeBtn.Text = "+"
-        mainDivider.Visible = false
-        mainSubtitle.Visible = false
-        scrollFrame.Visible = false
+        mainDivider.Visible   = false
+        mainSubtitle.Visible  = false
+        scrollFrame.Visible   = false
         isMinimized = true
     else
-        -- Restore
-        Services.Tween:Create(mainFrame, tweenInfo, {
+        Services.Tween:Create(mainFrame, minimizeTween, {
             Size = UDim2.new(0, fullMainW, 0, fullMainH)
         }):Play()
         minimizeBtn.Text = "–"
-        mainDivider.Visible = true
-        mainSubtitle.Visible = true
-        scrollFrame.Visible = true
+        mainDivider.Visible   = true
+        mainSubtitle.Visible  = true
+        scrollFrame.Visible   = true
         isMinimized = false
     end
 end)
@@ -1710,7 +1717,6 @@ local function setMenuOpen(state)
     menuFrame.Visible = state
 end
 
--- Detect drag vs click
 local toggleDragged = false
 toggleBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
