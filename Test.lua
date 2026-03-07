@@ -5,7 +5,9 @@ local Services = {
     Input = game:GetService("UserInputService"),
     RunService = game:GetService("RunService"),
     Stats = game:GetService("Stats"),
-    Http = game:GetService("HttpService")
+    Http = game:GetService("HttpService"),
+    Sound = game:GetService("SoundService"),
+    Debris = game:GetService("Debris")
 }
 
 local LocalPlayer = Services.Players.LocalPlayer
@@ -85,13 +87,29 @@ local guiLocked      = ConfigSystem.CurrentConfig.toggles["Lock Gui"] == true
 local notifEnabled   = ConfigSystem.CurrentConfig.toggles["Enable Notification"] ~= false
 local notifSound     = ConfigSystem.CurrentConfig.notifSound or "None"
 
--- Sound options (boleh tambah ID lepas ni)
-local SOUND_OPTIONS = {"None"}
--- local SOUND_IDS = { None = 0, Ding = 0, Chime = 0, Pop = 0 }
+local SOUND_OPTIONS = {"None", "Professional", "Window", "Discord", "WhatsApp", "Mod Mate", "Im at the Club"}
+local SOUND_IDS = {
+    ["None"]           = 0,
+    ["Professional"]   = 112486094040833,
+    ["Window"]         = 112540874905920,
+    ["Discord"]        = 135272730546427,
+    ["WhatsApp"]       = 97272458359894,
+    ["Mod Mate"]       = 137402801272072,
+    ["Im at the Club"] = 127104923420016,
+}
 
 local function playNotifSound()
     if notifSound == "None" then return end
-    -- nanti boleh tambah: local s = Instance.new("Sound") ...
+    local soundId = SOUND_IDS[notifSound]
+    if not soundId or soundId == 0 then return end
+    pcall(function()
+        local s = Instance.new("Sound")
+        s.SoundId = "rbxassetid://" .. tostring(soundId)
+        s.Volume = 0.5
+        s.Parent = Services.Sound
+        s:Play()
+        Services.Debris:AddItem(s, 5)
+    end)
 end
 
 -- =====================
@@ -810,15 +828,14 @@ local function makeDropdownRow(labelText, options, savedValue, parent, order, on
     dropBtnStroke.Color = Color3.fromRGB(50, 50, 65)
     dropBtnStroke.Parent = dropBtn
 
-    -- Arrow indicator
     local arrow = Instance.new("TextLabel")
     arrow.Size = UDim2.new(0, 14, 1, 0)
     arrow.Position = UDim2.new(1, -16, 0, 0)
     arrow.BackgroundTransparency = 1
-    arrow.Text = "▾"
+    arrow.Text = "v"
     arrow.TextColor3 = Color3.fromRGB(120, 120, 140)
     arrow.TextSize = 10
-    arrow.Font = Enum.Font.GothamBold
+    arrow.Font = Enum.Font.Gotham
     arrow.ZIndex = 5
     arrow.Parent = dropBtn
 
