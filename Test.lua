@@ -78,9 +78,13 @@ local MENU_BASE_W, MENU_BASE_H = 225, 320
 local currentScale = ConfigSystem.CurrentConfig.guiScale or GUI_SCALE_DEFAULT
 
 local MAIN_DEFAULT_POS   = UDim2.new(0.75, -92,  0.5, -145)
-local MENU_DEFAULT_POS   = UDim2.new(0.75, -320, 0.5, -160)
-local CREDIT_DEFAULT_POS = UDim2.new(0.5,  -140, 0.5, -240)
-local TOGGLE_DEFAULT_POS = UDim2.new(1, -90, 0, 15)
+local MENU_DEFAULT_POS   = UDim2.new(0,    85,   0,    115)
+local CREDIT_DEFAULT_POS = UDim2.new(0.5, -140,  0.5, -240)
+local TOGGLE_DEFAULT_POS = UDim2.new(1, -55, 0, 15)
+
+-- Minimize state
+local isMinimized = false
+local MAIN_MINIMIZED_H = 38
 
 -- =====================
 -- NOTIFICATION SYSTEM
@@ -257,16 +261,16 @@ local function showNotification(opts)
 end
 
 -- =====================
--- TOGGLE BUTTON (floating, draggable)
+-- TOGGLE BUTTON (kecil, no outline)
 -- =====================
 local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0, 65, 0, 65)
+toggleBtn.Size = UDim2.new(0, 40, 0, 40)
 toggleBtn.Position = TOGGLE_DEFAULT_POS
 toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 toggleBtn.BackgroundTransparency = 0.23
 toggleBtn.Text = "Zyn"
-toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleBtn.TextSize = 20
+toggleBtn.TextColor3 = Color3.fromRGB(210, 210, 225)
+toggleBtn.TextSize = 13
 toggleBtn.Font = Enum.Font.GothamBold
 toggleBtn.BorderSizePixel = 0
 toggleBtn.Active = true
@@ -277,22 +281,6 @@ toggleBtn.Parent = screenGui
 local toggleBtnCorner = Instance.new("UICorner")
 toggleBtnCorner.CornerRadius = UDim.new(0, 7)
 toggleBtnCorner.Parent = toggleBtn
-
-local toggleBtnStroke = Instance.new("UIStroke")
-toggleBtnStroke.Thickness = 1
-toggleBtnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-toggleBtnStroke.Color = Color3.fromRGB(60, 60, 75)
-toggleBtnStroke.Parent = toggleBtn
-
--- Gradient stroke animation
-local toggleStrokeGrad = Instance.new("UIGradient")
-toggleStrokeGrad.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0,   Color3.fromRGB(80, 80, 90)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(140, 140, 255)),
-    ColorSequenceKeypoint.new(1,   Color3.fromRGB(80, 80, 90))
-}
-toggleStrokeGrad.Parent = toggleBtnStroke
-Services.Tween:Create(toggleStrokeGrad, TweenInfo.new(4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 360}):Play()
 
 -- =====================
 -- CREDIT FRAME
@@ -428,6 +416,7 @@ mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
+mainFrame.ClipsDescendants = true
 mainFrame.Parent = screenGui
 
 local mainCorner = Instance.new("UICorner")
@@ -470,7 +459,7 @@ mainTitleGrad.Color = ColorSequence.new{
 mainTitleGrad.Rotation = 90
 mainTitleGrad.Parent = mainTitle
 
--- Minimize button "–" (ganti button Menu lama)
+-- Minimize button
 local minimizeBtn = Instance.new("TextButton")
 minimizeBtn.Size = UDim2.new(0, 24, 0, 18)
 minimizeBtn.Position = UDim2.new(1, -30, 0, 10)
@@ -596,7 +585,7 @@ menuDivider.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 menuDivider.BorderSizePixel = 0
 menuDivider.Parent = menuFrame
 
--- Custom drag untuk menuFrame
+-- Custom drag menuFrame
 do
     local dragging, dragStart, startPos = false, nil, nil
     menuFrame.InputBegan:Connect(function(input)
@@ -644,8 +633,8 @@ local function applyGuiScale(scale, silent)
     local menuCX = menuFrame.AbsolutePosition.X + menuFrame.AbsoluteSize.X / 2
     local menuCY = menuFrame.AbsolutePosition.Y + menuFrame.AbsoluteSize.Y / 2
     Services.Tween:Create(mainFrame, TweenInfo.new(0.05), {
-        Size     = UDim2.new(0, newMainW, 0, newMainH),
-        Position = UDim2.new(0, mainCX - newMainW / 2, 0, mainCY - newMainH / 2)
+        Size     = UDim2.new(0, newMainW, 0, isMinimized and MAIN_MINIMIZED_H or newMainH),
+        Position = UDim2.new(0, mainCX - newMainW / 2, 0, mainCY - (isMinimized and MAIN_MINIMIZED_H or newMainH) / 2)
     }):Play()
     Services.Tween:Create(menuFrame, TweenInfo.new(0.05), {
         Size     = UDim2.new(0, newMenuW, 0, newMenuH),
@@ -1066,7 +1055,7 @@ scrollLayout.Padding = UDim.new(0, 6)
 scrollLayout.Parent = scrollFrame
 
 -- =====================
--- MAIN FRAME: Button & Toggle
+-- QUICK PANEL ITEMS
 -- =====================
 local function makeButton(labelText, order, onClick)
     local container = Instance.new("Frame")
@@ -1218,16 +1207,9 @@ local function makeToggle(labelText, order, onToggle)
     toggleTriggers[labelText] = function() applyState(not isOn, false) end
 end
 
--- =====================
--- QUICK PANEL ITEMS
--- =====================
 makeButton("Tp to Best", 1, function() end)
 makeToggle("Steal Nearest", 2, function(state)
-    if state then
-        showNotification({ message = "Steal Nearest", barColor = "White", textColor = "Default", subtext = "Enabled" })
-    else
-        showNotification({ message = "Steal Nearest", barColor = "Default", textColor = "Default", subtext = "Disabled" })
-    end
+    showNotification({ message = "Steal Nearest", barColor = state and "White" or "Default", textColor = "Default", subtext = state and "Enabled" or "Disabled" })
 end)
 makeToggle("Highest",   3)
 makeToggle("Priority",  4)
@@ -1287,7 +1269,6 @@ resetKbStroke.Color = Color3.fromRGB(50, 50, 62)
 resetKbStroke.Parent = resetBtn
 
 local kbPills = {}
-
 resetBtn.MouseButton1Click:Connect(function()
     boundKeys = {}
     ConfigSystem:UpdateSetting(ConfigSystem.CurrentConfig, "keybinds", {})
@@ -1336,9 +1317,7 @@ makeIosToggle("Hop Server", srvScroll, 1, function(state)
                     local found = false
                     for _, server in ipairs(result.data) do
                         if server.id ~= game.JobId and server.playing < server.maxPlayers then
-                            pcall(function()
-                                Services.Teleport:TeleportToPlaceInstance(placeId, server.id, LocalPlayer)
-                            end)
+                            pcall(function() Services.Teleport:TeleportToPlaceInstance(placeId, server.id, LocalPlayer) end)
                             found = true
                             break
                         end
@@ -1523,9 +1502,6 @@ makeCardBtn("Join our Community!", "97462463002118", credScroll, 4, function()
     showNotification({ message = "Discord Copied!", barColor = "Blue", textColor = "Default" })
 end, true)
 
--- =====================
--- SETTINGS SECTION
--- =====================
 makeSectionLabel("Settings", credScroll, 5)
 
 makeIosToggle("Lock Gui", credScroll, 6, function(state)
@@ -1533,7 +1509,6 @@ makeIosToggle("Lock Gui", credScroll, 6, function(state)
     mainFrame.Draggable   = not state
     creditFrame.Draggable = not state
     toggleBtn.Draggable   = not state
-    -- menuFrame guna guiLocked flag dalam custom drag
 end)
 
 makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 7, function()
@@ -1544,7 +1519,6 @@ makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 7, function()
     showNotification({ message = "Gui Position Reset", barColor = "Default", textColor = "Default" })
 end, true)
 
--- Gui Scale row
 local scaleRow = Instance.new("Frame")
 scaleRow.Size = UDim2.new(1, 0, 0, 28)
 scaleRow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -1644,10 +1618,9 @@ sliderClickDetector.InputBegan:Connect(function(input)
             local delta = math.clamp((inputPos - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
             local newScale = math.floor(GUI_SCALE_MIN + delta * (GUI_SCALE_MAX - GUI_SCALE_MIN) + 0.5)
             local snappedDelta = (newScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)
-            local pct = math.floor(snappedDelta * 100 + 0.5)
             Services.Tween:Create(sliderFill, TweenInfo.new(0.05), {Size = UDim2.new(snappedDelta, 0, 1, 0)}):Play()
             Services.Tween:Create(sliderThumb, TweenInfo.new(0.05), {Position = UDim2.new(snappedDelta, -5.5, 0.5, -5.5)}):Play()
-            scaleValLbl.Text = pct .. "%"
+            scaleValLbl.Text = math.floor(snappedDelta * 100 + 0.5) .. "%"
             applyGuiScale(newScale)
         end
         updateScale()
@@ -1664,10 +1637,9 @@ end)
 
 local function doResetScale()
     local defDelta = (GUI_SCALE_DEFAULT - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)
-    local defPct = math.floor(defDelta * 100 + 0.5)
     Services.Tween:Create(sliderFill, TweenInfo.new(0.15), {Size = UDim2.new(defDelta, 0, 1, 0)}):Play()
     Services.Tween:Create(sliderThumb, TweenInfo.new(0.15), {Position = UDim2.new(defDelta, -5.5, 0.5, -5.5)}):Play()
-    scaleValLbl.Text = defPct .. "%"
+    scaleValLbl.Text = math.floor(defDelta * 100 + 0.5) .. "%"
     applyGuiScale(GUI_SCALE_DEFAULT)
 end
 
@@ -1695,54 +1667,65 @@ task.defer(function()
 end)
 
 -- =====================
--- TOGGLE BUTTON LOGIC
--- toggleBtn → show/hide menuFrame
--- minimizeBtn → hide mainFrame
--- klik toggleBtn bila mainFrame hidden → show balik mainFrame
+-- MINIMIZE LOGIC (tween size)
+-- =====================
+local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+local ratio = currentScale / GUI_SCALE_DEFAULT
+local fullMainW = math.floor(MAIN_BASE_W * ratio)
+local fullMainH = math.floor(MAIN_BASE_H * ratio)
+
+minimizeBtn.MouseButton1Click:Connect(function()
+    if not isMinimized then
+        -- Minimize: tween ke header size sahaja
+        fullMainW = math.floor(MAIN_BASE_W * (currentScale / GUI_SCALE_DEFAULT))
+        fullMainH = math.floor(MAIN_BASE_H * (currentScale / GUI_SCALE_DEFAULT))
+        Services.Tween:Create(mainFrame, tweenInfo, {
+            Size = UDim2.new(0, fullMainW, 0, MAIN_MINIMIZED_H)
+        }):Play()
+        minimizeBtn.Text = "+"
+        mainDivider.Visible = false
+        mainSubtitle.Visible = false
+        scrollFrame.Visible = false
+        isMinimized = true
+    else
+        -- Restore
+        Services.Tween:Create(mainFrame, tweenInfo, {
+            Size = UDim2.new(0, fullMainW, 0, fullMainH)
+        }):Play()
+        minimizeBtn.Text = "–"
+        mainDivider.Visible = true
+        mainSubtitle.Visible = true
+        scrollFrame.Visible = true
+        isMinimized = false
+    end
+end)
+
+-- =====================
+-- TOGGLE BUTTON LOGIC (menuFrame only)
 -- =====================
 local menuOpen = false
-local mainMinimized = false
 
 local function setMenuOpen(state)
     menuOpen = state
     menuFrame.Visible = state
-    if state then
-        Services.Tween:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundTransparency = 0.05}):Play()
-        Services.Tween:Create(toggleBtnStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(140, 140, 255)}):Play()
-    else
-        Services.Tween:Create(toggleBtn, TweenInfo.new(0.2), {BackgroundTransparency = 0.23}):Play()
-        Services.Tween:Create(toggleBtnStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(60, 60, 75)}):Play()
-    end
 end
 
--- Detect drag vs click untuk toggleBtn
-local toggleBtnDragged = false
+-- Detect drag vs click
+local toggleDragged = false
 toggleBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        toggleBtnDragged = false
+        toggleDragged = false
     end
 end)
 toggleBtn.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement then
-        toggleBtnDragged = true
+        toggleDragged = true
     end
 end)
 
 toggleBtn.MouseButton1Click:Connect(function()
-    if toggleBtnDragged then return end
-    if mainMinimized then
-        -- Show balik mainFrame dulu
-        mainFrame.Visible = true
-        mainMinimized = false
-    end
+    if toggleDragged then return end
     setMenuOpen(not menuOpen)
-end)
-
-minimizeBtn.MouseButton1Click:Connect(function()
-    mainFrame.Visible = false
-    mainMinimized = true
-    -- Tutup menu sekali bila minimize
-    setMenuOpen(false)
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
