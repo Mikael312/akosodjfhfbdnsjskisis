@@ -68,14 +68,31 @@ if ConfigSystem.CurrentConfig.toggles["Enable Notification"] == nil then
     ConfigSystem.CurrentConfig.toggles["Enable Notification"] = true
     ConfigSystem:Save(ConfigSystem.CurrentConfig)
 end
-
 if ConfigSystem.CurrentConfig.toggles["Show Menu on Start"] == nil then
     ConfigSystem.CurrentConfig.toggles["Show Menu on Start"] = false
     ConfigSystem:Save(ConfigSystem.CurrentConfig)
 end
+if ConfigSystem.CurrentConfig.toggles["Auto Hide Quick Panel"] == nil then
+    ConfigSystem.CurrentConfig.toggles["Auto Hide Quick Panel"] = false
+    ConfigSystem:Save(ConfigSystem.CurrentConfig)
+end
+if ConfigSystem.CurrentConfig.notifSound == nil then
+    ConfigSystem.CurrentConfig.notifSound = "None"
+    ConfigSystem:Save(ConfigSystem.CurrentConfig)
+end
 
-local guiLocked = ConfigSystem.CurrentConfig.toggles["Lock Gui"] == true
-local notifEnabled = ConfigSystem.CurrentConfig.toggles["Enable Notification"] ~= false
+local guiLocked      = ConfigSystem.CurrentConfig.toggles["Lock Gui"] == true
+local notifEnabled   = ConfigSystem.CurrentConfig.toggles["Enable Notification"] ~= false
+local notifSound     = ConfigSystem.CurrentConfig.notifSound or "None"
+
+-- Sound options (boleh tambah ID lepas ni)
+local SOUND_OPTIONS = {"None"}
+-- local SOUND_IDS = { None = 0, Ding = 0, Chime = 0, Pop = 0 }
+
+local function playNotifSound()
+    if notifSound == "None" then return end
+    -- nanti boleh tambah: local s = Instance.new("Sound") ...
+end
 
 -- =====================
 -- GUI SCALE CONSTANTS
@@ -95,6 +112,10 @@ local TOGGLE_DEFAULT_POS = UDim2.new(1, -60, 0, 15)
 
 local isMinimized = false
 local MAIN_MINIMIZED_H = 38
+
+-- Dropdown base sizes (minimum, tak mengecil dari ni)
+local DROPDOWN_BASE_W = 130
+local DROPDOWN_BASE_ITEM_H = 26
 
 -- =====================
 -- NOTIFICATION SYSTEM
@@ -139,11 +160,12 @@ end
 
 local function showNotification(opts)
     if not notifEnabled then return end
+    playNotifSound()
     opts = opts or {}
     local message  = opts.message      or ""
     local subtext  = opts.subtext      or nil
-    local barColor = NotifColors.Bar[opts.barColor      or "Default"] or NotifColors.Bar.Default
-    local txtColor = NotifColors.Text[opts.textColor    or "Default"] or NotifColors.Text.Default
+    local barColor = NotifColors.Bar[opts.barColor   or "Default"] or NotifColors.Bar.Default
+    local txtColor = NotifColors.Text[opts.textColor or "Default"] or NotifColors.Text.Default
     local subColor = NotifColors.Text[opts.subtextColor or "Default"] or NotifColors.Text.Default
 
     if #activeNotifications >= MAX_NOTIFS then
@@ -483,12 +505,8 @@ minimizeBtn.Font = Enum.Font.Gotham
 minimizeBtn.ZIndex = 3
 minimizeBtn.Parent = mainFrame
 
-minimizeBtn.MouseEnter:Connect(function()
-    minimizeBtn.TextColor3 = Color3.fromRGB(220, 220, 235)
-end)
-minimizeBtn.MouseLeave:Connect(function()
-    minimizeBtn.TextColor3 = Color3.fromRGB(130, 130, 145)
-end)
+minimizeBtn.MouseEnter:Connect(function() minimizeBtn.TextColor3 = Color3.fromRGB(220, 220, 235) end)
+minimizeBtn.MouseLeave:Connect(function() minimizeBtn.TextColor3 = Color3.fromRGB(130, 130, 145) end)
 
 local mainDivider = Instance.new("Frame")
 mainDivider.Size = UDim2.new(1, -20, 0, 1)
@@ -526,7 +544,7 @@ menuCorner.CornerRadius = UDim.new(0, 9)
 menuCorner.Parent = menuFrame
 
 local menuStroke = Instance.new("UIStroke")
-menuStroke.Thickness = 1.0
+menuStroke.Thickness = 1
 menuStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 menuStroke.Color = Color3.fromRGB(255, 255, 255)
 menuStroke.Parent = menuFrame
@@ -636,7 +654,6 @@ tabLayout.Padding = UDim.new(0, 2)
 tabLayout.Parent = tabBar
 
 local function calcTabW(menuW)
-    -- tabBar width = menuW - 20, gaps = 4 * 2 = 8
     return math.floor((menuW - 20 - 8) / 5)
 end
 
@@ -715,7 +732,213 @@ for i, name in ipairs(tabNames) do
 end
 
 -- =====================
--- GUI SCALE FUNCTION (tab resize included)
+-- DROPDOWN SYSTEM
+-- =====================
+local activeDropdown = nil
+
+local function closeActiveDropdown()
+    if activeDropdown then
+        activeDropdown:Destroy()
+        activeDropdown = nil
+    end
+end
+
+-- Close dropdown bila klik luar
+Services.Input.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if activeDropdown then
+            task.defer(function()
+                closeActiveDropdown()
+            end)
+        end
+    end
+end)
+
+local dropdownValueLabel = nil -- ref untuk update display text
+
+local function makeDropdownRow(labelText, options, savedValue, parent, order, onChange)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, 32)
+    row.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    row.BorderSizePixel = 0
+    row.LayoutOrder = order
+    row.Parent = parent
+
+    local rowCorner = Instance.new("UICorner")
+    rowCorner.CornerRadius = UDim.new(0, 7)
+    rowCorner.Parent = row
+
+    local rowStroke = Instance.new("UIStroke")
+    rowStroke.Thickness = 1
+    rowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    rowStroke.Color = Color3.fromRGB(30, 30, 38)
+    rowStroke.Parent = row
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0.5, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 10, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = labelText
+    lbl.TextColor3 = Color3.fromRGB(160, 160, 175)
+    lbl.TextStrokeTransparency = 1
+    lbl.TextSize = 11
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Parent = row
+
+    -- Dropdown trigger button (kanan)
+    local dropBtn = Instance.new("TextButton")
+    dropBtn.Size = UDim2.new(0, 80, 0, 22)
+    dropBtn.Position = UDim2.new(1, -86, 0.5, -11)
+    dropBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+    dropBtn.BorderSizePixel = 0
+    dropBtn.Text = savedValue
+    dropBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
+    dropBtn.TextStrokeTransparency = 1
+    dropBtn.TextSize = 10
+    dropBtn.Font = Enum.Font.GothamBold
+    dropBtn.ZIndex = 4
+    dropBtn.Parent = row
+
+    local dropBtnCorner = Instance.new("UICorner")
+    dropBtnCorner.CornerRadius = UDim.new(0, 6)
+    dropBtnCorner.Parent = dropBtn
+
+    local dropBtnStroke = Instance.new("UIStroke")
+    dropBtnStroke.Thickness = 1
+    dropBtnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    dropBtnStroke.Color = Color3.fromRGB(50, 50, 65)
+    dropBtnStroke.Parent = dropBtn
+
+    -- Arrow indicator
+    local arrow = Instance.new("TextLabel")
+    arrow.Size = UDim2.new(0, 14, 1, 0)
+    arrow.Position = UDim2.new(1, -16, 0, 0)
+    arrow.BackgroundTransparency = 1
+    arrow.Text = "▾"
+    arrow.TextColor3 = Color3.fromRGB(120, 120, 140)
+    arrow.TextSize = 10
+    arrow.Font = Enum.Font.GothamBold
+    arrow.ZIndex = 5
+    arrow.Parent = dropBtn
+
+    dropBtn.MouseEnter:Connect(function()
+        Services.Tween:Create(dropBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(28, 28, 38)}):Play()
+        Services.Tween:Create(dropBtnStroke, TweenInfo.new(0.15), {Color = Color3.fromRGB(120, 120, 150)}):Play()
+    end)
+    dropBtn.MouseLeave:Connect(function()
+        Services.Tween:Create(dropBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(18, 18, 24)}):Play()
+        Services.Tween:Create(dropBtnStroke, TweenInfo.new(0.15), {Color = Color3.fromRGB(50, 50, 65)}):Play()
+    end)
+
+    dropBtn.MouseButton1Click:Connect(function()
+        -- Close kalau dah open
+        if activeDropdown then
+            closeActiveDropdown()
+            return
+        end
+
+        -- Kira scale ratio — hanya membesar, tak mengecil dari base
+        local ratio = math.max(1, currentScale / GUI_SCALE_DEFAULT)
+        local ddW   = math.floor(DROPDOWN_BASE_W * ratio)
+        local itemH = math.floor(DROPDOWN_BASE_ITEM_H * ratio)
+        local maxVisible = math.min(#options, 4)
+        local ddH = itemH * maxVisible + 8
+
+        -- Absolute position dropdown (bawah button)
+        local absPos = dropBtn.AbsolutePosition
+        local absSize = dropBtn.AbsoluteSize
+
+        local popup = Instance.new("Frame")
+        popup.Size = UDim2.new(0, ddW, 0, ddH)
+        popup.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 4)
+        popup.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
+        popup.BorderSizePixel = 0
+        popup.ZIndex = 200
+        popup.Parent = screenGui
+
+        local popupCorner = Instance.new("UICorner")
+        popupCorner.CornerRadius = UDim.new(0, 7)
+        popupCorner.Parent = popup
+
+        local popupStroke = Instance.new("UIStroke")
+        popupStroke.Thickness = 1
+        popupStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        popupStroke.Color = Color3.fromRGB(55, 55, 70)
+        popupStroke.Parent = popup
+
+        local popupScroll = Instance.new("ScrollingFrame")
+        popupScroll.Size = UDim2.new(1, -8, 1, -8)
+        popupScroll.Position = UDim2.new(0, 4, 0, 4)
+        popupScroll.BackgroundTransparency = 1
+        popupScroll.BorderSizePixel = 0
+        popupScroll.ScrollBarThickness = 0
+        popupScroll.ScrollBarImageTransparency = 1
+        popupScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+        popupScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        popupScroll.ZIndex = 201
+        popupScroll.Parent = popup
+
+        local popupLayout = Instance.new("UIListLayout")
+        popupLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        popupLayout.Padding = UDim.new(0, 2)
+        popupLayout.Parent = popupScroll
+
+        for idx, opt in ipairs(options) do
+            local isSelected = (opt == dropBtn.Text)
+
+            local item = Instance.new("TextButton")
+            item.Size = UDim2.new(1, 0, 0, itemH - 2)
+            item.BackgroundColor3 = isSelected and Color3.fromRGB(40, 40, 60) or Color3.fromRGB(20, 20, 26)
+            item.BorderSizePixel = 0
+            item.Text = opt
+            item.TextColor3 = isSelected and Color3.fromRGB(180, 180, 255) or Color3.fromRGB(160, 160, 175)
+            item.TextSize = 10
+            item.Font = isSelected and Enum.Font.GothamBold or Enum.Font.Gotham
+            item.LayoutOrder = idx
+            item.ZIndex = 202
+            item.Parent = popupScroll
+
+            local itemCorner = Instance.new("UICorner")
+            itemCorner.CornerRadius = UDim.new(0, 5)
+            itemCorner.Parent = item
+
+            item.MouseEnter:Connect(function()
+                if not isSelected then
+                    Services.Tween:Create(item, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(30, 30, 42)}):Play()
+                    item.TextColor3 = Color3.fromRGB(210, 210, 225)
+                end
+            end)
+            item.MouseLeave:Connect(function()
+                if not isSelected then
+                    Services.Tween:Create(item, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(20, 20, 26)}):Play()
+                    item.TextColor3 = Color3.fromRGB(160, 160, 175)
+                end
+            end)
+
+            item.MouseButton1Click:Connect(function()
+                dropBtn.Text = opt
+                notifSound = opt
+                ConfigSystem:UpdateSetting(ConfigSystem.CurrentConfig, "notifSound", opt)
+                if onChange then onChange(opt) end
+                closeActiveDropdown()
+            end)
+        end
+
+        activeDropdown = popup
+
+        -- Tween masuk
+        popup.BackgroundTransparency = 1
+        Services.Tween:Create(popup, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundTransparency = 0
+        }):Play()
+    end)
+
+    return dropBtn
+end
+
+-- =====================
+-- GUI SCALE FUNCTION
 -- =====================
 local function applyGuiScale(scale, silent)
     currentScale = math.clamp(scale, GUI_SCALE_MIN, GUI_SCALE_MAX)
@@ -739,7 +962,6 @@ local function applyGuiScale(scale, silent)
         Position = UDim2.new(0, menuCX - newMenuW / 2, 0, menuCY - newMenuH / 2)
     }):Play()
 
-    -- Update tab widths ikut newMenuW
     local newTabW = calcTabW(newMenuW)
     for _, t in ipairs(tabBtns) do
         t.btn.Size = UDim2.new(0, newTabW, 0, 26)
@@ -1532,11 +1754,16 @@ makeIosToggle("Enable Notification", credScroll, 7, function(state)
     notifEnabled = state
 end)
 
-makeIosToggle("Show Menu on Start", credScroll, 8, function(state)
-    -- state disimpan auto dalam config, apply masa startup
+makeIosToggle("Show Menu on Start", credScroll, 8, function(state) end)
+
+makeIosToggle("Auto Hide Quick Panel", credScroll, 9, function(state) end)
+
+-- Notification Sound dropdown
+makeDropdownRow("Notif Sound", SOUND_OPTIONS, notifSound, credScroll, 10, function(val)
+    notifSound = val
 end)
 
-makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 9, function()
+makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 11, function()
     mainFrame.Position   = MAIN_DEFAULT_POS
     menuFrame.Position   = MENU_DEFAULT_POS
     creditFrame.Position = CREDIT_DEFAULT_POS
@@ -1550,7 +1777,7 @@ scaleRow.Size = UDim2.new(1, 0, 0, 28)
 scaleRow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 scaleRow.BackgroundTransparency = 0.17
 scaleRow.BorderSizePixel = 0
-scaleRow.LayoutOrder = 10
+scaleRow.LayoutOrder = 12
 scaleRow.Parent = credScroll
 
 local scaleRowCorner = Instance.new("UICorner")
@@ -1682,7 +1909,6 @@ if guiLocked then
     toggleBtn.Draggable   = false
 end
 
--- Apply Show Menu on Start
 local menuOpen = false
 if ConfigSystem.CurrentConfig.toggles["Show Menu on Start"] == true then
     menuOpen = true
@@ -1706,29 +1932,38 @@ local minimizeTween = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDire
 local fullMainW = math.floor(MAIN_BASE_W * (currentScale / GUI_SCALE_DEFAULT))
 local fullMainH = math.floor(MAIN_BASE_H * (currentScale / GUI_SCALE_DEFAULT))
 
+local function doMinimize()
+    fullMainW = math.floor(MAIN_BASE_W * (currentScale / GUI_SCALE_DEFAULT))
+    fullMainH = math.floor(MAIN_BASE_H * (currentScale / GUI_SCALE_DEFAULT))
+    Services.Tween:Create(mainFrame, minimizeTween, {
+        Size = UDim2.new(0, fullMainW, 0, MAIN_MINIMIZED_H)
+    }):Play()
+    minimizeBtn.Text = "+"
+    mainDivider.Visible  = false
+    mainSubtitle.Visible = false
+    scrollFrame.Visible  = false
+    isMinimized = true
+end
+
+local function doRestore()
+    Services.Tween:Create(mainFrame, minimizeTween, {
+        Size = UDim2.new(0, fullMainW, 0, fullMainH)
+    }):Play()
+    minimizeBtn.Text = "–"
+    mainDivider.Visible  = true
+    mainSubtitle.Visible = true
+    scrollFrame.Visible  = true
+    isMinimized = false
+end
+
 minimizeBtn.MouseButton1Click:Connect(function()
-    if not isMinimized then
-        fullMainW = math.floor(MAIN_BASE_W * (currentScale / GUI_SCALE_DEFAULT))
-        fullMainH = math.floor(MAIN_BASE_H * (currentScale / GUI_SCALE_DEFAULT))
-        Services.Tween:Create(mainFrame, minimizeTween, {
-            Size = UDim2.new(0, fullMainW, 0, MAIN_MINIMIZED_H)
-        }):Play()
-        minimizeBtn.Text = "+"
-        mainDivider.Visible  = false
-        mainSubtitle.Visible = false
-        scrollFrame.Visible  = false
-        isMinimized = true
-    else
-        Services.Tween:Create(mainFrame, minimizeTween, {
-            Size = UDim2.new(0, fullMainW, 0, fullMainH)
-        }):Play()
-        minimizeBtn.Text = "–"
-        mainDivider.Visible  = true
-        mainSubtitle.Visible = true
-        scrollFrame.Visible  = true
-        isMinimized = false
-    end
+    if not isMinimized then doMinimize() else doRestore() end
 end)
+
+-- Apply Auto Hide Quick Panel on Start
+if ConfigSystem.CurrentConfig.toggles["Auto Hide Quick Panel"] == true then
+    doMinimize()
+end
 
 -- =====================
 -- TOGGLE BUTTON LOGIC
