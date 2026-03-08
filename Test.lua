@@ -1779,12 +1779,28 @@ makeIosToggle("Show Menu on Start", credScroll, 8, function(state) end)
 
 makeIosToggle("Auto Hide Quick Panel", credScroll, 9, function(state) end)
 
+makeIosToggle("Disable Server Full Error", credScroll, 10, function(state)
+    if state then
+        task.spawn(function()
+            for i = 1, 30 do
+                pcall(function()
+                    local pg = CoreGui:FindFirstChild("RobloxPromptGui")
+                    if pg then
+                        pg:Destroy()
+                    end
+                end)
+                task.wait(0.01)
+            end
+        end)
+    end
+end)
+
 -- Notification Sound dropdown
-makeDropdownRow("Notif Sound", SOUND_OPTIONS, notifSound, credScroll, 10, function(val)
+makeDropdownRow("Notif Sound", SOUND_OPTIONS, notifSound, credScroll, 11, function(val)
     notifSound = val
 end)
 
-makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 11, function()
+makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 12, function()
     mainFrame.Position   = MAIN_DEFAULT_POS
     menuFrame.Position   = MENU_DEFAULT_POS
     creditFrame.Position = CREDIT_DEFAULT_POS
@@ -1798,7 +1814,7 @@ scaleRow.Size = UDim2.new(1, 0, 0, 28)
 scaleRow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 scaleRow.BackgroundTransparency = 0.17
 scaleRow.BorderSizePixel = 0
-scaleRow.LayoutOrder = 12
+scaleRow.LayoutOrder = 13
 scaleRow.Parent = credScroll
 
 local scaleRowCorner = Instance.new("UICorner")
