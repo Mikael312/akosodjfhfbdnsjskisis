@@ -89,18 +89,22 @@ local notifSound     = ConfigSystem.CurrentConfig.notifSound or "None"
 
 local SOUND_OPTIONS = {"None", "Professional", "Window", "Discord", "WhatsApp", "Mod Mate", "Im at the Club"}
 local SOUND_IDS = {
-    ["None"]           = 0,
-    ["Professional"]   = 112486094040833,
-    ["Window"]         = 112540874905920,
-    ["Discord"]        = 135272730546427,
-    ["WhatsApp"]       = 97272458359894,
-    ["Mod Mate"]       = 137402801272072,
-    ["Im at the Club"] = 127104923420016,
+    ["None"]             = 0,
+    ["Professional"]     = 112486094040833,
+    ["Window"]           = 112540874905920,
+    ["Discord"]          = 135272730546427,
+    ["WhatsApp"]         = 97272458359894,
+    ["Mod Mate"]         = 137402801272072,
+    ["Im at the Club"]   = 127104923420016,
+    -- System sounds (tidak dalam dropdown)
+    ["Warn"]             = 124951621656853,
+    ["HighValueAlert"]   = 123611924519936,
 }
 
-local function playNotifSound()
-    if notifSound == "None" then return end
-    local soundId = SOUND_IDS[notifSound]
+local function playNotifSound(overrideSound)
+    local soundName = overrideSound or notifSound
+    if soundName == "None" then return end
+    local soundId = SOUND_IDS[soundName]
     if not soundId or soundId == 0 then return end
     pcall(function()
         local s = Instance.new("Sound")
@@ -178,7 +182,7 @@ end
 
 local function showNotification(opts)
     if not notifEnabled then return end
-    playNotifSound()
+    playNotifSound(opts.systemSound)
     opts = opts or {}
     local message  = opts.message      or ""
     local subtext  = opts.subtext      or nil
