@@ -1795,12 +1795,35 @@ makeIosToggle("Disable Server Full Error", credScroll, 10, function(state)
     end
 end)
 
+makeIosToggle("Gui Transparency", credScroll, 11, function(state)
+    -- Frames utama
+    mainFrame.BackgroundTransparency   = state and 0.11 or 0
+    menuFrame.BackgroundTransparency   = state and 0.11 or 0
+    creditFrame.BackgroundTransparency = state and 0.11 or 0
+
+    -- Semua children dalam mainFrame scrollFrame (buttons/toggles)
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child:IsA("Frame") then
+            child.BackgroundTransparency = state and 0.07 or 0
+        end
+    end
+
+    -- Semua children dalam semua tab contents (menuFrame)
+    for _, tabScroll in pairs(tabContents) do
+        for _, child in ipairs(tabScroll:GetChildren()) do
+            if child:IsA("Frame") then
+                child.BackgroundTransparency = state and 0.07 or 0
+            end
+        end
+    end
+end)
+
 -- Notification Sound dropdown
-makeDropdownRow("Notif Sound", SOUND_OPTIONS, notifSound, credScroll, 11, function(val)
+makeDropdownRow("Notif Sound", SOUND_OPTIONS, notifSound, credScroll, 12, function(val)
     notifSound = val
 end)
 
-makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 12, function()
+makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 13, function()
     mainFrame.Position   = MAIN_DEFAULT_POS
     menuFrame.Position   = MENU_DEFAULT_POS
     creditFrame.Position = CREDIT_DEFAULT_POS
@@ -1814,7 +1837,7 @@ scaleRow.Size = UDim2.new(1, 0, 0, 28)
 scaleRow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 scaleRow.BackgroundTransparency = 0.17
 scaleRow.BorderSizePixel = 0
-scaleRow.LayoutOrder = 13
+scaleRow.LayoutOrder = 14
 scaleRow.Parent = credScroll
 
 local scaleRowCorner = Instance.new("UICorner")
