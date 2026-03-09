@@ -12,6 +12,47 @@ local Services = {
 
 local LocalPlayer = Services.Players.LocalPlayer
 
+local function makeTextGlow(textElement, color1, color2, duration, delay)
+    color1   = color1   or Color3.fromRGB(140, 140, 255)
+    color2   = color2   or Color3.fromRGB(100, 60, 200)
+    duration = duration or 1.2
+    delay    = delay    or 0
+    task.spawn(function()
+        if delay > 0 then task.wait(delay) end
+        while textElement.Parent do
+            Services.Tween:Create(textElement, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                TextColor3 = color2
+            }):Play()
+            task.wait(duration)
+            Services.Tween:Create(textElement, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                TextColor3 = color1
+            }):Play()
+            task.wait(duration)
+        end
+    end)
+end
+
+local function addTextGradient(textElement, color1, color2, rotation)
+    rotation = rotation or 45
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, color1),
+        ColorSequenceKeypoint.new(1, color2)
+    })
+    gradient.Rotation = rotation
+    gradient.Parent = textElement
+    task.spawn(function()
+        while textElement.Parent and gradient.Parent do
+            for rot = rotation, rotation + 360, 2 do
+                if not gradient.Parent then break end
+                gradient.Rotation = rot
+                task.wait(0.03)
+            end
+        end
+    end)
+    return gradient
+end
+
 local gui = game.CoreGui:FindFirstChild("ZynHub")
 if gui then gui:Destroy() end
 
@@ -411,15 +452,6 @@ creditTitle.Font = Enum.Font.GothamBold
 creditTitle.TextXAlignment = Enum.TextXAlignment.Left
 creditTitle.Parent = creditFrame
 
-local titleGrad = Instance.new("UIGradient")
-titleGrad.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0,   Color3.fromRGB(140, 140, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(70,  70,  180)),
-    ColorSequenceKeypoint.new(1,   Color3.fromRGB(140, 140, 255))
-}
-titleGrad.Rotation = 90
-titleGrad.Parent = creditTitle
-
 local creditSub = Instance.new("TextLabel")
 creditSub.Size = UDim2.new(1, -58, 0, 16)
 creditSub.Position = UDim2.new(0, 52, 0, 30)
@@ -505,15 +537,6 @@ mainTitle.Font = Enum.Font.GothamBold
 mainTitle.TextXAlignment = Enum.TextXAlignment.Left
 mainTitle.Parent = mainFrame
 
-local mainTitleGrad = Instance.new("UIGradient")
-mainTitleGrad.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0,   Color3.fromRGB(140, 140, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(70,  70,  180)),
-    ColorSequenceKeypoint.new(1,   Color3.fromRGB(140, 140, 255))
-}
-mainTitleGrad.Rotation = 90
-mainTitleGrad.Parent = mainTitle
-
 local minimizeBtn = Instance.new("TextButton")
 minimizeBtn.Size = UDim2.new(0, 24, 0, 20)
 minimizeBtn.Position = UDim2.new(1, -30, 0, 9)
@@ -591,15 +614,6 @@ menuTitle.TextSize = 14
 menuTitle.Font = Enum.Font.GothamBold
 menuTitle.TextXAlignment = Enum.TextXAlignment.Center
 menuTitle.Parent = menuFrame
-
-local menuTitleGrad = Instance.new("UIGradient")
-menuTitleGrad.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0,   Color3.fromRGB(140, 140, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(70,  70,  180)),
-    ColorSequenceKeypoint.new(1,   Color3.fromRGB(140, 140, 255))
-}
-menuTitleGrad.Rotation = 90
-menuTitleGrad.Parent = menuTitle
 
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 26, 0, 26)
@@ -1945,6 +1959,17 @@ resetScaleCredit.MouseButton1Click:Connect(doResetScale)
 -- STARTUP
 -- =====================
 setActiveTab("Features")
+
+local C1 = Color3.fromRGB(140, 140, 255)
+local C2 = Color3.fromRGB(100, 60, 200)
+
+addTextGradient(mainTitle,   C1, C2, 45)
+addTextGradient(menuTitle,   C1, C2, 45)
+addTextGradient(creditTitle, C1, C2, 45)
+
+makeTextGlow(mainTitle,   C1, C2, 1.2, 0)
+makeTextGlow(menuTitle,   C1, C2, 1.2, 0.4)
+makeTextGlow(creditTitle, C1, C2, 1.2, 0.8)
 
 if guiLocked then
     mainFrame.Draggable   = false
