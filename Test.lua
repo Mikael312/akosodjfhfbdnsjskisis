@@ -1960,8 +1960,8 @@ resetScaleCredit.MouseButton1Click:Connect(doResetScale)
 -- =====================
 setActiveTab("Features")
 
-local C1 = Color3.fromRGB(140, 140, 255)
-local C2 = Color3.fromRGB(100, 60, 200)
+local C1 = Color3.fromRGB(70, 70, 180)
+local C2 = Color3.fromRGB(183, 50, 250)
 
 addTextGradient(mainTitle,   C1, C2, 45)
 addTextGradient(menuTitle,   C1, C2, 45)
