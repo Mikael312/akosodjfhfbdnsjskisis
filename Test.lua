@@ -1796,26 +1796,9 @@ makeIosToggle("Disable Server Full Error", credScroll, 10, function(state)
 end)
 
 makeIosToggle("Gui Transparency", credScroll, 11, function(state)
-    -- Frames utama
-    mainFrame.BackgroundTransparency   = state and 0.11 or 0
-    menuFrame.BackgroundTransparency   = state and 0.11 or 0
-    creditFrame.BackgroundTransparency = state and 0.11 or 0
-
-    -- Semua children dalam mainFrame scrollFrame (buttons/toggles)
-    for _, child in ipairs(scrollFrame:GetChildren()) do
-        if child:IsA("Frame") then
-            child.BackgroundTransparency = state and 0.07 or 0
-        end
-    end
-
-    -- Semua children dalam semua tab contents (menuFrame)
-    for _, tabScroll in pairs(tabContents) do
-        for _, child in ipairs(tabScroll:GetChildren()) do
-            if child:IsA("Frame") then
-                child.BackgroundTransparency = state and 0.07 or 0
-            end
-        end
-    end
+    mainFrame.BackgroundTransparency   = state and 0.12 or 0
+    menuFrame.BackgroundTransparency   = state and 0.12 or 0
+    creditFrame.BackgroundTransparency = state and 0.12 or 0
 end)
 
 -- Notification Sound dropdown
