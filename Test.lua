@@ -128,7 +128,7 @@ local guiLocked      = ConfigSystem.CurrentConfig.toggles["Lock Gui"] == true
 local notifEnabled   = ConfigSystem.CurrentConfig.toggles["Enable Notification"] ~= false
 local notifSound     = ConfigSystem.CurrentConfig.notifSound or "None"
 
-local SOUND_OPTIONS = {"None", "Professional", "Window", "Discord", "WhatsApp", "Mod Mate", "Im at the Club"}
+local SOUND_OPTIONS = {"None", "Professional", "Window", "Discord", "WhatsApp", "Mod Mate", "Cool"}
 local SOUND_IDS = {
     ["None"]             = 0,
     ["Professional"]     = 112486094040833,
@@ -136,7 +136,7 @@ local SOUND_IDS = {
     ["Discord"]          = 135272730546427,
     ["WhatsApp"]         = 97272458359894,
     ["Mod Mate"]         = 137402801272072,
-    ["Im at the Club"]   = 127104923420016,
+    ["Cool"]             = 84046526988747,
     -- System sounds (tidak dalam dropdown)
     ["Warn"]             = 124951621656853,
     ["HighValueAlert"]   = 123611924519936,
