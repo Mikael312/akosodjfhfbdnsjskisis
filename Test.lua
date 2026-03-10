@@ -650,7 +650,7 @@ sidebar.Parent = menuFrame
 
 local sidebarLayout = Instance.new("UIListLayout")
 sidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
-sidebarLayout.Padding = UDim.new(0, 7)
+sidebarLayout.Padding = UDim.new(0, 8)
 sidebarLayout.Parent = sidebar
 
 local sidebarPadding = Instance.new("UIPadding")
@@ -713,7 +713,7 @@ end
 -- =====================
 -- TABS (Sidebar style)
 -- =====================
-local tabNames    = {"Features", "Misc", "Keybind", "Server", "Credits"}
+local tabNames = {"Features", "Misc", "Keybind", "Server", "Settings", "Credits"}
 local tabBtns     = {}
 local tabContents = {}
 
@@ -1853,34 +1853,33 @@ makeCardBtn("Join our Community!", "97462463002118", credScroll, 4, function()
 end, true)
 
 -- =====================
--- SETTINGS SECTION
+-- SETTINGS TAB
 -- =====================
-makeSectionLabel("Settings", credScroll, 5)
+local settScroll = tabContents["Settings"]
+makeSectionLabel("Settings", settScroll, 1)
 
-makeIosToggle("Lock Gui", credScroll, 6, function(state)
+makeIosToggle("Lock Gui", settScroll, 2, function(state)
     guiLocked = state
     mainFrame.Draggable   = not state
     creditFrame.Draggable = not state
     toggleBtn.Draggable   = not state
 end)
 
-makeIosToggle("Enable Notification", credScroll, 7, function(state)
+makeIosToggle("Enable Notification", settScroll, 3, function(state)
     notifEnabled = state
 end)
 
-makeIosToggle("Show Menu on Start", credScroll, 8, function(state) end)
+makeIosToggle("Show Menu on Start", settScroll, 4, function(state) end)
 
-makeIosToggle("Auto Hide Quick Panel", credScroll, 9, function(state) end)
+makeIosToggle("Auto Hide Quick Panel", settScroll, 5, function(state) end)
 
-makeIosToggle("Disable Server Full Error", credScroll, 10, function(state)
+makeIosToggle("Disable Server Full Error", settScroll, 6, function(state)
     if state then
         task.spawn(function()
             for i = 1, 30 do
                 pcall(function()
-                    local pg = CoreGui:FindFirstChild("RobloxPromptGui")
-                    if pg then
-                        pg:Destroy()
-                    end
+                    local pg = game:GetService("CoreGui"):FindFirstChild("RobloxPromptGui")
+                    if pg then pg:Destroy() end
                 end)
                 task.wait(0.01)
             end
@@ -1888,18 +1887,17 @@ makeIosToggle("Disable Server Full Error", credScroll, 10, function(state)
     end
 end)
 
-makeIosToggle("Gui Transparency", credScroll, 11, function(state)
+makeIosToggle("Gui Transparency", settScroll, 7, function(state)
     mainFrame.BackgroundTransparency   = state and 0.12 or 0
     menuFrame.BackgroundTransparency   = state and 0.12 or 0
     creditFrame.BackgroundTransparency = state and 0.12 or 0
 end)
 
--- Notification Sound dropdown
-makeDropdownRow("Notif Sound", SOUND_OPTIONS, notifSound, credScroll, 12, function(val)
+makeDropdownRow("Notif Sound", SOUND_OPTIONS, notifSound, settScroll, 8, function(val)
     notifSound = val
 end)
 
-makeCardBtn("Reset Gui Position", "97462463002118", credScroll, 13, function()
+makeCardBtn("Reset Gui Position", "97462463002118", settScroll, 9, function()
     mainFrame.Position   = MAIN_DEFAULT_POS
     menuFrame.Position   = MENU_DEFAULT_POS
     creditFrame.Position = CREDIT_DEFAULT_POS
@@ -1913,8 +1911,8 @@ scaleRow.Size = UDim2.new(1, 0, 0, 28)
 scaleRow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 scaleRow.BackgroundTransparency = 0.17
 scaleRow.BorderSizePixel = 0
-scaleRow.LayoutOrder = 14
-scaleRow.Parent = credScroll
+scaleRow.LayoutOrder = 10
+scaleRow.Parent = settScroll
 
 local scaleRowCorner = Instance.new("UICorner")
 scaleRowCorner.CornerRadius = UDim.new(0, 6)
