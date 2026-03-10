@@ -643,7 +643,6 @@ menuDivider.Parent = menuFrame
 -- Sidebar kiri
 local sidebar = Instance.new("Frame")
 sidebar.Size = UDim2.new(0, SIDEBAR_W, 1, -50)
-sidebar.ClipsDescendants = true
 sidebar.Position = UDim2.new(0, 0, 0, 44)
 sidebar.BackgroundTransparency = 1
 sidebar.BorderSizePixel = 0
