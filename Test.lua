@@ -1068,14 +1068,18 @@ local function applyGuiScale(scale, silent)
     local menuCX = menuFrame.AbsolutePosition.X + menuFrame.AbsoluteSize.X / 2
     local menuCY = menuFrame.AbsolutePosition.Y + menuFrame.AbsoluteSize.Y / 2
 
+    if not ConfigSystem.CurrentConfig.toggles["Disable Main Scale"] then
     Services.Tween:Create(mainFrame, TweenInfo.new(0.05), {
         Size     = UDim2.new(0, newMainW, 0, isMinimized and MAIN_MINIMIZED_H or newMainH),
         Position = UDim2.new(0, mainCX - newMainW / 2, 0, mainCY - (isMinimized and MAIN_MINIMIZED_H or newMainH) / 2)
     }):Play()
+end
+if not ConfigSystem.CurrentConfig.toggles["Disable Menu Scale"] then
     Services.Tween:Create(menuFrame, TweenInfo.new(0.05), {
         Size     = UDim2.new(0, newMenuW, 0, newMenuH),
         Position = UDim2.new(0, menuCX - newMenuW / 2, 0, menuCY - newMenuH / 2)
     }):Play()
+    end
 
     local newTabW = calcTabW(newMenuW)
     for _, t in ipairs(tabBtns) do
@@ -1889,17 +1893,21 @@ makeIosToggle("Disable Server Full Error", settScroll, 6, function(state)
     end
 end)
 
-makeIosToggle("Gui Transparency", settScroll, 7, function(state)
+makeIosToggle("Disable Main Scale", settScroll, 7, function(state) end)
+
+makeIosToggle("Disable Menu Scale", settScroll, 8, function(state) end)
+
+makeIosToggle("Gui Transparency", settScroll, 9, function(state)
     mainFrame.BackgroundTransparency   = state and 0.12 or 0
     menuFrame.BackgroundTransparency   = state and 0.12 or 0
     creditFrame.BackgroundTransparency = state and 0.12 or 0
 end)
 
-makeDropdownRow("Notif Sound", SOUND_OPTIONS, notifSound, settScroll, 8, function(val)
+makeDropdownRow("Notif Sound", SOUND_OPTIONS, notifSound, settScroll, 10, function(val)
     notifSound = val
 end)
 
-makeCardBtn("Reset Gui Position", "97462463002118", settScroll, 9, function()
+makeCardBtn("Reset Gui Position", "97462463002118", settScroll, 11, function()
     mainFrame.Position   = MAIN_DEFAULT_POS
     menuFrame.Position   = MENU_DEFAULT_POS
     creditFrame.Position = CREDIT_DEFAULT_POS
@@ -1913,7 +1921,7 @@ scaleRow.Size = UDim2.new(1, 0, 0, 28)
 scaleRow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 scaleRow.BackgroundTransparency = 0.17
 scaleRow.BorderSizePixel = 0
-scaleRow.LayoutOrder = 10
+scaleRow.LayoutOrder = 12
 scaleRow.Parent = settScroll
 
 local scaleRowCorner = Instance.new("UICorner")
