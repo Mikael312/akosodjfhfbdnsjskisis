@@ -719,11 +719,12 @@ local tabContents = {}
 
 -- Placeholder icon IDs — replace nanti
 local TAB_ICONS = {
-    Features = "0",
-    Misc     = "0",
-    Keybind  = "0",
-    Server   = "0",
-    Credits  = "0",
+    Features = "135805130474024",
+    Misc     = "125410749395920",
+    Keybind  = "104212259155690",
+    Server   = "95694928894687",
+    Settings = "124992078994960",
+    Credits  = "124139034664556",
 }
 
 local function setActiveTab(name)
