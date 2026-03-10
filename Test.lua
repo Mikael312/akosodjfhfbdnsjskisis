@@ -170,7 +170,7 @@ local currentScale = ConfigSystem.CurrentConfig.guiScale or GUI_SCALE_DEFAULT
 
 local MAIN_DEFAULT_POS   = UDim2.new(0.75, -92,  0.5, -145)
 local MENU_DEFAULT_POS   = UDim2.new(0,    85,   0,    115)
-local CREDIT_DEFAULT_POS = UDim2.new(0.5, -140,  0.5, -240)
+local CREDIT_DEFAULT_POS = UDim2.new(0.5, -140, 0.5, -270)
 local TOGGLE_DEFAULT_POS = UDim2.new(1, -60, 0, 15)
 
 local isMinimized = false
@@ -1651,6 +1651,7 @@ makeKeybindRowTracked("Steal Nearest", kbScroll, 3)
 -- SERVER TAB
 -- =====================
 local srvScroll = tabContents["Server"]
+makeSectionLabel("Server", srvScroll, 0)
 
 local hopActive = false
 makeIosToggle("Hop Server", srvScroll, 1, function(state)
