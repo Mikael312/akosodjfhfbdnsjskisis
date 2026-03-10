@@ -1167,7 +1167,7 @@ local function makeIosToggle(labelText, parent, order, onToggle)
     local function applyState(state, silent)
         isOn = state
         if isOn then
-            Services.Tween:Create(track, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(200, 200, 220)}):Play()
+            Services.Tween:Create(track, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(76, 76, 252)}):Play()
             Services.Tween:Create(circle, TweenInfo.new(0.2), {Position = UDim2.new(0, 19, 0.5, -6), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play()
             lbl.TextColor3 = Color3.fromRGB(210, 210, 225)
         else
