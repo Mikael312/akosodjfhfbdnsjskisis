@@ -170,7 +170,7 @@ local currentScale = ConfigSystem.CurrentConfig.guiScale or GUI_SCALE_DEFAULT
 
 local MAIN_DEFAULT_POS   = UDim2.new(0.75, -92,  0.5, -145)
 local MENU_DEFAULT_POS   = UDim2.new(0,    85,   0,    115)
-local CREDIT_DEFAULT_POS = UDim2.new(0.5, -140, 0.5, -279)
+local CREDIT_DEFAULT_POS = UDim2.new(0.5, -140, 0.5, -284)
 local TOGGLE_DEFAULT_POS = UDim2.new(1, -60, 0, 15)
 
 local isMinimized = false
