@@ -164,7 +164,7 @@ local GUI_SCALE_MIN     = 10
 local GUI_SCALE_MAX     = 25
 local GUI_SCALE_DEFAULT = 15
 local MAIN_BASE_W, MAIN_BASE_H = 185, 290
-local MENU_BASE_W, MENU_BASE_H = 225, 320
+local MENU_BASE_W, MENU_BASE_H = 450, 350
 
 local currentScale = ConfigSystem.CurrentConfig.guiScale or GUI_SCALE_DEFAULT
 
@@ -575,7 +575,6 @@ mainSubtitle.Parent = mainFrame
 -- =====================
 -- MENU FRAME
 -- =====================
-local MENU_BASE_W, MENU_BASE_H = 450, 350
 local SIDEBAR_W = 110
 
 local menuFrame = Instance.new("Frame")
@@ -751,7 +750,7 @@ end
 
 for i, name in ipairs(tabNames) do
     local tabBtn = Instance.new("Frame")
-    tabBtn.Size = UDim2.new(1, -2, 0, 30)
+    tabBtn.Size = UDim2.new(0, 105, 0, 30)
     tabBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     tabBtn.BorderSizePixel = 0
     tabBtn.LayoutOrder = i
