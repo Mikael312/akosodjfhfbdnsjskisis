@@ -650,7 +650,7 @@ sidebar.Parent = menuFrame
 
 local sidebarLayout = Instance.new("UIListLayout")
 sidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
-sidebarLayout.Padding = UDim.new(0, 3)
+sidebarLayout.Padding = UDim.new(0, 5)
 sidebarLayout.Parent = sidebar
 
 local sidebarPadding = Instance.new("UIPadding")
@@ -749,7 +749,7 @@ end
 
 for i, name in ipairs(tabNames) do
     local tabBtn = Instance.new("Frame")
-    tabBtn.Size = UDim2.new(1, 0, 0, 30)
+    tabBtn.Size = UDim2.new(1, 0, 0, 26)
     tabBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     tabBtn.BorderSizePixel = 0
     tabBtn.LayoutOrder = i
@@ -797,7 +797,7 @@ for i, name in ipairs(tabNames) do
     label.Text = name
     label.TextColor3 = Color3.fromRGB(90, 90, 105)
     label.TextStrokeTransparency = 1
-    label.TextSize = 10
+    label.TextSize = 9
     label.Font = Enum.Font.GothamBold
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.ZIndex = 3
