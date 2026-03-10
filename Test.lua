@@ -650,7 +650,7 @@ sidebar.Parent = menuFrame
 
 local sidebarLayout = Instance.new("UIListLayout")
 sidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
-sidebarLayout.Padding = UDim.new(0, 5)
+sidebarLayout.Padding = UDim.new(0, 7)
 sidebarLayout.Parent = sidebar
 
 local sidebarPadding = Instance.new("UIPadding")
