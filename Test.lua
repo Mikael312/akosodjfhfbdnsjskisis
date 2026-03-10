@@ -575,6 +575,9 @@ mainSubtitle.Parent = mainFrame
 -- =====================
 -- MENU FRAME
 -- =====================
+local MENU_BASE_W, MENU_BASE_H = 450, 350
+local SIDEBAR_W = 110
+
 local menuFrame = Instance.new("Frame")
 menuFrame.Size = UDim2.new(0, MENU_BASE_W, 0, MENU_BASE_H)
 menuFrame.Position = MENU_DEFAULT_POS
@@ -603,16 +606,17 @@ menuStrokeGrad.Color = ColorSequence.new{
 menuStrokeGrad.Parent = menuStroke
 Services.Tween:Create(menuStrokeGrad, TweenInfo.new(4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 360}):Play()
 
+-- Header
 local menuTitle = Instance.new("TextLabel")
-menuTitle.Size = UDim2.new(1, 0, 0, 26)
-menuTitle.Position = UDim2.new(0, 0, 0, 4)
+menuTitle.Size = UDim2.new(1, -40, 0, 30)
+menuTitle.Position = UDim2.new(0, 14, 0, 4)
 menuTitle.BackgroundTransparency = 1
 menuTitle.Text = "Zyn Hub"
 menuTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 menuTitle.TextStrokeTransparency = 1
 menuTitle.TextSize = 14
 menuTitle.Font = Enum.Font.GothamBold
-menuTitle.TextXAlignment = Enum.TextXAlignment.Center
+menuTitle.TextXAlignment = Enum.TextXAlignment.Left
 menuTitle.Parent = menuFrame
 
 local closeBtn = Instance.new("TextButton")
@@ -632,10 +636,47 @@ closeBtn.MouseLeave:Connect(function() closeBtn.TextColor3 = Color3.fromRGB(100,
 
 local menuDivider = Instance.new("Frame")
 menuDivider.Size = UDim2.new(1, -20, 0, 1)
-menuDivider.Position = UDim2.new(0, 10, 0, 30)
+menuDivider.Position = UDim2.new(0, 10, 0, 34)
 menuDivider.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
 menuDivider.BorderSizePixel = 0
 menuDivider.Parent = menuFrame
+
+-- Sidebar kiri
+local sidebar = Instance.new("Frame")
+sidebar.Size = UDim2.new(0, SIDEBAR_W, 1, -44)
+sidebar.Position = UDim2.new(0, 0, 0, 44)
+sidebar.BackgroundTransparency = 1
+sidebar.BorderSizePixel = 0
+sidebar.Parent = menuFrame
+
+local sidebarLayout = Instance.new("UIListLayout")
+sidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+sidebarLayout.Padding = UDim.new(0, 2)
+sidebarLayout.Parent = sidebar
+
+local sidebarPadding = Instance.new("UIPadding")
+sidebarPadding.PaddingLeft   = UDim.new(0, 8)
+sidebarPadding.PaddingRight  = UDim.new(0, 8)
+sidebarPadding.PaddingTop    = UDim.new(0, 6)
+sidebarPadding.PaddingBottom = UDim.new(0, 6)
+sidebarPadding.Parent = sidebar
+
+-- Vertical divider sidebar
+local sidebarDivider = Instance.new("Frame")
+sidebarDivider.Size = UDim2.new(0, 1, 1, -44)
+sidebarDivider.Position = UDim2.new(0, SIDEBAR_W, 0, 44)
+sidebarDivider.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+sidebarDivider.BorderSizePixel = 0
+sidebarDivider.Parent = menuFrame
+
+-- Content area kanan
+local contentArea = Instance.new("Frame")
+contentArea.Size = UDim2.new(1, -(SIDEBAR_W + 1), 1, -44)
+contentArea.Position = UDim2.new(0, SIDEBAR_W + 1, 0, 44)
+contentArea.BackgroundTransparency = 1
+contentArea.BorderSizePixel = 0
+contentArea.ClipsDescendants = true
+contentArea.Parent = menuFrame
 
 -- Custom drag menuFrame
 do
@@ -644,9 +685,9 @@ do
         if guiLocked then return end
         if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
+            dragging  = true
             dragStart = input.Position
-            startPos = menuFrame.Position
+            startPos  = menuFrame.Position
         end
     end)
     local function stopDrag(input)
@@ -671,38 +712,35 @@ do
 end
 
 -- =====================
--- TABS
+-- TABS (Sidebar style)
 -- =====================
-local tabNames = {"Features", "Misc", "Keybind", "Server", "Credits"}
-local tabBtns = {}
+local tabNames    = {"Features", "Misc", "Keybind", "Server", "Credits"}
+local tabBtns     = {}
 local tabContents = {}
 
-local tabBar = Instance.new("Frame")
-tabBar.Size = UDim2.new(1, -20, 0, 26)
-tabBar.Position = UDim2.new(0, 10, 0, 36)
-tabBar.BackgroundTransparency = 1
-tabBar.Parent = menuFrame
-
-local tabLayout = Instance.new("UIListLayout")
-tabLayout.FillDirection = Enum.FillDirection.Horizontal
-tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-tabLayout.Padding = UDim.new(0, 2)
-tabLayout.Parent = tabBar
-
-local function calcTabW(menuW)
-    return math.floor((menuW - 20 - 8) / 5)
-end
+-- Placeholder icon IDs — replace nanti
+local TAB_ICONS = {
+    Features = "0",
+    Misc     = "0",
+    Keybind  = "0",
+    Server   = "0",
+    Credits  = "0",
+}
 
 local function setActiveTab(name)
     for _, t in pairs(tabBtns) do
         if t.name == name then
-            t.btn.TextColor3 = Color3.fromRGB(220, 220, 235)
-            t.stroke.Color = Color3.fromRGB(150, 150, 170)
-            Services.Tween:Create(t.btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(28, 28, 38)}):Play()
+            Services.Tween:Create(t.btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(28, 28, 42)}):Play()
+            Services.Tween:Create(t.stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(100, 70, 180)}):Play()
+            t.label.TextColor3 = Color3.fromRGB(210, 210, 225)
+            t.icon.ImageColor3 = Color3.fromRGB(180, 140, 255)
+            t.accent.Visible = true
         else
-            t.btn.TextColor3 = Color3.fromRGB(90, 90, 105)
-            t.stroke.Color = Color3.fromRGB(35, 35, 42)
-            Services.Tween:Create(t.btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(16, 16, 20)}):Play()
+            Services.Tween:Create(t.btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 0, 0)}):Play()
+            Services.Tween:Create(t.stroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(25, 25, 32)}):Play()
+            t.label.TextColor3 = Color3.fromRGB(90, 90, 105)
+            t.icon.ImageColor3 = Color3.fromRGB(70, 70, 85)
+            t.accent.Visible = false
         end
     end
     for n, f in pairs(tabContents) do
@@ -710,37 +748,76 @@ local function setActiveTab(name)
     end
 end
 
-local initialTabW = calcTabW(MENU_BASE_W)
-
 for i, name in ipairs(tabNames) do
-    local tabBtn = Instance.new("TextButton")
-    tabBtn.Size = UDim2.new(0, initialTabW, 0, 26)
-    tabBtn.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
+    local tabBtn = Instance.new("Frame")
+    tabBtn.Size = UDim2.new(1, 0, 0, 34)
+    tabBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     tabBtn.BorderSizePixel = 0
-    tabBtn.Text = name
-    tabBtn.TextColor3 = Color3.fromRGB(90, 90, 105)
-    tabBtn.TextStrokeTransparency = 1
-    tabBtn.TextSize = 8
-    tabBtn.Font = Enum.Font.GothamBold
     tabBtn.LayoutOrder = i
-    tabBtn.ZIndex = 3
-    tabBtn.Parent = tabBar
+    tabBtn.Parent = sidebar
 
-    local tabCorner = Instance.new("UICorner")
-    tabCorner.CornerRadius = UDim.new(0, 6)
-    tabCorner.Parent = tabBtn
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 7)
+    btnCorner.Parent = tabBtn
 
-    local tabStroke = Instance.new("UIStroke")
-    tabStroke.Thickness = 1
-    tabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    tabStroke.Color = Color3.fromRGB(35, 35, 42)
-    tabStroke.Parent = tabBtn
+    local btnStroke = Instance.new("UIStroke")
+    btnStroke.Thickness = 1
+    btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    btnStroke.Color = Color3.fromRGB(25, 25, 32)
+    btnStroke.Parent = tabBtn
 
-    tabBtns[i] = {name = name, btn = tabBtn, stroke = tabStroke}
+    -- Violet accent bar kiri
+    local accent = Instance.new("Frame")
+    accent.Size = UDim2.new(0, 3, 0, 18)
+    accent.Position = UDim2.new(0, 0, 0.5, -9)
+    accent.BackgroundColor3 = Color3.fromRGB(120, 70, 220)
+    accent.BorderSizePixel = 0
+    accent.Visible = false
+    accent.ZIndex = 3
+    accent.Parent = tabBtn
 
+    local accentCorner = Instance.new("UICorner")
+    accentCorner.CornerRadius = UDim.new(0, 2)
+    accentCorner.Parent = accent
+
+    -- Icon
+    local icon = Instance.new("ImageLabel")
+    icon.Size = UDim2.new(0, 16, 0, 16)
+    icon.Position = UDim2.new(0, 10, 0.5, -8)
+    icon.BackgroundTransparency = 1
+    icon.Image = "rbxassetid://" .. (TAB_ICONS[name] or "0")
+    icon.ImageColor3 = Color3.fromRGB(70, 70, 85)
+    icon.ZIndex = 3
+    icon.Parent = tabBtn
+
+    -- Label
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -34, 1, 0)
+    label.Position = UDim2.new(0, 30, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(90, 90, 105)
+    label.TextStrokeTransparency = 1
+    label.TextSize = 10
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 3
+    label.Parent = tabBtn
+
+    -- Click detector
+    local clickDetector = Instance.new("TextButton")
+    clickDetector.Size = UDim2.new(1, 0, 1, 0)
+    clickDetector.BackgroundTransparency = 1
+    clickDetector.Text = ""
+    clickDetector.ZIndex = 4
+    clickDetector.Parent = tabBtn
+
+    tabBtns[i] = {name = name, btn = tabBtn, stroke = btnStroke, label = label, icon = icon, accent = accent}
+
+    -- Content scroll untuk tab ni
     local contentScroll = Instance.new("ScrollingFrame")
-    contentScroll.Size = UDim2.new(1, 0, 1, -70)
-    contentScroll.Position = UDim2.new(0, 0, 0, 70)
+    contentScroll.Size = UDim2.new(1, 0, 1, 0)
+    contentScroll.Position = UDim2.new(0, 0, 0, 0)
     contentScroll.BackgroundTransparency = 1
     contentScroll.BorderSizePixel = 0
     contentScroll.ScrollBarThickness = 0
@@ -749,12 +826,12 @@ for i, name in ipairs(tabNames) do
     contentScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     contentScroll.Visible = false
     contentScroll.ZIndex = 3
-    contentScroll.Parent = menuFrame
+    contentScroll.Parent = contentArea
 
     local cPadding = Instance.new("UIPadding")
-    cPadding.PaddingLeft = UDim.new(0, 10)
-    cPadding.PaddingRight = UDim.new(0, 14)
-    cPadding.PaddingTop = UDim.new(0, 8)
+    cPadding.PaddingLeft   = UDim.new(0, 10)
+    cPadding.PaddingRight  = UDim.new(0, 10)
+    cPadding.PaddingTop    = UDim.new(0, 8)
     cPadding.PaddingBottom = UDim.new(0, 8)
     cPadding.Parent = contentScroll
 
@@ -764,8 +841,11 @@ for i, name in ipairs(tabNames) do
     cLayout.Parent = contentScroll
 
     tabContents[name] = contentScroll
-    tabBtn.MouseButton1Click:Connect(function() setActiveTab(name) end)
+    clickDetector.MouseButton1Click:Connect(function() setActiveTab(name) end)
 end
+
+-- applyGuiScale untuk menuFrame baru
+local function calcTabW(menuW) return menuW end -- dummy, tak pakai dah
 
 -- =====================
 -- DROPDOWN SYSTEM
@@ -980,8 +1060,8 @@ local function applyGuiScale(scale, silent)
     local ratio = currentScale / GUI_SCALE_DEFAULT
     local newMainW = math.floor(MAIN_BASE_W * ratio)
     local newMainH = math.floor(MAIN_BASE_H * ratio)
-    local newMenuW = math.floor(MENU_BASE_W * ratio)
-    local newMenuH = math.floor(MENU_BASE_H * ratio)
+    local newMenuW = math.floor(450 * ratio)
+    local newMenuH = math.floor(350 * ratio)
 
     local mainCX = mainFrame.AbsolutePosition.X + mainFrame.AbsoluteSize.X / 2
     local mainCY = mainFrame.AbsolutePosition.Y + mainFrame.AbsoluteSize.Y / 2
