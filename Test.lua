@@ -749,7 +749,7 @@ end
 
 for i, name in ipairs(tabNames) do
     local tabBtn = Instance.new("Frame")
-    tabBtn.Size = UDim2.new(0, 105, 0, 30)
+    tabBtn.Size = UDim2.new(1, 0, 0, 30)
     tabBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     tabBtn.BorderSizePixel = 0
     tabBtn.LayoutOrder = i
@@ -844,7 +844,7 @@ for i, name in ipairs(tabNames) do
 end
 
 -- applyGuiScale untuk menuFrame baru
-local function calcTabW(menuW) return menuW end -- dummy, tak pakai dah
+local function calcTabW(menuW) return SIDEBAR_W - 16 end
 
 -- =====================
 -- DROPDOWN SYSTEM
@@ -1078,7 +1078,7 @@ local function applyGuiScale(scale, silent)
 
     local newTabW = calcTabW(newMenuW)
     for _, t in ipairs(tabBtns) do
-        t.btn.Size = UDim2.new(0, newTabW, 0, 26)
+        t.btn.Size = UDim2.new(1, 0, 0, 30)
     end
 
     if not silent then
