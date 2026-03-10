@@ -643,7 +643,8 @@ menuDivider.Parent = menuFrame
 
 -- Sidebar kiri
 local sidebar = Instance.new("Frame")
-sidebar.Size = UDim2.new(0, SIDEBAR_W, 1, -44)
+sidebar.Size = UDim2.new(0, SIDEBAR_W, 1, -50)
+sidebar.ClipsDescendants = true
 sidebar.Position = UDim2.new(0, 0, 0, 44)
 sidebar.BackgroundTransparency = 1
 sidebar.BorderSizePixel = 0
@@ -671,7 +672,7 @@ sidebarDivider.Parent = menuFrame
 
 -- Content area kanan
 local contentArea = Instance.new("Frame")
-contentArea.Size = UDim2.new(1, -(SIDEBAR_W + 1), 1, -44)
+contentArea.Size = UDim2.new(1, -(SIDEBAR_W + 1), 1, -50)
 contentArea.Position = UDim2.new(0, SIDEBAR_W + 1, 0, 44)
 contentArea.BackgroundTransparency = 1
 contentArea.BorderSizePixel = 0
@@ -750,7 +751,7 @@ end
 
 for i, name in ipairs(tabNames) do
     local tabBtn = Instance.new("Frame")
-    tabBtn.Size = UDim2.new(1, 0, 0, 30)
+    tabBtn.Size = UDim2.new(1, -2, 0, 30)
     tabBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     tabBtn.BorderSizePixel = 0
     tabBtn.LayoutOrder = i
