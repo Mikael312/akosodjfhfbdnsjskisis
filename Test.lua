@@ -651,14 +651,14 @@ sidebar.Parent = menuFrame
 
 local sidebarLayout = Instance.new("UIListLayout")
 sidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
-sidebarLayout.Padding = UDim.new(0, 2)
+sidebarLayout.Padding = UDim.new(0, 3)
 sidebarLayout.Parent = sidebar
 
 local sidebarPadding = Instance.new("UIPadding")
 sidebarPadding.PaddingLeft   = UDim.new(0, 8)
 sidebarPadding.PaddingRight  = UDim.new(0, 8)
-sidebarPadding.PaddingTop    = UDim.new(0, 6)
-sidebarPadding.PaddingBottom = UDim.new(0, 6)
+sidebarPadding.PaddingTop    = UDim.new(0, 4)
+sidebarPadding.PaddingBottom = UDim.new(0, 4)
 sidebarPadding.Parent = sidebar
 
 -- Vertical divider sidebar
@@ -750,7 +750,7 @@ end
 
 for i, name in ipairs(tabNames) do
     local tabBtn = Instance.new("Frame")
-    tabBtn.Size = UDim2.new(1, 0, 0, 34)
+    tabBtn.Size = UDim2.new(1, 0, 0, 30)
     tabBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     tabBtn.BorderSizePixel = 0
     tabBtn.LayoutOrder = i
