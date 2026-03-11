@@ -160,8 +160,8 @@ end
 -- =====================
 -- GUI SCALE CONSTANTS
 -- =====================
-local GUI_SCALE_MIN     = 10
-local GUI_SCALE_MAX     = 25
+local GUI_SCALE_MIN     = 5
+local GUI_SCALE_MAX     = 30
 local GUI_SCALE_DEFAULT = 15
 local MAIN_BASE_W, MAIN_BASE_H = 185, 290
 local MENU_BASE_W, MENU_BASE_H = 450, 350
