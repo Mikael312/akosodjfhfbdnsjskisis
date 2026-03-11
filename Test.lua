@@ -7,8 +7,7 @@ local Services = {
     Stats = game:GetService("Stats"),
     Http = game:GetService("HttpService"),
     Sound = game:GetService("SoundService"),
-    Debris = game:GetService("Debris"),
-    Lighting = game:GetService("Lighting")
+    Debris = game:GetService("Debris")
 }
 
 local LocalPlayer = Services.Players.LocalPlayer
@@ -1751,135 +1750,6 @@ makeCardBtn("Join Server", "97462463002118", srvScroll, 5, function()
     end
 end, false)
 
--- Visual System
-local Lighting = Services.Lighting
-_G.VisualSettings = { Enabled = false, Settings = {} }
-
-local function removeEffects()
-    for _, obj in pairs(Lighting:GetChildren()) do
-        if obj.Name == "CustomStars" or obj.Name == "AuroraEffect"
-            or obj.Name == "AlpineEffect" or obj.Name == "MeadowEffect"
-            or obj.Name == "LateAfternoonEffect" or obj.Name == "HazyEffect"
-            or obj.Name == "CinematicEffect" or obj.Name == "NightEffect" then
-            obj:Destroy()
-        end
-    end
-end
-
-local function makeSky(name, stars)
-    local sky = Instance.new("Sky", Lighting)
-    sky.Name = name
-    sky.SkyboxBk = "rbxasset://textures/sky/sky512_bk.tex"
-    sky.SkyboxDn = "rbxasset://textures/sky/sky512_dn.tex"
-    sky.SkyboxFt = "rbxasset://textures/sky/sky512_ft.tex"
-    sky.SkyboxLf = "rbxasset://textures/sky/sky512_lf.tex"
-    sky.SkyboxRt = "rbxasset://textures/sky/sky512_rt.tex"
-    sky.SkyboxUp = "rbxasset://textures/sky/sky512_up.tex"
-    sky.StarCount = stars or 5000
-    sky.CelestialBodiesShown = true
-end
-
-local function addNight()
-    makeSky("NightEffect", 6000)
-    local cc = Instance.new("ColorCorrectionEffect", Lighting)
-    cc.Name = "NightEffect"; cc.TintColor = Color3.fromRGB(180, 195, 240)
-    cc.Brightness = 0.08; cc.Contrast = 0.05; cc.Saturation = 0.08
-    local atmo = Instance.new("Atmosphere", Lighting)
-    atmo.Name = "NightEffect"; atmo.Color = Color3.fromRGB(90, 100, 170)
-    atmo.Glare = 0.05; atmo.Haze = 0.3; atmo.Density = 0.05
-    local bloom = Instance.new("BloomEffect", Lighting)
-    bloom.Name = "NightEffect"; bloom.Intensity = 0.25; bloom.Size = 18; bloom.Threshold = 0.88
-end
-
-local function addAurora()
-    makeSky("AuroraEffect", 8000)
-    local cc = Instance.new("ColorCorrectionEffect", Lighting)
-    cc.Name = "AuroraEffect"; cc.TintColor = Color3.fromRGB(100, 255, 200)
-    cc.Brightness = 0.05; cc.Contrast = 0.1; cc.Saturation = 0.2
-    local atmo = Instance.new("Atmosphere", Lighting)
-    atmo.Name = "AuroraEffect"; atmo.Color = Color3.fromRGB(100, 200, 255)
-    atmo.Glare = 0.5; atmo.Haze = 1.5; atmo.Density = 0.3
-    local bloom = Instance.new("BloomEffect", Lighting)
-    bloom.Name = "AuroraEffect"; bloom.Intensity = 0.5; bloom.Size = 24; bloom.Threshold = 0.8
-end
-
-local function addAlpine()
-    local cc = Instance.new("ColorCorrectionEffect", Lighting)
-    cc.Name = "AlpineEffect"; cc.TintColor = Color3.fromRGB(210, 235, 255)
-    cc.Brightness = 0.1; cc.Contrast = 0.05; cc.Saturation = 0.15
-    local atmo = Instance.new("Atmosphere", Lighting)
-    atmo.Name = "AlpineEffect"; atmo.Color = Color3.fromRGB(180, 210, 240)
-    atmo.Glare = 0.3; atmo.Haze = 0.4; atmo.Density = 0.1
-    local bloom = Instance.new("BloomEffect", Lighting)
-    bloom.Name = "AlpineEffect"; bloom.Intensity = 0.3; bloom.Size = 16; bloom.Threshold = 0.9
-end
-
-local function addMeadow()
-    local cc = Instance.new("ColorCorrectionEffect", Lighting)
-    cc.Name = "MeadowEffect"; cc.TintColor = Color3.fromRGB(255, 240, 200)
-    cc.Brightness = 0.06; cc.Contrast = 0.05; cc.Saturation = 0.2
-    local atmo = Instance.new("Atmosphere", Lighting)
-    atmo.Name = "MeadowEffect"; atmo.Color = Color3.fromRGB(220, 200, 150)
-    atmo.Glare = 0.4; atmo.Haze = 0.8; atmo.Density = 0.15
-    local bloom = Instance.new("BloomEffect", Lighting)
-    bloom.Name = "MeadowEffect"; bloom.Intensity = 0.4; bloom.Size = 20; bloom.Threshold = 0.85
-end
-
-local function addLateAfternoon()
-    local cc = Instance.new("ColorCorrectionEffect", Lighting)
-    cc.Name = "LateAfternoonEffect"; cc.TintColor = Color3.fromRGB(255, 220, 170)
-    cc.Brightness = 0.08; cc.Contrast = 0.05; cc.Saturation = 0.25
-    local atmo = Instance.new("Atmosphere", Lighting)
-    atmo.Name = "LateAfternoonEffect"; atmo.Color = Color3.fromRGB(255, 200, 140)
-    atmo.Glare = 0.5; atmo.Haze = 1.0; atmo.Density = 0.12
-    local bloom = Instance.new("BloomEffect", Lighting)
-    bloom.Name = "LateAfternoonEffect"; bloom.Intensity = 0.45; bloom.Size = 22; bloom.Threshold = 0.82
-end
-
-local function addHazy()
-    local cc = Instance.new("ColorCorrectionEffect", Lighting)
-    cc.Name = "HazyEffect"; cc.TintColor = Color3.fromRGB(255, 245, 210)
-    cc.Brightness = 0.12; cc.Contrast = -0.05; cc.Saturation = 0.1
-    local atmo = Instance.new("Atmosphere", Lighting)
-    atmo.Name = "HazyEffect"; atmo.Color = Color3.fromRGB(240, 220, 170)
-    atmo.Glare = 0.6; atmo.Haze = 2.0; atmo.Density = 0.25
-    local bloom = Instance.new("BloomEffect", Lighting)
-    bloom.Name = "HazyEffect"; bloom.Intensity = 0.5; bloom.Size = 26; bloom.Threshold = 0.78
-end
-
-local function addCinematic()
-    local cc = Instance.new("ColorCorrectionEffect", Lighting)
-    cc.Name = "CinematicEffect"; cc.TintColor = Color3.fromRGB(200, 230, 225)
-    cc.Brightness = 0.04; cc.Contrast = 0.22; cc.Saturation = 0.15
-    cc.Parent = Lighting
-    local atmo = Instance.new("Atmosphere", Lighting)
-    atmo.Name = "CinematicEffect"; atmo.Color = Color3.fromRGB(255, 180, 120)
-    atmo.Glare = 0.35; atmo.Haze = 0.6; atmo.Density = 0.08
-    local bloom = Instance.new("BloomEffect", Lighting)
-    bloom.Name = "CinematicEffect"; bloom.Intensity = 0.35; bloom.Size = 18; bloom.Threshold = 0.92
-    local sunray = Instance.new("SunRaysEffect", Lighting)
-    sunray.Name = "CinematicEffect"; sunray.Intensity = 0.08; sunray.Spread = 0.6
-end
-
-local VISUAL_PRESETS = {
-    ["None"]           = nil,
-    ["Night"]          = addNight,
-    ["Aurora"]         = addAurora,
-    ["Alpine"]         = addAlpine,
-    ["Meadow"]         = addMeadow,
-    ["Late Afternoon"] = addLateAfternoon,
-    ["Hazy"]           = addHazy,
-    ["Cinematic"]      = addCinematic,
-}
-
-Services.RunService.Heartbeat:Connect(function()
-    if _G.VisualSettings.Enabled and _G.VisualSettings.Settings then
-        for prop, val in pairs(_G.VisualSettings.Settings) do
-            pcall(function() if Lighting[prop] ~= val then Lighting[prop] = val end end)
-        end
-    end
-end)
-
 -- =====================
 -- CREDITS TAB
 -- =====================
@@ -1988,19 +1858,9 @@ makeCardBtn("Join our Community!", "97462463002118", credScroll, 4, function()
     showNotification({ message = "Discord Copied!", barColor = "Blue", textColor = "Default" })
 end, true)
 
-makeSectionLabel("Visual", credScroll, 5)
+makeSectionLabel("Utility", credScroll, 5)
 
-local VISUAL_OPTIONS = {"None", "Night", "Aurora", "Alpine", "Meadow", "Late Afternoon", "Hazy", "Cinematic"}
-makeDropdownRow("Select Visual", VISUAL_OPTIONS, "None", credScroll, 6, function(val)
-    removeEffects()
-    _G.VisualSettings.Enabled = false
-    _G.VisualSettings.Settings = {}
-    if val ~= "None" and VISUAL_PRESETS[val] then
-        VISUAL_PRESETS[val]()
-    end
-end)
-
-makeIosToggle("Anti Afk", credScroll, 7, function(state)
+makeIosToggle("Anti Afk", credScroll, 6, function(state)
     if state then
         task.spawn(function()
             local VirtualUser = game:GetService("VirtualUser")
