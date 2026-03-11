@@ -1960,6 +1960,52 @@ scaleValLbl.Font = Enum.Font.GothamBold
 scaleValLbl.TextXAlignment = Enum.TextXAlignment.Right
 scaleValLbl.Parent = scaleRow
 
+local scaleValBox = Instance.new("TextBox")
+scaleValBox.Size = UDim2.new(0, 30, 1, 0)
+scaleValBox.Position = UDim2.new(1, -34, 0, 0)
+scaleValBox.BackgroundTransparency = 1
+scaleValBox.Text = ""
+scaleValBox.PlaceholderText = ""
+scaleValBox.TextColor3 = Color3.fromRGB(140, 140, 255)
+scaleValBox.TextStrokeTransparency = 1
+scaleValBox.TextSize = 10
+scaleValBox.Font = Enum.Font.GothamBold
+scaleValBox.TextXAlignment = Enum.TextXAlignment.Right
+scaleValBox.ClearTextOnFocus = true
+scaleValBox.Visible = false
+scaleValBox.ZIndex = 6
+scaleValBox.Parent = scaleRow
+
+local scaleValBtn = Instance.new("TextButton")
+scaleValBtn.Size = UDim2.new(0, 30, 1, 0)
+scaleValBtn.Position = UDim2.new(1, -34, 0, 0)
+scaleValBtn.BackgroundTransparency = 1
+scaleValBtn.Text = ""
+scaleValBtn.ZIndex = 7
+scaleValBtn.Parent = scaleRow
+
+scaleValBtn.MouseButton1Click:Connect(function()
+    scaleValLbl.Visible = false
+    scaleValBox.Visible = true
+    scaleValBox.Text = tostring(math.floor(((currentScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)) * 100 + 0.5))
+    scaleValBox:CaptureFocus()
+end)
+
+scaleValBox.FocusLost:Connect(function(enterPressed)
+    local input = tonumber(scaleValBox.Text)
+    if input then
+        input = math.clamp(math.floor(input + 0.5), 0, 100)
+        local newScale = math.floor(GUI_SCALE_MIN + (input / 100) * (GUI_SCALE_MAX - GUI_SCALE_MIN) + 0.5)
+        local snappedDelta = (newScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)
+        Services.Tween:Create(sliderFill, TweenInfo.new(0.15), {Size = UDim2.new(snappedDelta, 0, 1, 0)}):Play()
+        Services.Tween:Create(sliderThumb, TweenInfo.new(0.15), {Position = UDim2.new(snappedDelta, -5.5, 0.5, -5.5)}):Play()
+        scaleValLbl.Text = math.floor(snappedDelta * 100 + 0.5) .. "%"
+        applyGuiScale(newScale)
+    end
+    scaleValBox.Visible = false
+    scaleValLbl.Visible = true
+end)
+
 local sliderBg = Instance.new("Frame")
 sliderBg.Size = UDim2.new(1, -106, 0, 5)
 sliderBg.Position = UDim2.new(0, 68, 0.5, -2)
