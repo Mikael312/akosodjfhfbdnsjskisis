@@ -1997,8 +1997,12 @@ scaleValBox.FocusLost:Connect(function(enterPressed)
         input = math.clamp(math.floor(input + 0.5), 0, 100)
         local newScale = math.floor(GUI_SCALE_MIN + (input / 100) * (GUI_SCALE_MAX - GUI_SCALE_MIN) + 0.5)
         local snappedDelta = (newScale - GUI_SCALE_MIN) / (GUI_SCALE_MAX - GUI_SCALE_MIN)
-        Services.Tween:Create(sliderFill, TweenInfo.new(0.15), {Size = UDim2.new(snappedDelta, 0, 1, 0)}):Play()
-        Services.Tween:Create(sliderThumb, TweenInfo.new(0.15), {Position = UDim2.new(snappedDelta, -5.5, 0.5, -5.5)}):Play()
+        if sliderFill and sliderFill.Parent then
+    Services.Tween:Create(sliderFill, TweenInfo.new(0.15), {Size = UDim2.new(snappedDelta, 0, 1, 0)}):Play()
+end
+if sliderThumb and sliderThumb.Parent then
+    Services.Tween:Create(sliderThumb, TweenInfo.new(0.15), {Position = UDim2.new(snappedDelta, -5.5, 0.5, -5.5)}):Play()
+            end
         scaleValLbl.Text = math.floor(snappedDelta * 100 + 0.5) .. "%"
         applyGuiScale(newScale)
     end
