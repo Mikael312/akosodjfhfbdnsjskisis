@@ -1858,6 +1858,31 @@ makeCardBtn("Join our Community!", "97462463002118", credScroll, 4, function()
     showNotification({ message = "Discord Copied!", barColor = "Blue", textColor = "Default" })
 end, true)
 
+makeSectionLabel("Visual", credScroll, 5)
+
+local VISUAL_OPTIONS = {"None", "Night", "Aurora", "Alpine", "Meadow", "Late Afternoon", "Hazy", "Cinematic"}
+makeDropdownRow("Select Visual", VISUAL_OPTIONS, "None", credScroll, 6, function(val)
+    removeEffects()
+    _G.VisualSettings.Enabled = false
+    _G.VisualSettings.Settings = {}
+    if val ~= "None" and VISUAL_PRESETS[val] then
+        VISUAL_PRESETS[val]()
+    end
+end)
+
+makeIosToggle("Anti Afk", credScroll, 7, function(state)
+    if state then
+        task.spawn(function()
+            local VirtualUser = game:GetService("VirtualUser")
+            Services.Players.LocalPlayer.Idled:Connect(function()
+                VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                task.wait(1)
+                VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            end)
+        end)
+    end
+end)
+
 -- =====================
 -- SETTINGS TAB
 -- =====================
