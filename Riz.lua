@@ -1027,8 +1027,8 @@ local function createAnimalCard(parent, animalData)
         local vpCamera = Instance.new("Camera")
         vpCamera.FieldOfView = 50
         vpCamera.CFrame = CFrame.new(
-            cf.Position + Vector3.new(0, size.Y * 0.3, distance),  -- center X, turun sikit
-            cf.Position + Vector3.new(0, -size.Y * 0.3, 0)         -- pandang ke bawah sikit
+            cf.Position + Vector3.new(0, size.Y * 0.6, distance),  -- center X, turun sikit
+            cf.Position + Vector3.new(0, -size.Y * 0.6, 0)         -- pandang ke bawah sikit
         )
         vpCamera.Parent = vpFrame
         vpFrame.CurrentCamera = vpCamera
@@ -1067,7 +1067,7 @@ genLabel.Size = UDim2.new(1, -65, 0, 16)
 genLabel.Position = UDim2.new(0, 61, 0, 46)
 genLabel.BackgroundTransparency = 1
 genLabel.Text = animalData.genText
-genLabel.TextColor3 = C.white
+genLabel.TextColor3 = C.green
 genLabel.Font = Enum.Font.GothamBold
 genLabel.TextSize = 10
 genLabel.TextXAlignment = Enum.TextXAlignment.Left
