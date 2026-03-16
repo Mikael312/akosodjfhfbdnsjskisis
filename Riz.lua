@@ -1027,40 +1027,53 @@ local function createAnimalCard(parent, animalData)
         local vpCamera = Instance.new("Camera")
         vpCamera.FieldOfView = 50
         vpCamera.CFrame = CFrame.new(
-            cf.Position + Vector3.new(0, size.Y * 0.1, distance),  -- center X, turun sikit
-            cf.Position + Vector3.new(0, -size.Y * 0.1, 0)         -- pandang ke bawah sikit
+            cf.Position + Vector3.new(0, size.Y * 0.3, distance),  -- center X, turun sikit
+            cf.Position + Vector3.new(0, -size.Y * 0.3, 0)         -- pandang ke bawah sikit
         )
         vpCamera.Parent = vpFrame
         vpFrame.CurrentCamera = vpCamera
     end)
 
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.Name = "NameLabel"
-    nameLabel.Size = UDim2.new(1, -65, 0, 22)
-    nameLabel.Position = UDim2.new(0, 61, 0, 16)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = animalData.name
-    nameLabel.TextColor3 = C.white
-    nameLabel.Font = Enum.Font.MontserratBold
-    nameLabel.TextSize = 11
-    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-    nameLabel.TextYAlignment = Enum.TextYAlignment.Center
-    nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    nameLabel.Parent = cardFrame
+local nameLabel = Instance.new("TextLabel")
+nameLabel.Name = "NameLabel"
+nameLabel.Size = UDim2.new(1, -65, 0, 18)
+nameLabel.Position = UDim2.new(0, 61, 0, 12)
+nameLabel.BackgroundTransparency = 1
+nameLabel.Text = animalData.name
+nameLabel.TextColor3 = C.white
+nameLabel.Font = Enum.Font.MontserratBold
+nameLabel.TextSize = 11
+nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+nameLabel.TextYAlignment = Enum.TextYAlignment.Center
+nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+nameLabel.Parent = cardFrame
 
-    local genLabel = Instance.new("TextLabel")
-    genLabel.Name = "GenLabel"
-    genLabel.Size = UDim2.new(1, -65, 0, 18)
-    genLabel.Position = UDim2.new(0, 61, 0, 40)
-    genLabel.BackgroundTransparency = 1
-    genLabel.Text = animalData.genText
-    genLabel.TextColor3 = C.green
-    genLabel.Font = Enum.Font.GothamBold
-    genLabel.TextSize = 10
-    genLabel.TextXAlignment = Enum.TextXAlignment.Left
-    genLabel.TextYAlignment = Enum.TextYAlignment.Center
-    genLabel.Parent = cardFrame
+local mutationLabel = Instance.new("TextLabel")
+mutationLabel.Name = "MutationLabel"
+mutationLabel.Size = UDim2.new(1, -65, 0, 16)
+mutationLabel.Position = UDim2.new(0, 61, 0, 30)
+mutationLabel.BackgroundTransparency = 1
+mutationLabel.Text = animalData.mutation
+mutationLabel.TextColor3 = C.blue1
+mutationLabel.Font = Enum.Font.GothamBold
+mutationLabel.TextSize = 10
+mutationLabel.TextXAlignment = Enum.TextXAlignment.Left
+mutationLabel.TextYAlignment = Enum.TextYAlignment.Center
+mutationLabel.Parent = cardFrame
 
+local genLabel = Instance.new("TextLabel")
+genLabel.Name = "GenLabel"
+genLabel.Size = UDim2.new(1, -65, 0, 16)
+genLabel.Position = UDim2.new(0, 61, 0, 46)
+genLabel.BackgroundTransparency = 1
+genLabel.Text = animalData.genText
+genLabel.TextColor3 = C.white
+genLabel.Font = Enum.Font.GothamBold
+genLabel.TextSize = 10
+genLabel.TextXAlignment = Enum.TextXAlignment.Left
+genLabel.TextYAlignment = Enum.TextYAlignment.Center
+genLabel.Parent = cardFrame
+    
     return cardFrame
 end
 
