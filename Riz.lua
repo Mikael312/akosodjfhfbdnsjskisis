@@ -1054,7 +1054,7 @@ local function createAnimalCard(parent, animalData)
     genLabel.Position = UDim2.new(0, 61, 0, 40)
     genLabel.BackgroundTransparency = 1
     genLabel.Text = animalData.genText
-    genLabel.TextColor3 = C.white
+    genLabel.TextColor3 = C.green
     genLabel.Font = Enum.Font.GothamBold
     genLabel.TextSize = 10
     genLabel.TextXAlignment = Enum.TextXAlignment.Left
