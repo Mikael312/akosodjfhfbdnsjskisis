@@ -32,7 +32,6 @@ local DefaultConfig = {
         MenuFrame = {X = 0.35, Y = 0.5},
     },
     AutoTponStart = false,
-    HopServer = false,
     Settings = false,
     StealBar = false,
 }
@@ -964,7 +963,6 @@ local function createTabToggle(parent, name, configKey, callback)
     return toggleFrame
 end
 
--- ===== ANIMAL CARD (UPDATED) =====
 local function createAnimalCard(parent, animalData)
     local cardFrame = Instance.new("Frame")
     cardFrame.Name = "AnimalCard"
@@ -978,11 +976,11 @@ local function createAnimalCard(parent, animalData)
     cardCorner.CornerRadius = UDim.new(0, 8)
     cardCorner.Parent = cardFrame
 
-    -- ViewportFrame -- dikecilkan
+    -- VP dikecilkan lagi
     local vpFrame = Instance.new("ViewportFrame")
     vpFrame.Name = "ModelViewport"
-    vpFrame.Size = UDim2.new(0, 55, 0, 55)
-    vpFrame.Position = UDim2.new(0, 8, 0.5, -27)
+    vpFrame.Size = UDim2.new(0, 45, 0, 45)
+    vpFrame.Position = UDim2.new(0, 8, 0.5, -22)
     vpFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     vpFrame.BorderSizePixel = 0
     vpFrame.Ambient = Color3.fromRGB(180, 180, 180)
@@ -990,7 +988,7 @@ local function createAnimalCard(parent, animalData)
     vpFrame.Parent = cardFrame
 
     local vpCorner = Instance.new("UICorner")
-    vpCorner.CornerRadius = UDim.new(0, 10)
+    vpCorner.CornerRadius = UDim.new(0, 8)
     vpCorner.Parent = vpFrame
 
     local vpStroke = Instance.new("UIStroke")
@@ -999,7 +997,6 @@ local function createAnimalCard(parent, animalData)
     vpStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     vpStroke.Parent = vpFrame
 
-    -- Load model 3D -- model dibesarkan (distance dikurangkan)
     pcall(function()
         local animalModels = S.ReplicatedStorage:FindFirstChild("Models")
             and S.ReplicatedStorage.Models:FindFirstChild("Animals")
@@ -1022,25 +1019,25 @@ local function createAnimalCard(parent, animalData)
         if rootPart then rootPart.Anchored = true end
 
         local cf, size = cloned:GetBoundingBox()
-        local distance = math.max(size.X, size.Y, size.Z) * 1.5  -- dikurangkan dari 2.2 → 1.5
+        local distance = math.max(size.X, size.Y, size.Z) * 1.5
 
+        -- Center model + turunkan sedikit
         cloned:PivotTo(CFrame.new(cf.Position) * CFrame.Angles(0, math.rad(125), 0))
 
         local vpCamera = Instance.new("Camera")
         vpCamera.FieldOfView = 50
         vpCamera.CFrame = CFrame.new(
-            cf.Position + Vector3.new(-0.5 * distance, size.Y * 0.3, 0.9 * distance),
-            cf.Position
+            cf.Position + Vector3.new(0, size.Y * 0.1, distance),  -- center X, turun sikit
+            cf.Position + Vector3.new(0, -size.Y * 0.1, 0)         -- pandang ke bawah sikit
         )
         vpCamera.Parent = vpFrame
         vpFrame.CurrentCamera = vpCamera
     end)
 
-    -- NameLabel — white
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "NameLabel"
-    nameLabel.Size = UDim2.new(1, -75, 0, 22)
-    nameLabel.Position = UDim2.new(0, 71, 0, 16)
+    nameLabel.Size = UDim2.new(1, -65, 0, 22)
+    nameLabel.Position = UDim2.new(0, 61, 0, 16)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Text = animalData.name
     nameLabel.TextColor3 = C.white
@@ -1051,11 +1048,10 @@ local function createAnimalCard(parent, animalData)
     nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
     nameLabel.Parent = cardFrame
 
-    -- GenLabel — white
     local genLabel = Instance.new("TextLabel")
     genLabel.Name = "GenLabel"
-    genLabel.Size = UDim2.new(1, -75, 0, 18)
-    genLabel.Position = UDim2.new(0, 71, 0, 40)
+    genLabel.Size = UDim2.new(1, -65, 0, 18)
+    genLabel.Position = UDim2.new(0, 61, 0, 40)
     genLabel.BackgroundTransparency = 1
     genLabel.Text = animalData.genText
     genLabel.TextColor3 = C.white
@@ -1126,35 +1122,6 @@ local settingsToggle = createToggle("Settings", 220, "Settings", function(ns, se
     set(ns)
     menuFrame.Visible = ns
 end)
-
-if Config.HopServer then
-    hopActive = true
-    task.spawn(function()
-        while hopActive do
-            local placeId = game.PlaceId
-            local ok, result = pcall(function()
-                return S.HttpService:JSONDecode(
-                    game:HttpGet("https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100")
-                )
-            end)
-            if ok and result and result.data then
-                local found = false
-                for _, server in ipairs(result.data) do
-                    if server.id ~= game.JobId and server.playing < server.maxPlayers then
-                        pcall(function()
-                            S.TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
-                        end)
-                        found = true
-                        break
-                    end
-                end
-                if not found then task.wait(3) end
-            else
-                task.wait(3)
-            end
-        end
-    end)
-end
 
 -- ===== TAB CONTENT =====
 task.wait(0.1)
