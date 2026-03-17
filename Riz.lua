@@ -1017,22 +1017,25 @@ local function createAnimalCard(parent, animalData)
 
         local rootPart = cloned.PrimaryPart or cloned:FindFirstChildWhichIsA("BasePart")
         if rootPart then rootPart.Anchored = true end
-
+ 
         local cf, size = cloned:GetBoundingBox()
-        local distance = math.max(size.X, size.Y, size.Z) * 1.5
 
-        -- Center model + turunkan sedikit
-        cloned:PivotTo(CFrame.new(cf.Position) * CFrame.Angles(0, math.rad(125), 0))
+-- Rotate dulu
+cloned:PivotTo(CFrame.new(cf.Position) * CFrame.Angles(0, math.rad(125), 0))
 
-        local vpCamera = Instance.new("Camera")
-        vpCamera.FieldOfView = 50
-        vpCamera.CFrame = CFrame.new(
-            cf.Position + Vector3.new(0, size.Y * 0.6, distance),  -- center X, turun sikit
-            cf.Position + Vector3.new(0, -size.Y * 0.6, 0)         -- pandang ke bawah sikit
-        )
-        vpCamera.Parent = vpFrame
-        vpFrame.CurrentCamera = vpCamera
-    end)
+-- Ambik semula position SELEPAS rotate
+local cf2, size2 = cloned:GetBoundingBox()
+local distance = math.max(size2.X, size2.Y, size2.Z) * 1.5
+
+local vpCamera = Instance.new("Camera")
+vpCamera.FieldOfView = 50
+vpCamera.CFrame = CFrame.new(
+    cf2.Position + Vector3.new(0, size2.Y * 0.1, distance),
+    cf2.Position
+)
+vpCamera.Parent = vpFrame
+vpFrame.CurrentCamera = vpCamera
+      end)
 
 local nameLabel = Instance.new("TextLabel")
 nameLabel.Name = "NameLabel"
