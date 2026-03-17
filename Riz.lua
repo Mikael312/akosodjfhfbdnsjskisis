@@ -1035,7 +1035,28 @@ vpCamera.CFrame = CFrame.new(
 )
 vpCamera.Parent = vpFrame
 vpFrame.CurrentCamera = vpCamera
-      end)
+
+-- Idle animation
+local animController = cloned:FindFirstChildOfClass("AnimationController")
+if animController then
+    local animator = animController:FindFirstChildOfClass("Animator")
+    if not animator then
+        animator = Instance.new("Animator")
+        animator.Parent = animController
+    end
+
+    local animFolder = S.ReplicatedStorage:FindFirstChild("Animations")
+        and S.ReplicatedStorage.Animations:FindFirstChild("Animals")
+        and S.ReplicatedStorage.Animations.Animals:FindFirstChild(animalData.modelName)
+    if animFolder then
+        local idle = animFolder:FindFirstChild("Idle")
+        if idle then
+            local track = animator:LoadAnimation(idle)
+            track.Looped = true
+            track:Play()
+        end
+    end
+end
 
 local nameLabel = Instance.new("TextLabel")
 nameLabel.Name = "NameLabel"
