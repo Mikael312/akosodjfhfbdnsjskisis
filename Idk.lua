@@ -321,7 +321,7 @@ local function createESP(targetPlayer)
     local highlight = Instance.new("Highlight")
     highlight.Name = "PlayerESP"
     highlight.Adornee = character
-    highlight.FillColor = Color3.fromRGB(0, 0, 0)
+    highlight.FillColor = Color3.fromRGB(59, 134, 255)
     highlight.OutlineColor = Color3.fromRGB(70, 70, 180)
     highlight.FillTransparency = 0.5
     highlight.OutlineTransparency = 0
