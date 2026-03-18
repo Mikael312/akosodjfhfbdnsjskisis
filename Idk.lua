@@ -979,14 +979,12 @@ local function createSectionHeader(parent, sectionName)
     return headerFrame
 end
 
-local function createButton(name, yPosition, configKey, callback)
-    local function setToggle(state) Config[configKey] = state; SaveConfig() end
-    local toggleEnabled = Config[configKey] or false
+local function createButton(name, yPosition, callback)
     local button = Instance.new("TextButton")
     button.Name = name .. "Button"
     button.Size = UDim2.new(0, 167, 0, 28)
     button.Position = UDim2.new(0.5, -83.5, 0, yPosition)
-    button.BackgroundColor3 = toggleEnabled and C.toggleOn or C.darkGrey
+    button.BackgroundColor3 = C.darkGrey
     button.BorderSizePixel = 0
     button.Text = name
     button.TextColor3 = C.buttonBlue
@@ -997,9 +995,7 @@ local function createButton(name, yPosition, configKey, callback)
     buttonCorner.CornerRadius = UDim.new(0, 5)
     buttonCorner.Parent = button
     button.MouseButton1Click:Connect(function()
-        toggleEnabled = not toggleEnabled
-        button.BackgroundColor3 = toggleEnabled and C.toggleOn or C.darkGrey
-        if callback then callback(toggleEnabled, setToggle) end
+        if callback then callback() end
     end)
     return button
 end
@@ -1212,19 +1208,13 @@ end
 
 -- ==================== CALLBACKS & UI POPULATION ====================
 
-local instantCloneBtn = createButton("Instant Clone", 45, "InstantClone", function(ns, set)
-    set(ns)
-end)
+local instantCloneBtn = createButton("Instant Clone", 45, function() end)
 
-local tpToBestBtn = createButton("Tp to Best", 80, "TpToBest", function(ns, set)
-    set(ns)
-end)
+local tpToBestBtn = createButton("Tp to Best", 80, function() end)
 
-local ragdollSelfBtn = createButton("Ragdoll Self", 115, "RagdollSelf", function(ns, set)
-    set(ns)
-end)
+local ragdollSelfBtn = createButton("Ragdoll Self", 115, function() end)
 
-local rejoinBtn = createButton("Rejoin", 150, "Rejoin", function()
+local rejoinBtn = createButton("Rejoin", 150, function()
     S.TeleportService:Teleport(game.PlaceId, player)
 end)
 
