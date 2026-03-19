@@ -1219,7 +1219,7 @@ local rejoinBtn = createButton("Rejoin", 150, function()
 end)
 
 local hopActive = false
-local hopServerBtn = createButton("Hop Server", 185, "HopServer", function(ns, set)
+local hopServerBtn = createToggle("Hop Server", 185, "HopServer", function(ns, set)
     set(ns)
     hopActive = ns
     if ns then
@@ -1251,7 +1251,7 @@ local hopServerBtn = createButton("Hop Server", 185, "HopServer", function(ns, s
     end
 end)
 
-local settingsBtn = createButton("Settings", 220, "Settings", function(ns, set)
+local settingsBtn = createToggle("Settings", 220, "Settings", function(ns, set)
     set(ns)
     menuFrame.Visible = ns
 end)
