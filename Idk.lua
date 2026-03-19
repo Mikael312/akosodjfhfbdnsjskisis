@@ -1273,8 +1273,9 @@ if featuresContent then
 
     createSectionHeader(featuresContent, "Visual")
     createTabToggle(featuresContent, "Esp Players", "EspPlayers", function(ns, set)
-    set(ns); if ns then enableESPPlayers() else disableESPPlayers() end
-end)
+        set(ns); if ns then enableESPPlayers() else disableESPPlayers() end
+    end)
+end
 
 local uiContent = tabContents["UI"]
 if uiContent then
