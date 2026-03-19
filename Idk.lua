@@ -1028,6 +1028,11 @@ end
 local function createTabToggle(parent, name, configKey, callback)
     local function setToggle(state) Config[configKey] = state; SaveConfig() end
     local toggleEnabled = Config[configKey] or false
+    if toggleEnabled and callback then
+        task.spawn(function()
+            callback(true, function(s) Config[configKey] = s; SaveConfig() end)
+        end)
+     end
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Name = name .. "ToggleFrame"
     toggleFrame.Size = UDim2.new(1, 0, 0, 30)
@@ -1268,11 +1273,8 @@ if featuresContent then
 
     createSectionHeader(featuresContent, "Visual")
     createTabToggle(featuresContent, "Esp Players", "EspPlayers", function(ns, set)
-        set(ns)
-        if ns then enableESPPlayers() else disableESPPlayers() end
-    end)
-    if Config.EspPlayers then task.wait(1); enableESPPlayers() end
-end
+    set(ns); if ns then enableESPPlayers() else disableESPPlayers() end
+end)
 
 local uiContent = tabContents["UI"]
 if uiContent then
