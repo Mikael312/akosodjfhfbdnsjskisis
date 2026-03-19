@@ -1271,6 +1271,7 @@ if featuresContent then
         set(ns)
         if ns then enableESPPlayers() else disableESPPlayers() end
     end)
+    if Config.EspPlayers then task.wait(1); enableESPPlayers() end
 end
 
 local uiContent = tabContents["UI"]
