@@ -1026,13 +1026,7 @@ local function createToggle(name, yPosition, configKey, callback)
 end
 
 local function createTabToggle(parent, name, configKey, callback)
-    local function setToggle(state) Config[configKey] = state; SaveConfig() end
     local toggleEnabled = Config[configKey] or false
-    if toggleEnabled and callback then
-        task.spawn(function()
-            callback(true, function(s) Config[configKey] = s; SaveConfig() end)
-        end)
-     end
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Name = name .. "ToggleFrame"
     toggleFrame.Size = UDim2.new(1, 0, 0, 30)
