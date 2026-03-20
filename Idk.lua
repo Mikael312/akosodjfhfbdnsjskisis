@@ -43,6 +43,9 @@ local DefaultConfig = {
         MainFrame = {X = 0.65, Y = 0.5},
         MenuFrame = {X = 0.35, Y = 0.5},
     },
+    Favorites = {
+        Animals = {},
+    },
     Settings = false,
     EspPlayers = false,
 }
@@ -80,6 +83,75 @@ local function SaveConfig()
             writefile(FileName, S.HttpService:JSONEncode(toSave))
         end)
     end
+end
+
+-- ==================== FAVORITES SYSTEM ====================
+local FAVORITES = Config.Favorites.Animals or {}
+
+local function saveFavorites()
+    Config.Favorites.Animals = FAVORITES
+    SaveConfig()
+end
+
+local function isFavorite(animalName)
+    for _, name in ipairs(FAVORITES) do
+        if name:lower() == animalName:lower() then
+            return true
+        end
+    end
+    return false
+end
+
+local function addFavorite(animalName)
+    if isFavorite(animalName) then
+        print("[Favorites] Dah ada:", animalName)
+        return false
+    end
+    table.insert(FAVORITES, animalName)
+    saveFavorites()
+    print("[Favorites] Tambah:", animalName)
+    return true
+end
+
+local function removeFavorite(animalName)
+    for i, name in ipairs(FAVORITES) do
+        if name:lower() == animalName:lower() then
+            table.remove(FAVORITES, i)
+            saveFavorites()
+            print("[Favorites] Buang:", animalName)
+            return true
+        end
+    end
+    return false
+end
+
+local function moveFavoriteUp(index)
+    if index > 1 and index <= #FAVORITES then
+        FAVORITES[index], FAVORITES[index - 1] = FAVORITES[index - 1], FAVORITES[index]
+        saveFavorites()
+        return true
+    end
+    return false
+end
+
+local function moveFavoriteDown(index)
+    if index >= 1 and index < #FAVORITES then
+        FAVORITES[index], FAVORITES[index + 1] = FAVORITES[index + 1], FAVORITES[index]
+        saveFavorites()
+        return true
+    end
+    return false
+end
+
+local function getFavoriteByPriority(allAnimalsCache)
+    for _, favName in ipairs(FAVORITES) do
+        for _, animal in ipairs(allAnimalsCache) do
+            if animal.name:lower() == favName:lower() then
+                return animal
+            end
+        end
+    end
+    return nil
 end
 
 -- ==================== NOTIFICATION SYSTEM ====================
@@ -1093,10 +1165,10 @@ local function createTabToggle(parent, name, configKey, callback)
     return toggleFrame
 end
 
-local function createAnimalCard(parent, animalData, rank)
+ local function createAnimalCard(parent, animalData, rank)
     local cardFrame = Instance.new("Frame")
     cardFrame.Name = "AnimalCard"
-    cardFrame.Size = UDim2.new(1, 0, 0, 95)
+    cardFrame.Size = UDim2.new(1, 0, 0, 100)  -- Increased from 95 to 100
     cardFrame.BackgroundColor3 = C.black
     cardFrame.BackgroundTransparency = 0.15
     cardFrame.BorderSizePixel = 0
@@ -1164,109 +1236,111 @@ local function createAnimalCard(parent, animalData, rank)
         vpFrame.CurrentCamera = vpCamera
     end)
 
-    -- Rank Badge (smaller size)
-local badgeColor, strokeColor, iconId
-if rank == 1 then
-    badgeColor = Color3.fromRGB(219, 154, 2)
-    strokeColor = Color3.fromRGB(255, 215, 0)
-    iconId = "rbxassetid://75275446742454"
-elseif rank == 2 then
-    badgeColor = Color3.fromRGB(166, 162, 162)
-    strokeColor = Color3.fromRGB(192, 192, 192)
-    iconId = "rbxassetid://105421235220109"
-elseif rank == 3 then
-    badgeColor = Color3.fromRGB(143, 81, 20)
-    strokeColor = Color3.fromRGB(205, 127, 50)
-    iconId = "rbxassetid://104204204434785"
-else
-    badgeColor = Color3.fromRGB(60, 60, 75)
-    strokeColor = Color3.fromRGB(100, 100, 120)
-    iconId = nil
-end
+    -- Rank Badge
+    local badgeColor, strokeColor, iconId
+    if rank == 1 then
+        badgeColor = Color3.fromRGB(219, 154, 2)
+        strokeColor = Color3.fromRGB(255, 215, 0)
+        iconId = "rbxassetid://75275446742454"
+    elseif rank == 2 then
+        badgeColor = Color3.fromRGB(166, 162, 162)
+        strokeColor = Color3.fromRGB(192, 192, 192)
+        iconId = "rbxassetid://105421235220109"
+    elseif rank == 3 then
+        badgeColor = Color3.fromRGB(143, 81, 20)
+        strokeColor = Color3.fromRGB(205, 127, 50)
+        iconId = "rbxassetid://104204204434785"
+    else
+        badgeColor = Color3.fromRGB(60, 60, 75)
+        strokeColor = Color3.fromRGB(100, 100, 120)
+        iconId = nil
+    end
 
-local rankBadge = Instance.new("Frame")
-rankBadge.Name = "RankBadge"
-rankBadge.Size = UDim2.new(0, 32, 0, 18)  -- Smaller: 38x20 -> 32x18
-rankBadge.Position = UDim2.new(0, 8, 0, 58)
-rankBadge.BackgroundTransparency = 1
-rankBadge.BorderSizePixel = 0
-rankBadge.Parent = cardFrame
+    local rankBadge = Instance.new("Frame")
+    rankBadge.Name = "RankBadge"
+    rankBadge.Size = UDim2.new(0, 32, 0, 18)
+    rankBadge.Position = UDim2.new(0, 8, 0, 58)
+    rankBadge.BackgroundTransparency = 1
+    rankBadge.BorderSizePixel = 0
+    rankBadge.Parent = cardFrame
 
-local badgeCorner = Instance.new("UICorner")
-badgeCorner.CornerRadius = UDim.new(0.11, 0)
-badgeCorner.Parent = rankBadge
+    local badgeCorner = Instance.new("UICorner")
+    badgeCorner.CornerRadius = UDim.new(0.11, 0)
+    badgeCorner.Parent = rankBadge
 
-local badgeStroke = Instance.new("UIStroke")
-badgeStroke.Thickness = 1.5  -- Slightly thinner
-badgeStroke.Color = strokeColor
-badgeStroke.Transparency = 0
-badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-badgeStroke.Parent = rankBadge
+    local badgeStroke = Instance.new("UIStroke")
+    badgeStroke.Thickness = 1.5
+    badgeStroke.Color = strokeColor
+    badgeStroke.Transparency = 0
+    badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    badgeStroke.Parent = rankBadge
 
-if iconId then
-    local iconImage = Instance.new("ImageLabel")
-    iconImage.Name = "RankIcon"
-    iconImage.Size = UDim2.new(0, 10, 0, 10)  -- Smaller: 12x12 -> 10x10
-    iconImage.Position = UDim2.new(0, 2, 0.5, -5)
-    iconImage.BackgroundTransparency = 1
-    iconImage.Image = iconId
-    iconImage.Parent = rankBadge
-end
+    if iconId then
+        local iconImage = Instance.new("ImageLabel")
+        iconImage.Name = "RankIcon"
+        iconImage.Size = UDim2.new(0, 10, 0, 10)
+        iconImage.Position = UDim2.new(0, 2, 0.5, -5)
+        iconImage.BackgroundTransparency = 1
+        iconImage.Image = iconId
+        iconImage.Parent = rankBadge
+    end
 
-local rankLabel = Instance.new("TextLabel")
-rankLabel.Name = "RankLabel"
-rankLabel.Size = UDim2.new(1, iconId and -12 or 0, 1, 0)
-rankLabel.Position = UDim2.new(0, iconId and 12 or 0, 0, 0)
-rankLabel.BackgroundTransparency = 1
-rankLabel.Text = "#" .. tostring(rank)
-rankLabel.TextColor3 = strokeColor
-rankLabel.Font = Enum.Font.GothamBold
-rankLabel.TextSize = 10  -- Smaller: 11 -> 10
-rankLabel.TextXAlignment = Enum.TextXAlignment.Center
-rankLabel.TextYAlignment = Enum.TextYAlignment.Center
-rankLabel.Parent = rankBadge
+    local rankLabel = Instance.new("TextLabel")
+    rankLabel.Name = "RankLabel"
+    rankLabel.Size = UDim2.new(1, iconId and -12 or 0, 1, 0)
+    rankLabel.Position = UDim2.new(0, iconId and 12 or 0, 0, 0)
+    rankLabel.BackgroundTransparency = 1
+    rankLabel.Text = "#" .. tostring(rank)
+    rankLabel.TextColor3 = strokeColor
+    rankLabel.Font = Enum.Font.GothamBold
+    rankLabel.TextSize = 10
+    rankLabel.TextXAlignment = Enum.TextXAlignment.Center
+    rankLabel.TextYAlignment = Enum.TextYAlignment.Center
+    rankLabel.Parent = rankBadge
 
--- Favorite Badge (smaller size, hidden by default)
-local favBadge = Instance.new("Frame")
-favBadge.Name = "FavoriteBadge"
-favBadge.Size = UDim2.new(0, 65, 0, 18)  -- Smaller: 75x20 -> 65x18
-favBadge.Position = UDim2.new(0, 44, 0, 58)  -- Adjusted position (32 + 4 spacing + 8 start)
-favBadge.BackgroundTransparency = 1
-favBadge.BorderSizePixel = 0
-favBadge.Visible = false
-favBadge.Parent = cardFrame
+    -- Favorite Badge (check if animal is favorited on creation)
+    local isFav = isFavorite(animalData.name)
+    
+    local favBadge = Instance.new("Frame")
+    favBadge.Name = "FavoriteBadge"
+    favBadge.Size = UDim2.new(0, 65, 0, 18)
+    favBadge.Position = UDim2.new(0, 44, 0, 58)
+    favBadge.BackgroundTransparency = 1
+    favBadge.BorderSizePixel = 0
+    favBadge.Visible = isFav  -- Auto show if favorited
+    favBadge.Parent = cardFrame
 
-local favBadgeCorner = Instance.new("UICorner")
-favBadgeCorner.CornerRadius = UDim.new(0.11, 0)
-favBadgeCorner.Parent = favBadge
+    local favBadgeCorner = Instance.new("UICorner")
+    favBadgeCorner.CornerRadius = UDim.new(0.11, 0)
+    favBadgeCorner.Parent = favBadge
 
-local favBadgeStroke = Instance.new("UIStroke")
-favBadgeStroke.Thickness = 1.5  -- Match rank badge thickness
-favBadgeStroke.Color = C.yellow
-favBadgeStroke.Transparency = 0
-favBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-favBadgeStroke.Parent = favBadge
+    local favBadgeStroke = Instance.new("UIStroke")
+    favBadgeStroke.Thickness = 1.5
+    favBadgeStroke.Color = C.yellow
+    favBadgeStroke.Transparency = 0
+    favBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    favBadgeStroke.Parent = favBadge
 
-local favBadgeIcon = Instance.new("ImageLabel")
-favBadgeIcon.Name = "FavIcon"
-favBadgeIcon.Size = UDim2.new(0, 10, 0, 10)  -- Smaller: 12x12 -> 10x10
-favBadgeIcon.Position = UDim2.new(0, 3, 0.5, -5)
-favBadgeIcon.BackgroundTransparency = 1
-favBadgeIcon.Image = "rbxassetid://113366714224251"
-favBadgeIcon.Parent = favBadge
+    local favBadgeIcon = Instance.new("ImageLabel")
+    favBadgeIcon.Name = "FavIcon"
+    favBadgeIcon.Size = UDim2.new(0, 10, 0, 10)
+    favBadgeIcon.Position = UDim2.new(0, 3, 0.5, -5)
+    favBadgeIcon.BackgroundTransparency = 1
+    favBadgeIcon.Image = "rbxassetid://113366714224251"
+    favBadgeIcon.Parent = favBadge
 
-local favBadgeLabel = Instance.new("TextLabel")
-favBadgeLabel.Name = "FavLabel"
-favBadgeLabel.Size = UDim2.new(1, -15, 1, 0)
-favBadgeLabel.Position = UDim2.new(0, 15, 0, 0)
-favBadgeLabel.BackgroundTransparency = 1
-favBadgeLabel.Text = "Favorite"
-favBadgeLabel.TextColor3 = C.yellow
-favBadgeLabel.Font = Enum.Font.GothamBold
-favBadgeLabel.TextSize = 9  -- Smaller: 10 -> 9
-favBadgeLabel.TextXAlignment = Enum.TextXAlignment.Center
-favBadgeLabel.TextYAlignment = Enum.TextYAlignment.Center
-favBadgeLabel.Parent = favBadge
+    local favBadgeLabel = Instance.new("TextLabel")
+    favBadgeLabel.Name = "FavLabel"
+    favBadgeLabel.Size = UDim2.new(1, -15, 1, 0)
+    favBadgeLabel.Position = UDim2.new(0, 15, 0, 0)
+    favBadgeLabel.BackgroundTransparency = 1
+    favBadgeLabel.Text = "Favorite"
+    favBadgeLabel.TextColor3 = C.yellow
+    favBadgeLabel.Font = Enum.Font.GothamBold
+    favBadgeLabel.TextSize = 9
+    favBadgeLabel.TextXAlignment = Enum.TextXAlignment.Center
+    favBadgeLabel.TextYAlignment = Enum.TextYAlignment.Center
+    favBadgeLabel.Parent = favBadge
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "NameLabel"
@@ -1358,11 +1432,11 @@ favBadgeLabel.Parent = favBadge
     favButton.Name = "FavoriteButton"
     favButton.Size = UDim2.new(0, 26, 0, 26)
     favButton.Position = UDim2.new(1, -32, 0.5, -13)
-    favButton.BackgroundColor3 = C.black
-    favButton.BackgroundTransparency = 0.15
+    favButton.BackgroundColor3 = isFav and C.yellow or C.black
+    favButton.BackgroundTransparency = isFav and 0 or 0.15
     favButton.BorderSizePixel = 0
     favButton.Text = "★"
-    favButton.TextColor3 = Color3.fromRGB(150, 150, 150)
+    favButton.TextColor3 = isFav and C.white or Color3.fromRGB(150, 150, 150)
     favButton.Font = Enum.Font.GothamBold
     favButton.TextSize = 14
     favButton.AutoButtonColor = false
@@ -1374,12 +1448,12 @@ favBadgeLabel.Parent = favBadge
 
     local favStroke = Instance.new("UIStroke")
     favStroke.Thickness = 1
-    favStroke.Color = Color3.fromRGB(100, 100, 115)
-    favStroke.Transparency = 0.5
+    favStroke.Color = isFav and C.yellow or Color3.fromRGB(100, 100, 115)
+    favStroke.Transparency = isFav and 0 or 0.5
     favStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     favStroke.Parent = favButton
 
-    local isFavorited = false
+    local isFavorited = isFav
     
     favButton.MouseEnter:Connect(function()
         if not isFavorited then
@@ -1399,8 +1473,12 @@ favBadgeLabel.Parent = favBadge
 
     favButton.MouseButton1Click:Connect(function()
         isFavorited = not isFavorited
+        
         if isFavorited then
-            -- Activate favorite
+            -- Add to favorites
+            addFavorite(animalData.name)
+            
+            -- Update button appearance
             favButton.BackgroundColor3 = C.yellow
             favButton.BackgroundTransparency = 0
             favButton.TextColor3 = C.white
@@ -1410,7 +1488,10 @@ favBadgeLabel.Parent = favBadge
             -- Show favorite badge
             favBadge.Visible = true
         else
-            -- Deactivate favorite
+            -- Remove from favorites
+            removeFavorite(animalData.name)
+            
+            -- Update button appearance
             favButton.BackgroundColor3 = C.black
             favButton.BackgroundTransparency = 0.15
             favButton.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -1420,8 +1501,6 @@ favBadgeLabel.Parent = favBadge
             -- Hide favorite badge
             favBadge.Visible = false
         end
-        -- TODO: Add favorite functionality
-        print("Favorite:", animalData.name, isFavorited)
     end)
 
     return cardFrame
