@@ -987,6 +987,13 @@ local menuFrameCorner = Instance.new("UICorner")
 menuFrameCorner.CornerRadius = UDim.new(0, 9)
 menuFrameCorner.Parent = menuFrame
 
+-- Selepas buat semua frames, before TAB CONTENT
+if Config.LockGui then
+    creditFrame.Draggable = false
+    mainFrame.Draggable = false
+    menuFrame.Draggable = false
+end
+
 local menuTitleLabel = Instance.new("TextLabel")
 menuTitleLabel.Name = "MenuTitleLabel"
 menuTitleLabel.Size = UDim2.new(0, 180, 0, 25)
