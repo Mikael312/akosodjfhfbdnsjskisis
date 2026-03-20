@@ -1026,6 +1026,7 @@ local function createToggle(name, yPosition, configKey, callback)
 end
 
 local function createTabToggle(parent, name, configKey, callback)
+    local function setToggle(state) Config[configKey] = state; SaveConfig() end
     local toggleEnabled = Config[configKey] or false
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Name = name .. "ToggleFrame"
@@ -1088,6 +1089,7 @@ local function createTabToggle(parent, name, configKey, callback)
         end
         if callback then callback(toggleEnabled, setToggle) end
     end)
+    if toggleEnabled and callback then callback(true, setToggle) end
     return toggleFrame
 end
 
