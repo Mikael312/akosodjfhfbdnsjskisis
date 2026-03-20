@@ -1093,10 +1093,10 @@ local function createTabToggle(parent, name, configKey, callback)
     return toggleFrame
 end
 
-local function createAnimalCard(parent, animalData)
+local function createAnimalCard(parent, animalData, rank)
     local cardFrame = Instance.new("Frame")
     cardFrame.Name = "AnimalCard"
-    cardFrame.Size = UDim2.new(1, 0, 0, 80)
+    cardFrame.Size = UDim2.new(1, 0, 0, 95)  -- Increased from 80 to 95
     cardFrame.BackgroundColor3 = C.black
     cardFrame.BackgroundTransparency = 0.15
     cardFrame.BorderSizePixel = 0
@@ -1109,7 +1109,7 @@ local function createAnimalCard(parent, animalData)
     local vpFrame = Instance.new("ViewportFrame")
     vpFrame.Name = "ModelViewport"
     vpFrame.Size = UDim2.new(0, 45, 0, 45)
-    vpFrame.Position = UDim2.new(0, 8, 0.5, -22)
+    vpFrame.Position = UDim2.new(0, 8, 0, 8)  -- Changed position to top
     vpFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     vpFrame.BorderSizePixel = 0
     vpFrame.Ambient = Color3.fromRGB(180, 180, 180)
@@ -1163,6 +1163,42 @@ local function createAnimalCard(parent, animalData)
         vpCamera.Parent = vpFrame
         vpFrame.CurrentCamera = vpCamera
     end)
+
+    -- Rank Badge (below viewport)
+    local badgeColor
+    if rank == 1 then
+        badgeColor = Color3.fromRGB(219, 154, 2)  -- Gold
+    elseif rank == 2 then
+        badgeColor = Color3.fromRGB(166, 162, 162)  -- Silver
+    elseif rank == 3 then
+        badgeColor = Color3.fromRGB(143, 81, 20)  -- Bronze
+    else
+        badgeColor = Color3.fromRGB(60, 60, 75)  -- Default grey
+    end
+
+    local rankBadge = Instance.new("Frame")
+    rankBadge.Name = "RankBadge"
+    rankBadge.Size = UDim2.new(0, 45, 0, 22)
+    rankBadge.Position = UDim2.new(0, 8, 0, 58)  -- Below viewport
+    rankBadge.BackgroundColor3 = badgeColor
+    rankBadge.BorderSizePixel = 0
+    rankBadge.Parent = cardFrame
+
+    local badgeCorner = Instance.new("UICorner")
+    badgeCorner.CornerRadius = UDim.new(0, 6)
+    badgeCorner.Parent = rankBadge
+
+    local rankLabel = Instance.new("TextLabel")
+    rankLabel.Name = "RankLabel"
+    rankLabel.Size = UDim2.new(1, 0, 1, 0)
+    rankLabel.BackgroundTransparency = 1
+    rankLabel.Text = "#" .. tostring(rank)
+    rankLabel.TextColor3 = C.white
+    rankLabel.Font = Enum.Font.GothamBold
+    rankLabel.TextSize = 12
+    rankLabel.TextXAlignment = Enum.TextXAlignment.Center
+    rankLabel.TextYAlignment = Enum.TextYAlignment.Center
+    rankLabel.Parent = rankBadge
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "NameLabel"
@@ -1286,8 +1322,8 @@ local favoritesContent = tabContents["Favorites"]
 if favoritesContent then
     createSectionHeader(favoritesContent, "Favorites Animal")
 
-    for _, animalData in ipairs(allAnimalsCache) do
-        createAnimalCard(favoritesContent, animalData)
+    for rank, animalData in ipairs(allAnimalsCache) do
+        createAnimalCard(favoritesContent, animalData, rank)
     end
 
     task.spawn(function()
@@ -1299,8 +1335,8 @@ if favoritesContent then
                 end
             end
             createSectionHeader(favoritesContent, "Favorites Animal")
-            for _, animalData in ipairs(allAnimalsCache) do
-                createAnimalCard(favoritesContent, animalData)
+            for rank, animalData in ipairs(allAnimalsCache) do
+                createAnimalCard(favoritesContent, animalData, rank)
             end
         end
     end)
