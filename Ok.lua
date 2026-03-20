@@ -394,6 +394,13 @@ local boundKeys = {}
 local toggleTriggers = {}
 local listeningPill = nil
 
+local desyncActivated = false
+local showServerPosEnabled = false
+local ESPFolder = nil
+local fakePosESP = nil
+local serverPosition = nil
+local espUpdateConnection = nil
+
 -- ==================== FUNCTIONALITY FUNCTIONS ====================
 
 local function isMyBaseAnimal(animalData)
@@ -566,6 +573,233 @@ local function disableESPPlayers()
     eventConnections = {}
     for targetPlayer in pairs(espObjects) do removeESP(targetPlayer) end
     espObjects = {}
+end
+
+-- ==================== INSTANT CLONE & DESYNC ====================
+
+local function performInstantClone(useDesync)
+    pcall(function()
+        local backpack = player:WaitForChild("Backpack")
+        local char = player.Character or player.CharacterAdded:Wait()
+        local humanoid = char:WaitForChild("Humanoid")
+
+        local tool = backpack:FindFirstChild("Quantum Cloner") or char:FindFirstChild("Quantum Cloner")
+        if not tool then
+            showNotification({message = "Quantum Cloner not found!", color = "Failed", textColor = "White"})
+            return
+        end
+
+        if tool.Parent == backpack then
+            humanoid:EquipTool(tool)
+            task.wait(0.1)
+        end
+
+        tool:Activate()
+
+        if useDesync and not desyncActivated then
+            pcall(function()
+                raknet.desync(true)
+                desyncActivated = true
+            end)
+        end
+
+        local clone = workspace:WaitForChild(player.UserId .. "_Clone", 10)
+
+        if clone then
+            local teleportBtn = player.PlayerGui
+                :WaitForChild("ToolsFrames")
+                :WaitForChild("QuantumCloner")
+                :WaitForChild("TeleportToClone")
+
+            firesignal(teleportBtn.MouseButton1Up)
+        end
+    end)
+end
+
+local function createSolidCircle(radius, thickness, color, transparency)
+    local segments = 40
+    local parts = {}
+    for i = 1, segments do
+        local angle1 = (i - 1) / segments * math.pi * 2
+        local angle2 = i / segments * math.pi * 2
+        local x1, z1 = math.cos(angle1) * radius, math.sin(angle1) * radius
+        local x2, z2 = math.cos(angle2) * radius, math.sin(angle2) * radius
+        local pos1 = Vector3.new(x1, 0, z1)
+        local pos2 = Vector3.new(x2, 0, z2)
+        local part = Instance.new("Part")
+        part.Anchored = true
+        part.CanCollide = false
+        part.Size = Vector3.new(thickness, 0.3, (pos2 - pos1).Magnitude)
+        part.Color = color
+        part.Material = Enum.Material.Neon
+        part.Transparency = transparency
+        part.TopSurface = Enum.SurfaceType.Smooth
+        part.BottomSurface = Enum.SurfaceType.Smooth
+        part.Parent = ESPFolder
+        table.insert(parts, {part = part, pos1 = pos1, pos2 = pos2})
+    end
+    return parts
+end
+
+local function createESPCircle(name)
+    local anchorPart = Instance.new("Part")
+    anchorPart.Name = name .. "_Anchor"
+    anchorPart.Size = Vector3.new(1, 1, 1)
+    anchorPart.Anchored = true
+    anchorPart.CanCollide = false
+    anchorPart.Transparency = 1
+    anchorPart.Parent = ESPFolder
+
+    local ring = createSolidCircle(3, 0.5, Color3.fromRGB(66, 135, 245), 0)
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 180, 0, 70)
+    billboard.StudsOffset = Vector3.new(0, 5, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = anchorPart
+
+    local bgFrame = Instance.new("Frame")
+    bgFrame.Size = UDim2.new(1, 0, 1, 0)
+    bgFrame.BackgroundColor3 = Color3.fromRGB(20, 25, 25)
+    bgFrame.BackgroundTransparency = 0.05
+    bgFrame.BorderSizePixel = 0
+    bgFrame.Parent = billboard
+
+    local bgCorner = Instance.new("UICorner")
+    bgCorner.CornerRadius = UDim.new(0, 12)
+    bgCorner.Parent = bgFrame
+
+    local bgStroke = Instance.new("UIStroke")
+    bgStroke.Color = Color3.fromRGB(66, 135, 245)
+    bgStroke.Thickness = 3
+    bgStroke.Parent = bgFrame
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -8, 0, 28)
+    titleLabel.Position = UDim2.new(0, 4, 0, 3)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = "Server Position"
+    titleLabel.TextColor3 = Color3.fromRGB(66, 135, 245)
+    titleLabel.TextSize = 14
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Center
+    titleLabel.TextStrokeTransparency = 0.8
+    titleLabel.Parent = bgFrame
+
+    local distanceLabel = Instance.new("TextLabel")
+    distanceLabel.Name = "DistanceLabel"
+    distanceLabel.Size = UDim2.new(1, -8, 0, 35)
+    distanceLabel.Position = UDim2.new(0, 4, 0, 32)
+    distanceLabel.BackgroundTransparency = 1
+    distanceLabel.Text = "0.0 studs"
+    distanceLabel.TextColor3 = Color3.fromRGB(66, 135, 245)
+    distanceLabel.TextSize = 22
+    distanceLabel.Font = Enum.Font.GothamBold
+    distanceLabel.TextXAlignment = Enum.TextXAlignment.Center
+    distanceLabel.TextStrokeTransparency = 0.8
+    distanceLabel.Parent = bgFrame
+
+    return anchorPart, ring
+end
+
+local function updateRingPosition(ringParts, centerPos)
+    for _, data in pairs(ringParts) do
+        local worldPos1 = centerPos + data.pos1
+        local worldPos2 = centerPos + data.pos2
+        local midpoint = (worldPos1 + worldPos2) / 2
+        data.part.CFrame = CFrame.new(midpoint, worldPos2)
+    end
+end
+
+local function trackServerPosition()
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    hrp:GetPropertyChangedSignal("Position"):Connect(function()
+        task.wait(0.15)
+        local currentChar = player.Character
+        if currentChar then
+            local currentHRP = currentChar:FindFirstChild("HumanoidRootPart")
+            if currentHRP then
+                serverPosition = currentHRP.Position
+            end
+        end
+    end)
+end
+
+local desyncRing = nil
+
+local function updateESP()
+    if not serverPosition or not ESPFolder then return end
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    if fakePosESP then
+        fakePosESP.CFrame = CFrame.new(serverPosition)
+        local billboard = fakePosESP:FindFirstChildOfClass("BillboardGui")
+        if billboard then
+            local frame = billboard:FindFirstChildOfClass("Frame")
+            if frame then
+                local distLabel = frame:FindFirstChild("DistanceLabel")
+                if distLabel then
+                    local distance = (hrp.Position - serverPosition).Magnitude
+                    distLabel.Text = string.format("%.1f studs", distance)
+                end
+            end
+        end
+    end
+    if desyncRing then
+        local centerPos = Vector3.new(serverPosition.X, serverPosition.Y - 1.2, serverPosition.Z)
+        updateRingPosition(desyncRing, centerPos)
+    end
+end
+
+local function initializeESP()
+    for _, existing in ipairs(workspace:GetChildren()) do
+        if existing.Name == "DesyncESP" then existing:Destroy() end
+    end
+    ESPFolder = Instance.new("Folder")
+    ESPFolder.Name = "DesyncESP"
+    ESPFolder.Parent = workspace
+
+    local anchorPart, ring = createESPCircle("Server Position")
+    fakePosESP = anchorPart
+    desyncRing = ring
+
+    local char = player.Character
+    if char then
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            serverPosition = hrp.Position
+            local centerPos = Vector3.new(serverPosition.X, serverPosition.Y - 1.2, serverPosition.Z)
+            anchorPart.CFrame = CFrame.new(serverPosition)
+            updateRingPosition(ring, centerPos)
+            hrp:GetPropertyChangedSignal("CFrame"):Connect(function()
+                task.wait(0.2)
+                serverPosition = hrp.Position
+                local newCenterPos = Vector3.new(serverPosition.X, serverPosition.Y - 1.2, serverPosition.Z)
+                updateRingPosition(ring, newCenterPos)
+            end)
+        end
+    end
+
+    trackServerPosition()
+    espUpdateConnection = S.RunService.Heartbeat:Connect(function()
+        if showServerPosEnabled then updateESP() end
+    end)
+end
+
+local function disableESP()
+    if espUpdateConnection then espUpdateConnection:Disconnect(); espUpdateConnection = nil end
+    for _, existing in ipairs(workspace:GetChildren()) do
+        if existing.Name == "DesyncESP" then existing:Destroy() end
+    end
+    ESPFolder = nil
+    fakePosESP = nil
+    serverPosition = nil
+    desyncRing = nil
 end
 
 -- KEYBIND SYSTEM
@@ -1771,7 +2005,9 @@ end
 
 -- ==================== CALLBACKS & UI POPULATION ====================
 
-local instantCloneBtn = createButton("Instant Clone", 45, function() end)
+local instantCloneBtn = createButton("Instant Clone", 45, function()
+    performInstantClone(desyncActivated)
+    end
 
 local tpToBestBtn = createButton("Tp to Best", 80, function() end)
 
@@ -1877,10 +2113,34 @@ if keybindsContent then
     createSectionHeader(keybindsContent, "Keybinds Settings")
     
     createKeybindRow(keybindsContent, "InstantClone", "Instant Clone", function()
-        -- TODO: Trigger instant clone
+    performInstantClone(desyncActivated)
     end)
 end
 
+local utilityContent = tabContents["Utility"]
+if utilityContent then
+    createSectionHeader(utilityContent, "Desync")
+
+    createTabToggle(utilityContent, "Desync (Use Cloner)", "DesyncCloner", function(ns, set)
+        set(ns)
+        desyncActivated = ns
+        if not ns then
+            pcall(function() raknet.desync(false) end)
+            desyncActivated = false
+        end
+    end)
+
+    createTabToggle(utilityContent, "Show Server Position", "ShowServerPos", function(ns, set)
+        set(ns)
+        showServerPosEnabled = ns
+        if ns then
+            initializeESP()
+        else
+            disableESP()
+        end
+    end)
+end
+    
 -- Favorites Tab
 local favoritesContent = tabContents["Favorites"]
 local lastCacheCount = 0
