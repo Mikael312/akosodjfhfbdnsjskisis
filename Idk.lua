@@ -250,7 +250,47 @@ local function showNotification(opts)
 end
 
 -- ==================== FAVORITES SYSTEM ====================
-local FAVORITES = Config.Favorites.Animals or {}
+
+local FAVORITES_LIST = {
+    "Strawberry Elephant",
+    "Meowl",
+    "Skibidi Toilet",
+    "Headless Horseman",
+    "Dragon Gingerini",
+    "Dragon Cannelloni",
+    "Ketupat Bros",
+    "Hydra Dragon Cannelloni",
+    "La Supreme Combinasion",
+    "Love Love Bear",
+    "Cerberus",
+    "Capitano Moby",
+    "Celestial Pegasus",
+    "Fortunu and Cashuru",
+    "Cloverat Clapat",
+    "Griffin",
+    "Cooki and Milki",
+    "Rosey and Teddy",
+    "Popcuru and Fizzuru",
+    "Reinito Sleighito",
+    "Fragrama and Chocrama",
+    "Signore Carapace",
+    "La Taco Combinasion"
+}
+
+-- Load favorites from config or use default list
+local FAVORITES = {}
+
+if Config.Favorites.Animals and #Config.Favorites.Animals > 0 then
+    FAVORITES = Config.Favorites.Animals
+else
+    
+    FAVORITES = {}
+    for _, name in ipairs(FAVORITES_LIST) do
+        table.insert(FAVORITES, name)
+    end
+    Config.Favorites.Animals = FAVORITES
+    SaveConfig()
+end
 
 local function saveFavorites()
     Config.Favorites.Animals = FAVORITES
@@ -273,7 +313,6 @@ local function addFavorite(animalName)
     table.insert(FAVORITES, animalName)
     saveFavorites()
     
-    -- Compact notification format
     showNotification({message = "Favorited: " .. animalName, color = "Success", textColor = "White"})
     
     return true
@@ -285,7 +324,6 @@ local function removeFavorite(animalName)
             table.remove(FAVORITES, i)
             saveFavorites()
             
-            -- Compact notification format
             showNotification({message = "Removed: " .. animalName, color = "Failed", textColor = "White"})
             
             return true
