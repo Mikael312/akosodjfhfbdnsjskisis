@@ -19,6 +19,7 @@ do
     end)
 end
 
+-- Services wrapped dalam table
 local S = {
     Players = game:GetService("Players"),
     TweenService = game:GetService("TweenService"),
@@ -54,6 +55,9 @@ local DefaultConfig = {
     },
     Favorites = {
         Animals = {},
+    },
+    Keybinds = {
+        InstantClone = nil,
     },
     Settings = false,
     EspPlayers = false,
@@ -107,6 +111,7 @@ local NotifColors = {
     Success = Color3.fromRGB(14, 154, 235),
     White   = Color3.fromRGB(255, 255, 255),
     Blue    = Color3.fromRGB(60,  160, 255),
+    Yellow  = Color3.fromRGB(241, 196, 15),
     Violet  = Color3.fromRGB(70,  70,  180),
 }
 
@@ -131,8 +136,8 @@ local function showNotification(opts)
     local message  = opts.message  or ""
     local subtext  = opts.subtext  or nil
     local color    = opts.color and NotifColors[opts.color] or NotifColors.Default
-    local textColor = opts.textColor and NotifColors[opts.textColor] or color  -- Custom text color
-    local subColor = opts.subColor and NotifColors[opts.subColor] or color    -- Custom subtext color
+    local textColor = opts.textColor and NotifColors[opts.textColor] or color
+    local subColor = opts.subColor and NotifColors[opts.subColor] or color
 
     if #activeNotifications >= MAX_NOTIFS then
         local oldest = activeNotifications[1]
@@ -191,7 +196,7 @@ local function showNotification(opts)
     textLabel.Position = UDim2.new(0, 30, 0, subtext and 8 or 0)
     textLabel.BackgroundTransparency = 1
     textLabel.Text = message
-    textLabel.TextColor3 = textColor  -- Custom text color
+    textLabel.TextColor3 = textColor
     textLabel.TextSize = 12
     textLabel.Font = Enum.Font.GothamBold
     textLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -205,7 +210,7 @@ local function showNotification(opts)
         subLabel.Position = UDim2.new(0, 30, 0, 28)
         subLabel.BackgroundTransparency = 1
         subLabel.Text = subtext
-        subLabel.TextColor3 = subColor  -- Custom subtext color
+        subLabel.TextColor3 = subColor
         subLabel.TextSize = 10
         subLabel.Font = Enum.Font.Gotham
         subLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -287,13 +292,11 @@ local FAVORITES_LIST = {
     "La Taco Combinasion"
 }
 
--- Load favorites from config or use default list
 local FAVORITES = {}
 
 if Config.Favorites.Animals and #Config.Favorites.Animals > 0 then
     FAVORITES = Config.Favorites.Animals
 else
-    
     FAVORITES = {}
     for _, name in ipairs(FAVORITES_LIST) do
         table.insert(FAVORITES, name)
@@ -386,6 +389,11 @@ local plotChannels = {}
 local lastAnimalData = {}
 local highestAnimal = nil
 
+-- Keybinds Variables
+local boundKeys = {}
+local toggleTriggers = {}
+local listeningPill = nil
+
 -- ==================== FUNCTIONALITY FUNCTIONS ====================
 
 local function isMyBaseAnimal(animalData)
@@ -421,7 +429,7 @@ local function isPlayerPlot(plot)
     return false
 end
 
--- ==================== ESP PLAYERS FUNCTIONS ====================
+-- ESP PLAYERS FUNCTIONS
 local function getEquippedItem(character)
     for _, child in pairs(character:GetChildren()) do
         if child:IsA("Tool") then return child.Name end
@@ -559,6 +567,67 @@ local function disableESPPlayers()
     for targetPlayer in pairs(espObjects) do removeESP(targetPlayer) end
     espObjects = {}
 end
+
+-- KEYBIND SYSTEM
+local function keyName(kc)
+    local names = {
+        LeftBracket = "[", RightBracket = "]",
+        Semicolon = ";", Quote = "'",
+        Comma = ",", Period = ".", Slash = "/",
+        BackSlash = "\\", Minus = "-", Equals = "=",
+        BackQuote = "`"
+    }
+    return names[kc.Name] or kc.Name
+end
+
+-- Load keybinds from config
+if Config.Keybinds then
+    for actionName, keyCodeName in pairs(Config.Keybinds) do
+        if keyCodeName then
+            boundKeys[actionName] = Enum.KeyCode[keyCodeName]
+        end
+    end
+end
+
+-- Input handler
+S.UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+    
+    if listeningPill then
+        local data = listeningPill
+        listeningPill = nil
+        
+        if input.KeyCode == Enum.KeyCode.Escape then
+            boundKeys[data.actionName] = nil
+            data.pill.Text = "None"
+            data.pill.TextColor3 = Color3.fromRGB(90, 90, 105)
+        else
+            boundKeys[data.actionName] = input.KeyCode
+            data.pill.Text = keyName(input.KeyCode)
+            data.pill.TextColor3 = Color3.fromRGB(200, 200, 215)
+        end
+        
+        -- Save keybinds
+        local keybindsToSave = {}
+        for action, kc in pairs(boundKeys) do
+            keybindsToSave[action] = kc and kc.Name or nil
+        end
+        Config.Keybinds = keybindsToSave
+        SaveConfig()
+        
+        return
+    end
+    
+    -- Trigger bound actions
+    for actionName, kc in pairs(boundKeys) do
+        if kc and input.KeyCode == kc then
+            if toggleTriggers[actionName] then
+                toggleTriggers[actionName]()
+            end
+        end
+    end
+end)
 
 -- ==================== SCANNER ====================
 
@@ -978,7 +1047,7 @@ local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
 menuFrame.Size = UDim2.new(0, 290, 0, 320)
 local menuPos = Config.Positions.MenuFrame
-menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160)  -- Adjust center position
+menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160)
 menuFrame.BackgroundColor3 = C.black
 menuFrame.BackgroundTransparency = 0.03
 menuFrame.BorderSizePixel = 0
@@ -992,7 +1061,7 @@ local menuFrameCorner = Instance.new("UICorner")
 menuFrameCorner.CornerRadius = UDim.new(0, 9)
 menuFrameCorner.Parent = menuFrame
 
--- Selepas buat semua frames, before TAB CONTENT
+-- Auto-apply Lock GUI if enabled
 if Config.LockGui then
     creditFrame.Draggable = false
     mainFrame.Draggable = false
@@ -1257,7 +1326,6 @@ local function createTabButton(parent, name, iconId, callback)
     buttonLabel.TextYAlignment = Enum.TextYAlignment.Center
     buttonLabel.Parent = buttonFrame
     
-    -- Icon decoration (no background)
     local iconDecor = Instance.new("ImageLabel")
     iconDecor.Name = "Icon"
     iconDecor.Size = UDim2.new(0, 18, 0, 18)
@@ -1267,7 +1335,6 @@ local function createTabButton(parent, name, iconId, callback)
     iconDecor.ImageColor3 = C.blue1
     iconDecor.Parent = buttonFrame
     
-    -- Click area covers whole frame
     local clickButton = Instance.new("TextButton")
     clickButton.Name = "ClickButton"
     clickButton.Size = UDim2.new(1, 0, 1, 0)
@@ -1293,10 +1360,93 @@ local function createTabButton(parent, name, iconId, callback)
     return buttonFrame
 end
 
- local function createAnimalCard(parent, animalData, rank)
+local function createKeybindRow(parent, actionName, actionLabel, triggerCallback)
+    local keybindFrame = Instance.new("Frame")
+    keybindFrame.Name = actionName .. "KeybindFrame"
+    keybindFrame.Size = UDim2.new(1, 0, 0, 30)
+    keybindFrame.BackgroundColor3 = C.black
+    keybindFrame.BackgroundTransparency = 0.20
+    keybindFrame.BorderSizePixel = 0
+    keybindFrame.Parent = parent
+    
+    local keybindCorner = Instance.new("UICorner")
+    keybindCorner.CornerRadius = UDim.new(0, 6)
+    keybindCorner.Parent = keybindFrame
+    
+    local keybindLabel = Instance.new("TextLabel")
+    keybindLabel.Name = "Label"
+    keybindLabel.Size = UDim2.new(0, 150, 1, 0)
+    keybindLabel.Position = UDim2.new(0, 10, 0, 0)
+    keybindLabel.BackgroundTransparency = 1
+    keybindLabel.Text = actionLabel
+    keybindLabel.TextColor3 = C.white
+    keybindLabel.Font = Enum.Font.Gotham
+    keybindLabel.TextSize = 10
+    keybindLabel.TextXAlignment = Enum.TextXAlignment.Left
+    keybindLabel.TextYAlignment = Enum.TextYAlignment.Center
+    keybindLabel.Parent = keybindFrame
+    
+    local keyPill = Instance.new("TextButton")
+    keyPill.Name = "KeyPill"
+    keyPill.Size = UDim2.new(0, 70, 0, 22)
+    keyPill.Position = UDim2.new(1, -80, 0.5, -11)
+    keyPill.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    keyPill.BorderSizePixel = 0
+    keyPill.Font = Enum.Font.GothamBold
+    keyPill.TextSize = 9
+    keyPill.AutoButtonColor = false
+    keyPill.Parent = keybindFrame
+    
+    local pillCorner = Instance.new("UICorner")
+    pillCorner.CornerRadius = UDim.new(0, 4)
+    pillCorner.Parent = keyPill
+    
+    local pillStroke = Instance.new("UIStroke")
+    pillStroke.Thickness = 1
+    pillStroke.Color = Color3.fromRGB(60, 60, 75)
+    pillStroke.Transparency = 0.5
+    pillStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    pillStroke.Parent = keyPill
+    
+    if boundKeys[actionName] then
+        keyPill.Text = keyName(boundKeys[actionName])
+        keyPill.TextColor3 = Color3.fromRGB(200, 200, 215)
+    else
+        keyPill.Text = "None"
+        keyPill.TextColor3 = Color3.fromRGB(90, 90, 105)
+    end
+    
+    toggleTriggers[actionName] = triggerCallback
+    
+    keyPill.MouseButton1Click:Connect(function()
+        listeningPill = {pill = keyPill, actionName = actionName}
+        keyPill.Text = "..."
+        keyPill.TextColor3 = C.yellow
+        pillStroke.Color = C.yellow
+        pillStroke.Transparency = 0
+    end)
+    
+    keyPill.MouseEnter:Connect(function()
+        if not listeningPill or listeningPill.pill ~= keyPill then
+            pillStroke.Color = C.buttonBlue
+            pillStroke.Transparency = 0.3
+        end
+    end)
+    
+    keyPill.MouseLeave:Connect(function()
+        if not listeningPill or listeningPill.pill ~= keyPill then
+            pillStroke.Color = Color3.fromRGB(60, 60, 75)
+            pillStroke.Transparency = 0.5
+        end
+    end)
+    
+    return keybindFrame
+end
+
+local function createAnimalCard(parent, animalData, rank)
     local cardFrame = Instance.new("Frame")
     cardFrame.Name = "AnimalCard"
-    cardFrame.Size = UDim2.new(1, 0, 0, 100)  -- Increased from 95 to 100
+    cardFrame.Size = UDim2.new(1, 0, 0, 100)
     cardFrame.BackgroundColor3 = C.black
     cardFrame.BackgroundTransparency = 0.15
     cardFrame.BorderSizePixel = 0
@@ -1364,111 +1514,109 @@ end
         vpFrame.CurrentCamera = vpCamera
     end)
 
-    -- Rank Badge
-local badgeColor, strokeColor, iconId
-if rank == 1 then
-    badgeColor = Color3.fromRGB(219, 154, 2)
-    strokeColor = Color3.fromRGB(255, 215, 0)
-    iconId = "rbxassetid://75275446742454"
-elseif rank == 2 then
-    badgeColor = Color3.fromRGB(166, 162, 162)
-    strokeColor = Color3.fromRGB(192, 192, 192)
-    iconId = "rbxassetid://105421235220109"
-elseif rank == 3 then
-    badgeColor = Color3.fromRGB(143, 81, 20)
-    strokeColor = Color3.fromRGB(205, 127, 50)
-    iconId = "rbxassetid://104204204434785"
-else
-    badgeColor = Color3.fromRGB(60, 60, 75)
-    strokeColor = Color3.fromRGB(100, 100, 120)
-    iconId = nil
-end
+    local badgeColor, strokeColor, iconId
+    if rank == 1 then
+        badgeColor = Color3.fromRGB(219, 154, 2)
+        strokeColor = Color3.fromRGB(255, 215, 0)
+        iconId = "rbxassetid://75275446742454"
+    elseif rank == 2 then
+        badgeColor = Color3.fromRGB(166, 162, 162)
+        strokeColor = Color3.fromRGB(192, 192, 192)
+        iconId = "rbxassetid://105421235220109"
+    elseif rank == 3 then
+        badgeColor = Color3.fromRGB(143, 81, 20)
+        strokeColor = Color3.fromRGB(205, 127, 50)
+        iconId = "rbxassetid://104204204434785"
+    else
+        badgeColor = Color3.fromRGB(60, 60, 75)
+        strokeColor = Color3.fromRGB(100, 100, 120)
+        iconId = nil
+    end
 
-local rankBadge = Instance.new("Frame")
-rankBadge.Name = "RankBadge"
-rankBadge.Size = UDim2.new(0, 32, 0, 18)
-rankBadge.Position = UDim2.new(0, 8, 0, 65)  -- Changed from 58 to 63 (down 5px)
-rankBadge.BackgroundTransparency = 1
-rankBadge.BorderSizePixel = 0
-rankBadge.Parent = cardFrame
+    local rankBadge = Instance.new("Frame")
+    rankBadge.Name = "RankBadge"
+    rankBadge.Size = UDim2.new(0, 32, 0, 18)
+    rankBadge.Position = UDim2.new(0, 8, 0, 65)
+    rankBadge.BackgroundTransparency = 1
+    rankBadge.BorderSizePixel = 0
+    rankBadge.Parent = cardFrame
 
-local badgeCorner = Instance.new("UICorner")
-badgeCorner.CornerRadius = UDim.new(0.11, 0)
-badgeCorner.Parent = rankBadge
+    local badgeCorner = Instance.new("UICorner")
+    badgeCorner.CornerRadius = UDim.new(0.11, 0)
+    badgeCorner.Parent = rankBadge
 
-local badgeStroke = Instance.new("UIStroke")
-badgeStroke.Thickness = 1.5
-badgeStroke.Color = strokeColor
-badgeStroke.Transparency = 0
-badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-badgeStroke.Parent = rankBadge
+    local badgeStroke = Instance.new("UIStroke")
+    badgeStroke.Thickness = 1.5
+    badgeStroke.Color = strokeColor
+    badgeStroke.Transparency = 0
+    badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    badgeStroke.Parent = rankBadge
 
-if iconId then
-    local iconImage = Instance.new("ImageLabel")
-    iconImage.Name = "RankIcon"
-    iconImage.Size = UDim2.new(0, 10, 0, 10)
-    iconImage.Position = UDim2.new(0, 2, 0.5, -5)
-    iconImage.BackgroundTransparency = 1
-    iconImage.Image = iconId
-    iconImage.Parent = rankBadge
-end
+    if iconId then
+        local iconImage = Instance.new("ImageLabel")
+        iconImage.Name = "RankIcon"
+        iconImage.Size = UDim2.new(0, 10, 0, 10)
+        iconImage.Position = UDim2.new(0, 2, 0.5, -5)
+        iconImage.BackgroundTransparency = 1
+        iconImage.Image = iconId
+        iconImage.Parent = rankBadge
+    end
 
-local rankLabel = Instance.new("TextLabel")
-rankLabel.Name = "RankLabel"
-rankLabel.Size = UDim2.new(1, iconId and -12 or 0, 1, 0)
-rankLabel.Position = UDim2.new(0, iconId and 12 or 0, 0, 0)
-rankLabel.BackgroundTransparency = 1
-rankLabel.Text = "#" .. tostring(rank)
-rankLabel.TextColor3 = strokeColor
-rankLabel.Font = Enum.Font.GothamBold
-rankLabel.TextSize = 10
-rankLabel.TextXAlignment = Enum.TextXAlignment.Center
-rankLabel.TextYAlignment = Enum.TextYAlignment.Center
-rankLabel.Parent = rankBadge
+    local rankLabel = Instance.new("TextLabel")
+    rankLabel.Name = "RankLabel"
+    rankLabel.Size = UDim2.new(1, iconId and -12 or 0, 1, 0)
+    rankLabel.Position = UDim2.new(0, iconId and 12 or 0, 0, 0)
+    rankLabel.BackgroundTransparency = 1
+    rankLabel.Text = "#" .. tostring(rank)
+    rankLabel.TextColor3 = strokeColor
+    rankLabel.Font = Enum.Font.GothamBold
+    rankLabel.TextSize = 10
+    rankLabel.TextXAlignment = Enum.TextXAlignment.Center
+    rankLabel.TextYAlignment = Enum.TextYAlignment.Center
+    rankLabel.Parent = rankBadge
 
--- Favorite Badge (check if animal is favorited on creation)
-local isFav = isFavorite(animalData.name)
+    local isFav = isFavorite(animalData.name)
 
-local favBadge = Instance.new("Frame")
-favBadge.Name = "FavoriteBadge"
-favBadge.Size = UDim2.new(0, 58, 0, 18)  -- Changed from 65 to 58 (smaller width)
-favBadge.Position = UDim2.new(0, 44, 0, 65)  -- Changed from 58 to 63 (down 5px)
-favBadge.BackgroundTransparency = 1
-favBadge.BorderSizePixel = 0
-favBadge.Visible = isFav
-favBadge.Parent = cardFrame
+    local favBadge = Instance.new("Frame")
+    favBadge.Name = "FavoriteBadge"
+    favBadge.Size = UDim2.new(0, 58, 0, 18)
+    favBadge.Position = UDim2.new(0, 44, 0, 65)
+    favBadge.BackgroundTransparency = 1
+    favBadge.BorderSizePixel = 0
+    favBadge.Visible = isFav
+    favBadge.Parent = cardFrame
 
-local favBadgeCorner = Instance.new("UICorner")
-favBadgeCorner.CornerRadius = UDim.new(0.11, 0)
-favBadgeCorner.Parent = favBadge
+    local favBadgeCorner = Instance.new("UICorner")
+    favBadgeCorner.CornerRadius = UDim.new(0.11, 0)
+    favBadgeCorner.Parent = favBadge
 
-local favBadgeStroke = Instance.new("UIStroke")
-favBadgeStroke.Thickness = 1.5
-favBadgeStroke.Color = C.yellow
-favBadgeStroke.Transparency = 0
-favBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-favBadgeStroke.Parent = favBadge
+    local favBadgeStroke = Instance.new("UIStroke")
+    favBadgeStroke.Thickness = 1.5
+    favBadgeStroke.Color = C.yellow
+    favBadgeStroke.Transparency = 0
+    favBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    favBadgeStroke.Parent = favBadge
 
-local favBadgeIcon = Instance.new("ImageLabel")
-favBadgeIcon.Name = "FavIcon"
-favBadgeIcon.Size = UDim2.new(0, 10, 0, 10)
-favBadgeIcon.Position = UDim2.new(0, 3, 0.5, -5)
-favBadgeIcon.BackgroundTransparency = 1
-favBadgeIcon.Image = "rbxassetid://113366714224251"
-favBadgeIcon.Parent = favBadge
+    local favBadgeIcon = Instance.new("ImageLabel")
+    favBadgeIcon.Name = "FavIcon"
+    favBadgeIcon.Size = UDim2.new(0, 10, 0, 10)
+    favBadgeIcon.Position = UDim2.new(0, 3, 0.5, -5)
+    favBadgeIcon.BackgroundTransparency = 1
+    favBadgeIcon.Image = "rbxassetid://113366714224251"
+    favBadgeIcon.Parent = favBadge
 
-local favBadgeLabel = Instance.new("TextLabel")
-favBadgeLabel.Name = "FavLabel"
-favBadgeLabel.Size = UDim2.new(1, -14, 1, 0)  -- Changed from -15 to -14 (closer to icon)
-favBadgeLabel.Position = UDim2.new(0, 14, 0, 0)  -- Changed from 15 to 14 (closer to icon)
-favBadgeLabel.BackgroundTransparency = 1
-favBadgeLabel.Text = "Favorite"
-favBadgeLabel.TextColor3 = C.yellow
-favBadgeLabel.Font = Enum.Font.GothamBold
-favBadgeLabel.TextSize = 9
-favBadgeLabel.TextXAlignment = Enum.TextXAlignment.Center
-favBadgeLabel.TextYAlignment = Enum.TextYAlignment.Center
-favBadgeLabel.Parent = favBadge
+    local favBadgeLabel = Instance.new("TextLabel")
+    favBadgeLabel.Name = "FavLabel"
+    favBadgeLabel.Size = UDim2.new(1, -14, 1, 0)
+    favBadgeLabel.Position = UDim2.new(0, 14, 0, 0)
+    favBadgeLabel.BackgroundTransparency = 1
+    favBadgeLabel.Text = "Favorite"
+    favBadgeLabel.TextColor3 = C.yellow
+    favBadgeLabel.Font = Enum.Font.GothamBold
+    favBadgeLabel.TextSize = 9
+    favBadgeLabel.TextXAlignment = Enum.TextXAlignment.Center
+    favBadgeLabel.TextYAlignment = Enum.TextYAlignment.Center
+    favBadgeLabel.Parent = favBadge
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "NameLabel"
@@ -1510,7 +1658,6 @@ favBadgeLabel.Parent = favBadge
     genLabel.TextYAlignment = Enum.TextYAlignment.Center
     genLabel.Parent = cardFrame
 
-    -- Teleport Button
     local tpButton = Instance.new("TextButton")
     tpButton.Name = "TpButton"
     tpButton.Size = UDim2.new(0, 60, 0, 26)
@@ -1551,10 +1698,9 @@ favBadgeLabel.Parent = favBadge
     end)
 
     tpButton.MouseButton1Click:Connect(function()
-        
+        -- TODO: Teleport function
     end)
 
-    -- Favorite Button
     local favButton = Instance.new("TextButton")
     favButton.Name = "FavoriteButton"
     favButton.Size = UDim2.new(0, 26, 0, 26)
@@ -1602,30 +1748,20 @@ favBadgeLabel.Parent = favBadge
         isFavorited = not isFavorited
         
         if isFavorited then
-            -- Add to favorites
             addFavorite(animalData.name)
-            
-            -- Update button appearance
             favButton.BackgroundColor3 = C.yellow
             favButton.BackgroundTransparency = 0
             favButton.TextColor3 = C.white
             favStroke.Color = C.yellow
             favStroke.Transparency = 0
-            
-            -- Show favorite badge
             favBadge.Visible = true
         else
-            -- Remove from favorites
             removeFavorite(animalData.name)
-            
-            -- Update button appearance
             favButton.BackgroundColor3 = C.black
             favButton.BackgroundTransparency = 0.15
             favButton.TextColor3 = Color3.fromRGB(150, 150, 150)
             favStroke.Color = Color3.fromRGB(100, 100, 115)
             favStroke.Transparency = 0.5
-            
-            -- Hide favorite badge
             favBadge.Visible = false
         end
     end)
@@ -1699,7 +1835,6 @@ if featuresContent then
     end)
 end
 
--- UI Tab
 local uiContent = tabContents["UI"]
 if uiContent then
     createSectionHeader(uiContent, "GUI Controls")
@@ -1733,15 +1868,20 @@ if uiContent then
     
     createTabToggle(uiContent, "Steal Bar", "StealBar", function(ns, set)
         set(ns)
-        if ns then
-            enableStealBar()
-        else
-            disableStealBar()
-        end
     end)
 end
 
--- Favorites Tab (BALANCED - EFFICIENT + SIMPLE)
+-- Keybinds Tab
+local keybindsContent = tabContents["Keybinds"]
+if keybindsContent then
+    createSectionHeader(keybindsContent, "Keybinds Settings")
+    
+    createKeybindRow(keybindsContent, "InstantClone", "Instant Clone", function()
+        -- TODO: Trigger instant clone
+    end)
+end
+
+-- Favorites Tab
 local favoritesContent = tabContents["Favorites"]
 local lastCacheCount = 0
 local lastTopUIDs = {}
@@ -1782,7 +1922,6 @@ if favoritesContent then
             task.wait(3)
             
             if needsUpdate() then
-            
                 for _, child in ipairs(favoritesContent:GetChildren()) do
                     if child.Name == "AnimalCard" then
                         child:Destroy()
@@ -1799,5 +1938,4 @@ if favoritesContent then
     end)
 end
 
--- Show welcome notification
-showNotification({message = "ZynHub Private", subtext = "Welcome back!", color = "Violet", textColor = "White", subColor = "Violet"})
+showNotification({message = "ZYNHUB PRIVATE Loaded", subtext = "Welcome back!", color = "Violet", textColor = "White", subColor = "Violet"})
