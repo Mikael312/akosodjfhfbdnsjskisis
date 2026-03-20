@@ -1164,7 +1164,7 @@ local function createAnimalCard(parent, animalData, rank)
         vpFrame.CurrentCamera = vpCamera
     end)
 
-    -- Rank Badge (below viewport)
+    -- Rank Badge (smaller size)
     local badgeColor, strokeColor, iconId
     if rank == 1 then
         badgeColor = Color3.fromRGB(219, 154, 2)
@@ -1186,29 +1186,28 @@ local function createAnimalCard(parent, animalData, rank)
 
     local rankBadge = Instance.new("Frame")
     rankBadge.Name = "RankBadge"
-    rankBadge.Size = UDim2.new(0, 45, 0, 22)
+    rankBadge.Size = UDim2.new(0, 38, 0, 20)  -- Smaller: 45x22 -> 38x20
     rankBadge.Position = UDim2.new(0, 8, 0, 58)
     rankBadge.BackgroundTransparency = 1
     rankBadge.BorderSizePixel = 0
     rankBadge.Parent = cardFrame
 
     local badgeCorner = Instance.new("UICorner")
-    badgeCorner.CornerRadius = UDim.new(0.11, 0)  -- More rounded
+    badgeCorner.CornerRadius = UDim.new(0.11, 0)
     badgeCorner.Parent = rankBadge
 
     local badgeStroke = Instance.new("UIStroke")
-    badgeStroke.Thickness = 2
+    badgeStroke.Thickness = 1.8
     badgeStroke.Color = strokeColor
     badgeStroke.Transparency = 0
     badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     badgeStroke.Parent = rankBadge
 
-    -- Icon for top 3
     if iconId then
         local iconImage = Instance.new("ImageLabel")
         iconImage.Name = "RankIcon"
-        iconImage.Size = UDim2.new(0, 14, 0, 14)
-        iconImage.Position = UDim2.new(0, 4, 0.5, -7)
+        iconImage.Size = UDim2.new(0, 12, 0, 12)  -- Smaller icon
+        iconImage.Position = UDim2.new(0, 3, 0.5, -6)
         iconImage.BackgroundTransparency = 1
         iconImage.Image = iconId
         iconImage.Parent = rankBadge
@@ -1216,20 +1215,20 @@ local function createAnimalCard(parent, animalData, rank)
 
     local rankLabel = Instance.new("TextLabel")
     rankLabel.Name = "RankLabel"
-    rankLabel.Size = UDim2.new(1, iconId and -18 or 0, 1, 0)
-    rankLabel.Position = UDim2.new(0, iconId and 18 or 0, 0, 0)
+    rankLabel.Size = UDim2.new(1, iconId and -15 or 0, 1, 0)
+    rankLabel.Position = UDim2.new(0, iconId and 15 or 0, 0, 0)
     rankLabel.BackgroundTransparency = 1
     rankLabel.Text = "#" .. tostring(rank)
     rankLabel.TextColor3 = strokeColor
     rankLabel.Font = Enum.Font.GothamBold
-    rankLabel.TextSize = 12
+    rankLabel.TextSize = 11  -- Slightly smaller
     rankLabel.TextXAlignment = Enum.TextXAlignment.Center
     rankLabel.TextYAlignment = Enum.TextYAlignment.Center
     rankLabel.Parent = rankBadge
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "NameLabel"
-    nameLabel.Size = UDim2.new(1, -130, 0, 18)
+    nameLabel.Size = UDim2.new(1, -145, 0, 18)
     nameLabel.Position = UDim2.new(0, 61, 0, 12)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Text = animalData.name
@@ -1243,7 +1242,7 @@ local function createAnimalCard(parent, animalData, rank)
 
     local mutationLabel = Instance.new("TextLabel")
     mutationLabel.Name = "MutationLabel"
-    mutationLabel.Size = UDim2.new(1, -130, 0, 16)
+    mutationLabel.Size = UDim2.new(1, -145, 0, 16)
     mutationLabel.Position = UDim2.new(0, 61, 0, 30)
     mutationLabel.BackgroundTransparency = 1
     mutationLabel.Text = animalData.mutation
@@ -1256,7 +1255,7 @@ local function createAnimalCard(parent, animalData, rank)
 
     local genLabel = Instance.new("TextLabel")
     genLabel.Name = "GenLabel"
-    genLabel.Size = UDim2.new(1, -130, 0, 16)
+    genLabel.Size = UDim2.new(1, -145, 0, 16)
     genLabel.Position = UDim2.new(0, 61, 0, 46)
     genLabel.BackgroundTransparency = 1
     genLabel.Text = animalData.genText
@@ -1267,49 +1266,104 @@ local function createAnimalCard(parent, animalData, rank)
     genLabel.TextYAlignment = Enum.TextYAlignment.Center
     genLabel.Parent = cardFrame
 
-    -- Tp Button (right side, centered vertically)
+    -- Teleport Button (professional style)
     local tpButton = Instance.new("TextButton")
     tpButton.Name = "TpButton"
-    tpButton.Size = UDim2.new(0, 35, 0, 28)
-    tpButton.Position = UDim2.new(1, -75, 0.5, -14)
-    tpButton.BackgroundColor3 = C.buttonBlue
+    tpButton.Size = UDim2.new(0, 60, 0, 26)
+    tpButton.Position = UDim2.new(1, -95, 0.5, -13)
+    tpButton.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
     tpButton.BorderSizePixel = 0
-    tpButton.Text = "Tp"
-    tpButton.TextColor3 = C.white
+    tpButton.Text = "Teleport"
+    tpButton.TextColor3 = C.buttonBlue
     tpButton.Font = Enum.Font.GothamBold
-    tpButton.TextSize = 11
+    tpButton.TextSize = 9
+    tpButton.AutoButtonColor = false
     tpButton.Parent = cardFrame
 
     local tpCorner = Instance.new("UICorner")
     tpCorner.CornerRadius = UDim.new(0, 6)
     tpCorner.Parent = tpButton
 
+    local tpStroke = Instance.new("UIStroke")
+    tpStroke.Thickness = 1
+    tpStroke.Color = C.buttonBlue
+    tpStroke.Transparency = 0.5
+    tpStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    tpStroke.Parent = tpButton
+
+    tpButton.MouseEnter:Connect(function()
+        tpButton.BackgroundColor3 = C.buttonBlue
+        tpButton.TextColor3 = C.white
+        tpStroke.Transparency = 0
+    end)
+
+    tpButton.MouseLeave:Connect(function()
+        tpButton.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+        tpButton.TextColor3 = C.buttonBlue
+        tpStroke.Transparency = 0.5
+    end)
+
     tpButton.MouseButton1Click:Connect(function()
         -- TODO: Add teleport functionality
         print("Teleport to:", animalData.name)
     end)
 
-    -- Favorite Button (star emoji, next to Tp button)
+    -- Favorite Button (professional style)
     local favButton = Instance.new("TextButton")
     favButton.Name = "FavoriteButton"
-    favButton.Size = UDim2.new(0, 28, 0, 28)
-    favButton.Position = UDim2.new(1, -37, 0.5, -14)
-    favButton.BackgroundColor3 = C.darkGrey
+    favButton.Size = UDim2.new(0, 26, 0, 26)
+    favButton.Position = UDim2.new(1, -32, 0.5, -13)
+    favButton.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
     favButton.BorderSizePixel = 0
-    favButton.Text = "⭐"
-    favButton.TextColor3 = C.white
+    favButton.Text = "★"
+    favButton.TextColor3 = Color3.fromRGB(150, 150, 150)
     favButton.Font = Enum.Font.GothamBold
     favButton.TextSize = 14
+    favButton.AutoButtonColor = false
     favButton.Parent = cardFrame
 
     local favCorner = Instance.new("UICorner")
     favCorner.CornerRadius = UDim.new(0, 6)
     favCorner.Parent = favButton
 
+    local favStroke = Instance.new("UIStroke")
+    favStroke.Thickness = 1
+    favStroke.Color = Color3.fromRGB(100, 100, 115)
+    favStroke.Transparency = 0.5
+    favStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    favStroke.Parent = favButton
+
     local isFavorited = false
+    
+    favButton.MouseEnter:Connect(function()
+        if not isFavorited then
+            favButton.TextColor3 = C.yellow
+            favStroke.Color = C.yellow
+            favStroke.Transparency = 0.3
+        end
+    end)
+
+    favButton.MouseLeave:Connect(function()
+        if not isFavorited then
+            favButton.TextColor3 = Color3.fromRGB(150, 150, 150)
+            favStroke.Color = Color3.fromRGB(100, 100, 115)
+            favStroke.Transparency = 0.5
+        end
+    end)
+
     favButton.MouseButton1Click:Connect(function()
         isFavorited = not isFavorited
-        favButton.BackgroundColor3 = isFavorited and C.yellow or C.darkGrey
+        if isFavorited then
+            favButton.BackgroundColor3 = C.yellow
+            favButton.TextColor3 = C.white
+            favStroke.Color = C.yellow
+            favStroke.Transparency = 0
+        else
+            favButton.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+            favButton.TextColor3 = Color3.fromRGB(150, 150, 150)
+            favStroke.Color = Color3.fromRGB(100, 100, 115)
+            favStroke.Transparency = 0.5
+        end
         -- TODO: Add favorite functionality
         print("Favorite:", animalData.name, isFavorited)
     end)
@@ -1392,25 +1446,64 @@ if uiContent then
     end)
 end
 
+-- Favorites Tab (BALANCED - EFFICIENT + SIMPLE)
 local favoritesContent = tabContents["Favorites"]
+local lastCacheCount = 0
+local lastTopUIDs = {}
+
+-- Helper function untuk check if need update
+local function needsUpdate()
+    -- Check if count changed
+    if #allAnimalsCache ~= lastCacheCount then
+        return true
+    end
+    
+    -- Check if top 10 changed (most important)
+    for i = 1, math.min(10, #allAnimalsCache) do
+        if allAnimalsCache[i].uid ~= lastTopUIDs[i] then
+            return true
+        end
+    end
+    
+    return false
+end
+
+local function updateLastCache()
+    lastCacheCount = #allAnimalsCache
+    lastTopUIDs = {}
+    for i = 1, math.min(10, #allAnimalsCache) do
+        lastTopUIDs[i] = allAnimalsCache[i].uid
+    end
+end
+
 if favoritesContent then
     createSectionHeader(favoritesContent, "Favorites Animal")
 
     for rank, animalData in ipairs(allAnimalsCache) do
         createAnimalCard(favoritesContent, animalData, rank)
     end
+    
+    updateLastCache()
 
+    -- Simple update system - only rebuild when needed
     task.spawn(function()
         while true do
-            task.wait(0.1)
-            for _, child in ipairs(favoritesContent:GetChildren()) do
-                if child:IsA("Frame") and (child.Name == "AnimalCard" or child.Name:find("Header")) then
-                    child:Destroy()
+            task.wait(3)
+            
+            if needsUpdate() then
+                -- Clear all cards (keep header)
+                for _, child in ipairs(favoritesContent:GetChildren()) do
+                    if child.Name == "AnimalCard" then
+                        child:Destroy()
+                    end
                 end
-            end
-            createSectionHeader(favoritesContent, "Favorites Animal")
-            for rank, animalData in ipairs(allAnimalsCache) do
-                createAnimalCard(favoritesContent, animalData, rank)
+                
+                -- Rebuild all cards
+                for rank, animalData in ipairs(allAnimalsCache) do
+                    createAnimalCard(favoritesContent, animalData, rank)
+                end
+                
+                updateLastCache()
             end
         end
     end)
