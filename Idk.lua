@@ -189,7 +189,9 @@ local function showNotification(opts)
     opts = opts or {}
     local message  = opts.message  or ""
     local subtext  = opts.subtext  or nil
-    local color    = NotifColors[opts.color or "Default"] or NotifColors.Default
+    local color    = opts.color and NotifColors[opts.color] or NotifColors.Default
+    local textColor = opts.textColor and NotifColors[opts.textColor] or color  -- Custom text color
+    local subColor = opts.subColor and NotifColors[opts.subColor] or color    -- Custom subtext color
 
     if #activeNotifications >= MAX_NOTIFS then
         local oldest = activeNotifications[1]
@@ -248,7 +250,7 @@ local function showNotification(opts)
     textLabel.Position = UDim2.new(0, 30, 0, subtext and 8 or 0)
     textLabel.BackgroundTransparency = 1
     textLabel.Text = message
-    textLabel.TextColor3 = color
+    textLabel.TextColor3 = textColor  -- Custom text color
     textLabel.TextSize = 12
     textLabel.Font = Enum.Font.GothamBold
     textLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -262,7 +264,7 @@ local function showNotification(opts)
         subLabel.Position = UDim2.new(0, 30, 0, 28)
         subLabel.BackgroundTransparency = 1
         subLabel.Text = subtext
-        subLabel.TextColor3 = color
+        subLabel.TextColor3 = subColor  -- Custom subtext color
         subLabel.TextSize = 10
         subLabel.Font = Enum.Font.Gotham
         subLabel.TextXAlignment = Enum.TextXAlignment.Left
