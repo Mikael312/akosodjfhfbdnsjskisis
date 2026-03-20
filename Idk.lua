@@ -974,7 +974,7 @@ divider.BackgroundColor3 = C.dividerGrey
 divider.BorderSizePixel = 0
 divider.Parent = menuFrame
 
-local currentTab = "Features"
+local currentTab = "Favorites"
 
 local tabContainer = Instance.new("Frame")
 tabContainer.Name = "TabContainer"
@@ -983,7 +983,7 @@ tabContainer.Position = UDim2.new(0, 10, 0, 40)
 tabContainer.BackgroundTransparency = 1
 tabContainer.Parent = menuFrame
 
-local tabs = {"Features", "Utility", "UI", "Keybinds", "Favorites"}
+local tabs = {"Favorites", "Features", "Utility", "UI", "Keybinds"}
 local tabButtons = {}
 local tabContents = {}
 
