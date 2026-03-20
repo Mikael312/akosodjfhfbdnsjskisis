@@ -1266,7 +1266,7 @@ end
 local rankBadge = Instance.new("Frame")
 rankBadge.Name = "RankBadge"
 rankBadge.Size = UDim2.new(0, 32, 0, 18)
-rankBadge.Position = UDim2.new(0, 8, 0, 63)  -- Changed from 58 to 63 (down 5px)
+rankBadge.Position = UDim2.new(0, 8, 0, 65)  -- Changed from 58 to 63 (down 5px)
 rankBadge.BackgroundTransparency = 1
 rankBadge.BorderSizePixel = 0
 rankBadge.Parent = cardFrame
@@ -1311,7 +1311,7 @@ local isFav = isFavorite(animalData.name)
 local favBadge = Instance.new("Frame")
 favBadge.Name = "FavoriteBadge"
 favBadge.Size = UDim2.new(0, 58, 0, 18)  -- Changed from 65 to 58 (smaller width)
-favBadge.Position = UDim2.new(0, 44, 0, 63)  -- Changed from 58 to 63 (down 5px)
+favBadge.Position = UDim2.new(0, 44, 0, 65)  -- Changed from 58 to 63 (down 5px)
 favBadge.BackgroundTransparency = 1
 favBadge.BorderSizePixel = 0
 favBadge.Visible = isFav
@@ -1650,8 +1650,5 @@ if favoritesContent then
     end)
 end
 
-showNotification({
-    message = "ZYNHUB PRIVATE Loaded",
-    subtext = "Welcome back!",
-    color = "Success"
-})
+-- Show welcome notification
+showNotification({message = "ZynHub Private", subtext = "Welcome back!", color = "Violet", textColor = "White", subColor = "Violet"})
