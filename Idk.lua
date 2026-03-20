@@ -85,75 +85,6 @@ local function SaveConfig()
     end
 end
 
--- ==================== FAVORITES SYSTEM ====================
-local FAVORITES = Config.Favorites.Animals or {}
-
-local function saveFavorites()
-    Config.Favorites.Animals = FAVORITES
-    SaveConfig()
-end
-
-local function isFavorite(animalName)
-    for _, name in ipairs(FAVORITES) do
-        if name:lower() == animalName:lower() then
-            return true
-        end
-    end
-    return false
-end
-
-local function addFavorite(animalName)
-    if isFavorite(animalName) then
-        print("[Favorites] Dah ada:", animalName)
-        return false
-    end
-    table.insert(FAVORITES, animalName)
-    saveFavorites()
-    print("[Favorites] Tambah:", animalName)
-    return true
-end
-
-local function removeFavorite(animalName)
-    for i, name in ipairs(FAVORITES) do
-        if name:lower() == animalName:lower() then
-            table.remove(FAVORITES, i)
-            saveFavorites()
-            print("[Favorites] Buang:", animalName)
-            return true
-        end
-    end
-    return false
-end
-
-local function moveFavoriteUp(index)
-    if index > 1 and index <= #FAVORITES then
-        FAVORITES[index], FAVORITES[index - 1] = FAVORITES[index - 1], FAVORITES[index]
-        saveFavorites()
-        return true
-    end
-    return false
-end
-
-local function moveFavoriteDown(index)
-    if index >= 1 and index < #FAVORITES then
-        FAVORITES[index], FAVORITES[index + 1] = FAVORITES[index + 1], FAVORITES[index]
-        saveFavorites()
-        return true
-    end
-    return false
-end
-
-local function getFavoriteByPriority(allAnimalsCache)
-    for _, favName in ipairs(FAVORITES) do
-        for _, animal in ipairs(allAnimalsCache) do
-            if animal.name:lower() == favName:lower() then
-                return animal
-            end
-        end
-    end
-    return nil
-end
-
 -- ==================== NOTIFICATION SYSTEM ====================
 local activeNotifications = {}
 local NOTIF_HEIGHT = 56
@@ -316,6 +247,80 @@ local function showNotification(opts)
 
     closeButton.MouseButton1Click:Connect(dismiss)
     task.delay(2, dismiss)
+end
+
+-- ==================== FAVORITES SYSTEM ====================
+local FAVORITES = Config.Favorites.Animals or {}
+
+local function saveFavorites()
+    Config.Favorites.Animals = FAVORITES
+    SaveConfig()
+end
+
+local function isFavorite(animalName)
+    for _, name in ipairs(FAVORITES) do
+        if name:lower() == animalName:lower() then
+            return true
+        end
+    end
+    return false
+end
+
+local function addFavorite(animalName)
+    if isFavorite(animalName) then
+        return false
+    end
+    table.insert(FAVORITES, animalName)
+    saveFavorites()
+    
+    -- Compact notification format
+    showNotification({message = "Favorited: " .. animalName, color = "Success", textColor = "White"})
+    
+    return true
+end
+
+local function removeFavorite(animalName)
+    for i, name in ipairs(FAVORITES) do
+        if name:lower() == animalName:lower() then
+            table.remove(FAVORITES, i)
+            saveFavorites()
+            
+            -- Compact notification format
+            showNotification({message = "Removed: " .. animalName, color = "Failed", textColor = "White"})
+            
+            return true
+        end
+    end
+    return false
+end
+
+local function moveFavoriteUp(index)
+    if index > 1 and index <= #FAVORITES then
+        FAVORITES[index], FAVORITES[index - 1] = FAVORITES[index - 1], FAVORITES[index]
+        saveFavorites()
+        return true
+    end
+    return false
+end
+
+local function moveFavoriteDown(index)
+    if index >= 1 and index < #FAVORITES then
+        FAVORITES[index], FAVORITES[index + 1] = FAVORITES[index + 1], FAVORITES[index]
+        saveFavorites()
+        return true
+    end
+    return false
+end
+
+local function getFavoriteByPriority(allAnimalsCache)
+    for _, favName in ipairs(FAVORITES) do
+        for _, animal in ipairs(allAnimalsCache) do
+            if animal.name:lower() == favName:lower() then
+                return animal
+            end
+        end
+    end
+    return nil
 end
 
 -- ==================== FUNCTIONALITY FUNCTIONS ====================
