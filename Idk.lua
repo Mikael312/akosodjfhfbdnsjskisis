@@ -1226,7 +1226,7 @@ local function createTabToggle(parent, name, configKey, callback)
     return toggleFrame
 end
 
-local function createTabButton(parent, name, callback)
+local function createTabButton(parent, name, iconId, callback)
     local buttonFrame = Instance.new("Frame")
     buttonFrame.Name = name .. "ButtonFrame"
     buttonFrame.Size = UDim2.new(1, 0, 0, 30)
@@ -1252,29 +1252,36 @@ local function createTabButton(parent, name, callback)
     buttonLabel.TextYAlignment = Enum.TextYAlignment.Center
     buttonLabel.Parent = buttonFrame
     
-    local actionButton = Instance.new("ImageButton")
-    actionButton.Name = "ActionButton"
-    actionButton.Size = UDim2.new(0, 20, 0, 20)
-    actionButton.Position = UDim2.new(1, -30, 0.5, -10)
-    actionButton.BackgroundColor3 = C.blue1
-    actionButton.BorderSizePixel = 0
-    actionButton.Image = "rbxassetid://97462463002118"
-    actionButton.AutoButtonColor = false
-    actionButton.Parent = buttonFrame
+    -- Icon decoration (no background)
+    local iconDecor = Instance.new("ImageLabel")
+    iconDecor.Name = "Icon"
+    iconDecor.Size = UDim2.new(0, 18, 0, 18)
+    iconDecor.Position = UDim2.new(1, -28, 0.5, -9)
+    iconDecor.BackgroundTransparency = 1
+    iconDecor.Image = iconId or "rbxassetid://97462463002118"
+    iconDecor.ImageColor3 = C.blue1
+    iconDecor.Parent = buttonFrame
     
-    local actionCorner = Instance.new("UICorner")
-    actionCorner.CornerRadius = UDim.new(0, 4)
-    actionCorner.Parent = actionButton
+    -- Click area covers whole frame
+    local clickButton = Instance.new("TextButton")
+    clickButton.Name = "ClickButton"
+    clickButton.Size = UDim2.new(1, 0, 1, 0)
+    clickButton.Position = UDim2.new(0, 0, 0, 0)
+    clickButton.BackgroundTransparency = 1
+    clickButton.Text = ""
+    clickButton.Parent = buttonFrame
     
-    actionButton.MouseEnter:Connect(function()
-        actionButton.BackgroundColor3 = C.blue2
+    clickButton.MouseEnter:Connect(function()
+        buttonFrame.BackgroundTransparency = 0.1
+        iconDecor.ImageColor3 = C.blue2
     end)
     
-    actionButton.MouseLeave:Connect(function()
-        actionButton.BackgroundColor3 = C.blue1
+    clickButton.MouseLeave:Connect(function()
+        buttonFrame.BackgroundTransparency = 0.20
+        iconDecor.ImageColor3 = C.blue1
     end)
     
-    actionButton.MouseButton1Click:Connect(function()
+    clickButton.MouseButton1Click:Connect(function()
         if callback then callback() end
     end)
     
@@ -1690,17 +1697,6 @@ end
 -- UI Tab
 local uiContent = tabContents["UI"]
 if uiContent then
-    createSectionHeader(uiContent, "UI Panel")
-    
-    createTabToggle(uiContent, "Steal Bar", "StealBar", function(ns, set)
-        set(ns)
-        if ns then
-            enableStealBar()
-        else
-            disableStealBar()
-        end
-    end)
-    
     createSectionHeader(uiContent, "GUI Controls")
     
     createTabToggle(uiContent, "Lock GUI", "LockGui", function(ns, set)
@@ -1710,7 +1706,7 @@ if uiContent then
         menuFrame.Draggable = not ns
     end)
     
-    createTabButton(uiContent, "Reset Position", function()
+    createTabButton(uiContent, "Reset Position", "rbxassetid://97462463002118", function()
         Config.Positions.CreditFrame = DefaultConfig.Positions.CreditFrame
         Config.Positions.MainFrame = DefaultConfig.Positions.MainFrame
         Config.Positions.MenuFrame = DefaultConfig.Positions.MenuFrame
@@ -1727,6 +1723,17 @@ if uiContent then
         
         showNotification({message = "GUI positions reset!", color = "Success", textColor = "White"})
     end)
+    
+    createSectionHeader(uiContent, "UI Panel")
+    
+    createTabToggle(uiContent, "Steal Bar", "StealBar", function(ns, set)
+        set(ns)
+        if ns then
+            enableStealBar()
+        else
+            disableStealBar()
+        end
+    end)
 end
 
 -- Favorites Tab (BALANCED - EFFICIENT + SIMPLE)
@@ -1734,14 +1741,11 @@ local favoritesContent = tabContents["Favorites"]
 local lastCacheCount = 0
 local lastTopUIDs = {}
 
--- Helper function untuk check if need update
 local function needsUpdate()
-    -- Check if count changed
     if #allAnimalsCache ~= lastCacheCount then
         return true
     end
     
-    -- Check if top 10 changed (most important)
     for i = 1, math.min(10, #allAnimalsCache) do
         if allAnimalsCache[i].uid ~= lastTopUIDs[i] then
             return true
@@ -1768,20 +1772,18 @@ if favoritesContent then
     
     updateLastCache()
 
-    -- Simple update system - only rebuild when needed
     task.spawn(function()
         while true do
             task.wait(3)
             
             if needsUpdate() then
-                -- Clear all cards (keep header)
+            
                 for _, child in ipairs(favoritesContent:GetChildren()) do
                     if child.Name == "AnimalCard" then
                         child:Destroy()
                     end
                 end
                 
-                -- Rebuild all cards
                 for rank, animalData in ipairs(allAnimalsCache) do
                     createAnimalCard(favoritesContent, animalData, rank)
                 end
