@@ -1096,7 +1096,7 @@ end
 local function createAnimalCard(parent, animalData, rank)
     local cardFrame = Instance.new("Frame")
     cardFrame.Name = "AnimalCard"
-    cardFrame.Size = UDim2.new(1, 0, 0, 95)  -- Increased from 80 to 95
+    cardFrame.Size = UDim2.new(1, 0, 0, 95)
     cardFrame.BackgroundColor3 = C.black
     cardFrame.BackgroundTransparency = 0.15
     cardFrame.BorderSizePixel = 0
@@ -1109,7 +1109,7 @@ local function createAnimalCard(parent, animalData, rank)
     local vpFrame = Instance.new("ViewportFrame")
     vpFrame.Name = "ModelViewport"
     vpFrame.Size = UDim2.new(0, 45, 0, 45)
-    vpFrame.Position = UDim2.new(0, 8, 0, 8)  -- Changed position to top
+    vpFrame.Position = UDim2.new(0, 8, 0, 8)
     vpFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     vpFrame.BorderSizePixel = 0
     vpFrame.Ambient = Color3.fromRGB(180, 180, 180)
@@ -1165,56 +1165,71 @@ local function createAnimalCard(parent, animalData, rank)
     end)
 
     -- Rank Badge (below viewport)
-local badgeColor, strokeColor
-if rank == 1 then
-    badgeColor = Color3.fromRGB(219, 154, 2)  -- Gold
-    strokeColor = Color3.fromRGB(255, 215, 0)  -- Brighter gold stroke
-elseif rank == 2 then
-    badgeColor = Color3.fromRGB(166, 162, 162)  -- Silver
-    strokeColor = Color3.fromRGB(192, 192, 192)  -- Brighter silver stroke
-elseif rank == 3 then
-    badgeColor = Color3.fromRGB(143, 81, 20)  -- Bronze
-    strokeColor = Color3.fromRGB(205, 127, 50)  -- Brighter bronze stroke
-else
-    badgeColor = Color3.fromRGB(60, 60, 75)  -- Default grey
-    strokeColor = Color3.fromRGB(100, 100, 120)  -- Brighter grey stroke
-end
+    local badgeColor, strokeColor, iconId
+    if rank == 1 then
+        badgeColor = Color3.fromRGB(219, 154, 2)
+        strokeColor = Color3.fromRGB(255, 215, 0)
+        iconId = "rbxassetid://75275446742454"
+    elseif rank == 2 then
+        badgeColor = Color3.fromRGB(166, 162, 162)
+        strokeColor = Color3.fromRGB(192, 192, 192)
+        iconId = "rbxassetid://105421235220109"
+    elseif rank == 3 then
+        badgeColor = Color3.fromRGB(143, 81, 20)
+        strokeColor = Color3.fromRGB(205, 127, 50)
+        iconId = "rbxassetid://104204204434785"
+    else
+        badgeColor = Color3.fromRGB(60, 60, 75)
+        strokeColor = Color3.fromRGB(100, 100, 120)
+        iconId = nil
+    end
 
-local rankBadge = Instance.new("Frame")
-rankBadge.Name = "RankBadge"
-rankBadge.Size = UDim2.new(0, 45, 0, 22)
-rankBadge.Position = UDim2.new(0, 8, 0, 58)
-rankBadge.BackgroundTransparency = 1  -- Invisible background
-rankBadge.BorderSizePixel = 0
-rankBadge.Parent = cardFrame
+    local rankBadge = Instance.new("Frame")
+    rankBadge.Name = "RankBadge"
+    rankBadge.Size = UDim2.new(0, 45, 0, 22)
+    rankBadge.Position = UDim2.new(0, 8, 0, 58)
+    rankBadge.BackgroundTransparency = 1
+    rankBadge.BorderSizePixel = 0
+    rankBadge.Parent = cardFrame
 
-local badgeCorner = Instance.new("UICorner")
-badgeCorner.CornerRadius = UDim.new(0, 6)
-badgeCorner.Parent = rankBadge
+    local badgeCorner = Instance.new("UICorner")
+    badgeCorner.CornerRadius = UDim.new(0.11, 0)  -- More rounded
+    badgeCorner.Parent = rankBadge
 
--- Stroke dengan color masing-masing
-local badgeStroke = Instance.new("UIStroke")
-badgeStroke.Thickness = 2
-badgeStroke.Color = strokeColor
-badgeStroke.Transparency = 0
-badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-badgeStroke.Parent = rankBadge
+    local badgeStroke = Instance.new("UIStroke")
+    badgeStroke.Thickness = 2
+    badgeStroke.Color = strokeColor
+    badgeStroke.Transparency = 0
+    badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    badgeStroke.Parent = rankBadge
 
-local rankLabel = Instance.new("TextLabel")
-rankLabel.Name = "RankLabel"
-rankLabel.Size = UDim2.new(1, 0, 1, 0)
-rankLabel.BackgroundTransparency = 1
-rankLabel.Text = "#" .. tostring(rank)
-rankLabel.TextColor3 = strokeColor  -- Text same color as stroke
-rankLabel.Font = Enum.Font.GothamBold
-rankLabel.TextSize = 12
-rankLabel.TextXAlignment = Enum.TextXAlignment.Center
-rankLabel.TextYAlignment = Enum.TextYAlignment.Center
-rankLabel.Parent = rankBadge
+    -- Icon for top 3
+    if iconId then
+        local iconImage = Instance.new("ImageLabel")
+        iconImage.Name = "RankIcon"
+        iconImage.Size = UDim2.new(0, 14, 0, 14)
+        iconImage.Position = UDim2.new(0, 4, 0.5, -7)
+        iconImage.BackgroundTransparency = 1
+        iconImage.Image = iconId
+        iconImage.Parent = rankBadge
+    end
+
+    local rankLabel = Instance.new("TextLabel")
+    rankLabel.Name = "RankLabel"
+    rankLabel.Size = UDim2.new(1, iconId and -18 or 0, 1, 0)
+    rankLabel.Position = UDim2.new(0, iconId and 18 or 0, 0, 0)
+    rankLabel.BackgroundTransparency = 1
+    rankLabel.Text = "#" .. tostring(rank)
+    rankLabel.TextColor3 = strokeColor
+    rankLabel.Font = Enum.Font.GothamBold
+    rankLabel.TextSize = 12
+    rankLabel.TextXAlignment = Enum.TextXAlignment.Center
+    rankLabel.TextYAlignment = Enum.TextYAlignment.Center
+    rankLabel.Parent = rankBadge
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "NameLabel"
-    nameLabel.Size = UDim2.new(1, -65, 0, 18)
+    nameLabel.Size = UDim2.new(1, -130, 0, 18)
     nameLabel.Position = UDim2.new(0, 61, 0, 12)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Text = animalData.name
@@ -1228,7 +1243,7 @@ rankLabel.Parent = rankBadge
 
     local mutationLabel = Instance.new("TextLabel")
     mutationLabel.Name = "MutationLabel"
-    mutationLabel.Size = UDim2.new(1, -65, 0, 16)
+    mutationLabel.Size = UDim2.new(1, -130, 0, 16)
     mutationLabel.Position = UDim2.new(0, 61, 0, 30)
     mutationLabel.BackgroundTransparency = 1
     mutationLabel.Text = animalData.mutation
@@ -1241,7 +1256,7 @@ rankLabel.Parent = rankBadge
 
     local genLabel = Instance.new("TextLabel")
     genLabel.Name = "GenLabel"
-    genLabel.Size = UDim2.new(1, -65, 0, 16)
+    genLabel.Size = UDim2.new(1, -130, 0, 16)
     genLabel.Position = UDim2.new(0, 61, 0, 46)
     genLabel.BackgroundTransparency = 1
     genLabel.Text = animalData.genText
@@ -1251,6 +1266,53 @@ rankLabel.Parent = rankBadge
     genLabel.TextXAlignment = Enum.TextXAlignment.Left
     genLabel.TextYAlignment = Enum.TextYAlignment.Center
     genLabel.Parent = cardFrame
+
+    -- Tp Button (right side, centered vertically)
+    local tpButton = Instance.new("TextButton")
+    tpButton.Name = "TpButton"
+    tpButton.Size = UDim2.new(0, 35, 0, 28)
+    tpButton.Position = UDim2.new(1, -75, 0.5, -14)
+    tpButton.BackgroundColor3 = C.buttonBlue
+    tpButton.BorderSizePixel = 0
+    tpButton.Text = "Tp"
+    tpButton.TextColor3 = C.white
+    tpButton.Font = Enum.Font.GothamBold
+    tpButton.TextSize = 11
+    tpButton.Parent = cardFrame
+
+    local tpCorner = Instance.new("UICorner")
+    tpCorner.CornerRadius = UDim.new(0, 6)
+    tpCorner.Parent = tpButton
+
+    tpButton.MouseButton1Click:Connect(function()
+        -- TODO: Add teleport functionality
+        print("Teleport to:", animalData.name)
+    end)
+
+    -- Favorite Button (star emoji, next to Tp button)
+    local favButton = Instance.new("TextButton")
+    favButton.Name = "FavoriteButton"
+    favButton.Size = UDim2.new(0, 28, 0, 28)
+    favButton.Position = UDim2.new(1, -37, 0.5, -14)
+    favButton.BackgroundColor3 = C.darkGrey
+    favButton.BorderSizePixel = 0
+    favButton.Text = "⭐"
+    favButton.TextColor3 = C.white
+    favButton.Font = Enum.Font.GothamBold
+    favButton.TextSize = 14
+    favButton.Parent = cardFrame
+
+    local favCorner = Instance.new("UICorner")
+    favCorner.CornerRadius = UDim.new(0, 6)
+    favCorner.Parent = favButton
+
+    local isFavorited = false
+    favButton.MouseButton1Click:Connect(function()
+        isFavorited = not isFavorited
+        favButton.BackgroundColor3 = isFavorited and C.yellow or C.darkGrey
+        -- TODO: Add favorite functionality
+        print("Favorite:", animalData.name, isFavorited)
+    end)
 
     return cardFrame
 end
@@ -1340,7 +1402,7 @@ if favoritesContent then
 
     task.spawn(function()
         while true do
-            task.wait(2)
+            task.wait(0.1)
             for _, child in ipairs(favoritesContent:GetChildren()) do
                 if child:IsA("Frame") and (child.Name == "AnimalCard" or child.Name:find("Header")) then
                     child:Destroy()
