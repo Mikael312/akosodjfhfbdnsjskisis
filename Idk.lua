@@ -1164,7 +1164,7 @@ local function createAnimalCard(parent, animalData, rank)
         vpFrame.CurrentCamera = vpCamera
     end)
 
-    -- Rank Badge (smaller size)
+    -- Rank Badge
     local badgeColor, strokeColor, iconId
     if rank == 1 then
         badgeColor = Color3.fromRGB(219, 154, 2)
@@ -1186,7 +1186,7 @@ local function createAnimalCard(parent, animalData, rank)
 
     local rankBadge = Instance.new("Frame")
     rankBadge.Name = "RankBadge"
-    rankBadge.Size = UDim2.new(0, 38, 0, 20)  -- Smaller: 45x22 -> 38x20
+    rankBadge.Size = UDim2.new(0, 38, 0, 20)
     rankBadge.Position = UDim2.new(0, 8, 0, 58)
     rankBadge.BackgroundTransparency = 1
     rankBadge.BorderSizePixel = 0
@@ -1206,7 +1206,7 @@ local function createAnimalCard(parent, animalData, rank)
     if iconId then
         local iconImage = Instance.new("ImageLabel")
         iconImage.Name = "RankIcon"
-        iconImage.Size = UDim2.new(0, 12, 0, 12)  -- Smaller icon
+        iconImage.Size = UDim2.new(0, 12, 0, 12)
         iconImage.Position = UDim2.new(0, 3, 0.5, -6)
         iconImage.BackgroundTransparency = 1
         iconImage.Image = iconId
@@ -1221,10 +1221,52 @@ local function createAnimalCard(parent, animalData, rank)
     rankLabel.Text = "#" .. tostring(rank)
     rankLabel.TextColor3 = strokeColor
     rankLabel.Font = Enum.Font.GothamBold
-    rankLabel.TextSize = 11  -- Slightly smaller
+    rankLabel.TextSize = 11
     rankLabel.TextXAlignment = Enum.TextXAlignment.Center
     rankLabel.TextYAlignment = Enum.TextYAlignment.Center
     rankLabel.Parent = rankBadge
+
+    -- Favorite Badge (hidden by default)
+    local favBadge = Instance.new("Frame")
+    favBadge.Name = "FavoriteBadge"
+    favBadge.Size = UDim2.new(0, 75, 0, 20)
+    favBadge.Position = UDim2.new(0, 50, 0, 58)  -- Next to rank badge
+    favBadge.BackgroundTransparency = 1
+    favBadge.BorderSizePixel = 0
+    favBadge.Visible = false
+    favBadge.Parent = cardFrame
+
+    local favBadgeCorner = Instance.new("UICorner")
+    favBadgeCorner.CornerRadius = UDim.new(0.11, 0)
+    favBadgeCorner.Parent = favBadge
+
+    local favBadgeStroke = Instance.new("UIStroke")
+    favBadgeStroke.Thickness = 1.8
+    favBadgeStroke.Color = C.yellow
+    favBadgeStroke.Transparency = 0
+    favBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    favBadgeStroke.Parent = favBadge
+
+    local favBadgeIcon = Instance.new("ImageLabel")
+    favBadgeIcon.Name = "FavIcon"
+    favBadgeIcon.Size = UDim2.new(0, 12, 0, 12)
+    favBadgeIcon.Position = UDim2.new(0, 4, 0.5, -6)
+    favBadgeIcon.BackgroundTransparency = 1
+    favBadgeIcon.Image = "rbxassetid://113366714224251"
+    favBadgeIcon.Parent = favBadge
+
+    local favBadgeLabel = Instance.new("TextLabel")
+    favBadgeLabel.Name = "FavLabel"
+    favBadgeLabel.Size = UDim2.new(1, -18, 1, 0)
+    favBadgeLabel.Position = UDim2.new(0, 18, 0, 0)
+    favBadgeLabel.BackgroundTransparency = 1
+    favBadgeLabel.Text = "Favorite"
+    favBadgeLabel.TextColor3 = C.yellow
+    favBadgeLabel.Font = Enum.Font.GothamBold
+    favBadgeLabel.TextSize = 10
+    favBadgeLabel.TextXAlignment = Enum.TextXAlignment.Center
+    favBadgeLabel.TextYAlignment = Enum.TextYAlignment.Center
+    favBadgeLabel.Parent = favBadge
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "NameLabel"
@@ -1266,12 +1308,13 @@ local function createAnimalCard(parent, animalData, rank)
     genLabel.TextYAlignment = Enum.TextYAlignment.Center
     genLabel.Parent = cardFrame
 
-    -- Teleport Button (professional style)
+    -- Teleport Button
     local tpButton = Instance.new("TextButton")
     tpButton.Name = "TpButton"
     tpButton.Size = UDim2.new(0, 60, 0, 26)
     tpButton.Position = UDim2.new(1, -95, 0.5, -13)
-    tpButton.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+    tpButton.BackgroundColor3 = C.black
+    tpButton.BackgroundTransparency = 0.15
     tpButton.BorderSizePixel = 0
     tpButton.Text = "Teleport"
     tpButton.TextColor3 = C.buttonBlue
@@ -1293,12 +1336,14 @@ local function createAnimalCard(parent, animalData, rank)
 
     tpButton.MouseEnter:Connect(function()
         tpButton.BackgroundColor3 = C.buttonBlue
+        tpButton.BackgroundTransparency = 0
         tpButton.TextColor3 = C.white
         tpStroke.Transparency = 0
     end)
 
     tpButton.MouseLeave:Connect(function()
-        tpButton.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+        tpButton.BackgroundColor3 = C.black
+        tpButton.BackgroundTransparency = 0.15
         tpButton.TextColor3 = C.buttonBlue
         tpStroke.Transparency = 0.5
     end)
@@ -1308,12 +1353,13 @@ local function createAnimalCard(parent, animalData, rank)
         print("Teleport to:", animalData.name)
     end)
 
-    -- Favorite Button (professional style)
+    -- Favorite Button
     local favButton = Instance.new("TextButton")
     favButton.Name = "FavoriteButton"
     favButton.Size = UDim2.new(0, 26, 0, 26)
     favButton.Position = UDim2.new(1, -32, 0.5, -13)
-    favButton.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+    favButton.BackgroundColor3 = C.black
+    favButton.BackgroundTransparency = 0.15
     favButton.BorderSizePixel = 0
     favButton.Text = "★"
     favButton.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -1354,15 +1400,25 @@ local function createAnimalCard(parent, animalData, rank)
     favButton.MouseButton1Click:Connect(function()
         isFavorited = not isFavorited
         if isFavorited then
+            -- Activate favorite
             favButton.BackgroundColor3 = C.yellow
+            favButton.BackgroundTransparency = 0
             favButton.TextColor3 = C.white
             favStroke.Color = C.yellow
             favStroke.Transparency = 0
+            
+            -- Show favorite badge
+            favBadge.Visible = true
         else
-            favButton.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+            -- Deactivate favorite
+            favButton.BackgroundColor3 = C.black
+            favButton.BackgroundTransparency = 0.15
             favButton.TextColor3 = Color3.fromRGB(150, 150, 150)
             favStroke.Color = Color3.fromRGB(100, 100, 115)
             favStroke.Transparency = 0.5
+            
+            -- Hide favorite badge
+            favBadge.Visible = false
         end
         -- TODO: Add favorite functionality
         print("Favorite:", animalData.name, isFavorited)
