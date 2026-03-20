@@ -1237,110 +1237,110 @@ end
     end)
 
     -- Rank Badge
-    local badgeColor, strokeColor, iconId
-    if rank == 1 then
-        badgeColor = Color3.fromRGB(219, 154, 2)
-        strokeColor = Color3.fromRGB(255, 215, 0)
-        iconId = "rbxassetid://75275446742454"
-    elseif rank == 2 then
-        badgeColor = Color3.fromRGB(166, 162, 162)
-        strokeColor = Color3.fromRGB(192, 192, 192)
-        iconId = "rbxassetid://105421235220109"
-    elseif rank == 3 then
-        badgeColor = Color3.fromRGB(143, 81, 20)
-        strokeColor = Color3.fromRGB(205, 127, 50)
-        iconId = "rbxassetid://104204204434785"
-    else
-        badgeColor = Color3.fromRGB(60, 60, 75)
-        strokeColor = Color3.fromRGB(100, 100, 120)
-        iconId = nil
-    end
+local badgeColor, strokeColor, iconId
+if rank == 1 then
+    badgeColor = Color3.fromRGB(219, 154, 2)
+    strokeColor = Color3.fromRGB(255, 215, 0)
+    iconId = "rbxassetid://75275446742454"
+elseif rank == 2 then
+    badgeColor = Color3.fromRGB(166, 162, 162)
+    strokeColor = Color3.fromRGB(192, 192, 192)
+    iconId = "rbxassetid://105421235220109"
+elseif rank == 3 then
+    badgeColor = Color3.fromRGB(143, 81, 20)
+    strokeColor = Color3.fromRGB(205, 127, 50)
+    iconId = "rbxassetid://104204204434785"
+else
+    badgeColor = Color3.fromRGB(60, 60, 75)
+    strokeColor = Color3.fromRGB(100, 100, 120)
+    iconId = nil
+end
 
-    local rankBadge = Instance.new("Frame")
-    rankBadge.Name = "RankBadge"
-    rankBadge.Size = UDim2.new(0, 32, 0, 18)
-    rankBadge.Position = UDim2.new(0, 8, 0, 58)
-    rankBadge.BackgroundTransparency = 1
-    rankBadge.BorderSizePixel = 0
-    rankBadge.Parent = cardFrame
+local rankBadge = Instance.new("Frame")
+rankBadge.Name = "RankBadge"
+rankBadge.Size = UDim2.new(0, 32, 0, 18)
+rankBadge.Position = UDim2.new(0, 8, 0, 63)  -- Changed from 58 to 63 (down 5px)
+rankBadge.BackgroundTransparency = 1
+rankBadge.BorderSizePixel = 0
+rankBadge.Parent = cardFrame
 
-    local badgeCorner = Instance.new("UICorner")
-    badgeCorner.CornerRadius = UDim.new(0.11, 0)
-    badgeCorner.Parent = rankBadge
+local badgeCorner = Instance.new("UICorner")
+badgeCorner.CornerRadius = UDim.new(0.11, 0)
+badgeCorner.Parent = rankBadge
 
-    local badgeStroke = Instance.new("UIStroke")
-    badgeStroke.Thickness = 1.5
-    badgeStroke.Color = strokeColor
-    badgeStroke.Transparency = 0
-    badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    badgeStroke.Parent = rankBadge
+local badgeStroke = Instance.new("UIStroke")
+badgeStroke.Thickness = 1.5
+badgeStroke.Color = strokeColor
+badgeStroke.Transparency = 0
+badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+badgeStroke.Parent = rankBadge
 
-    if iconId then
-        local iconImage = Instance.new("ImageLabel")
-        iconImage.Name = "RankIcon"
-        iconImage.Size = UDim2.new(0, 10, 0, 10)
-        iconImage.Position = UDim2.new(0, 2, 0.5, -5)
-        iconImage.BackgroundTransparency = 1
-        iconImage.Image = iconId
-        iconImage.Parent = rankBadge
-    end
+if iconId then
+    local iconImage = Instance.new("ImageLabel")
+    iconImage.Name = "RankIcon"
+    iconImage.Size = UDim2.new(0, 10, 0, 10)
+    iconImage.Position = UDim2.new(0, 2, 0.5, -5)
+    iconImage.BackgroundTransparency = 1
+    iconImage.Image = iconId
+    iconImage.Parent = rankBadge
+end
 
-    local rankLabel = Instance.new("TextLabel")
-    rankLabel.Name = "RankLabel"
-    rankLabel.Size = UDim2.new(1, iconId and -12 or 0, 1, 0)
-    rankLabel.Position = UDim2.new(0, iconId and 12 or 0, 0, 0)
-    rankLabel.BackgroundTransparency = 1
-    rankLabel.Text = "#" .. tostring(rank)
-    rankLabel.TextColor3 = strokeColor
-    rankLabel.Font = Enum.Font.GothamBold
-    rankLabel.TextSize = 10
-    rankLabel.TextXAlignment = Enum.TextXAlignment.Center
-    rankLabel.TextYAlignment = Enum.TextYAlignment.Center
-    rankLabel.Parent = rankBadge
+local rankLabel = Instance.new("TextLabel")
+rankLabel.Name = "RankLabel"
+rankLabel.Size = UDim2.new(1, iconId and -12 or 0, 1, 0)
+rankLabel.Position = UDim2.new(0, iconId and 12 or 0, 0, 0)
+rankLabel.BackgroundTransparency = 1
+rankLabel.Text = "#" .. tostring(rank)
+rankLabel.TextColor3 = strokeColor
+rankLabel.Font = Enum.Font.GothamBold
+rankLabel.TextSize = 10
+rankLabel.TextXAlignment = Enum.TextXAlignment.Center
+rankLabel.TextYAlignment = Enum.TextYAlignment.Center
+rankLabel.Parent = rankBadge
 
-    -- Favorite Badge (check if animal is favorited on creation)
-    local isFav = isFavorite(animalData.name)
-    
-    local favBadge = Instance.new("Frame")
-    favBadge.Name = "FavoriteBadge"
-    favBadge.Size = UDim2.new(0, 65, 0, 18)
-    favBadge.Position = UDim2.new(0, 44, 0, 58)
-    favBadge.BackgroundTransparency = 1
-    favBadge.BorderSizePixel = 0
-    favBadge.Visible = isFav  -- Auto show if favorited
-    favBadge.Parent = cardFrame
+-- Favorite Badge (check if animal is favorited on creation)
+local isFav = isFavorite(animalData.name)
 
-    local favBadgeCorner = Instance.new("UICorner")
-    favBadgeCorner.CornerRadius = UDim.new(0.11, 0)
-    favBadgeCorner.Parent = favBadge
+local favBadge = Instance.new("Frame")
+favBadge.Name = "FavoriteBadge"
+favBadge.Size = UDim2.new(0, 58, 0, 18)  -- Changed from 65 to 58 (smaller width)
+favBadge.Position = UDim2.new(0, 44, 0, 63)  -- Changed from 58 to 63 (down 5px)
+favBadge.BackgroundTransparency = 1
+favBadge.BorderSizePixel = 0
+favBadge.Visible = isFav
+favBadge.Parent = cardFrame
 
-    local favBadgeStroke = Instance.new("UIStroke")
-    favBadgeStroke.Thickness = 1.5
-    favBadgeStroke.Color = C.yellow
-    favBadgeStroke.Transparency = 0
-    favBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    favBadgeStroke.Parent = favBadge
+local favBadgeCorner = Instance.new("UICorner")
+favBadgeCorner.CornerRadius = UDim.new(0.11, 0)
+favBadgeCorner.Parent = favBadge
 
-    local favBadgeIcon = Instance.new("ImageLabel")
-    favBadgeIcon.Name = "FavIcon"
-    favBadgeIcon.Size = UDim2.new(0, 10, 0, 10)
-    favBadgeIcon.Position = UDim2.new(0, 3, 0.5, -5)
-    favBadgeIcon.BackgroundTransparency = 1
-    favBadgeIcon.Image = "rbxassetid://113366714224251"
-    favBadgeIcon.Parent = favBadge
+local favBadgeStroke = Instance.new("UIStroke")
+favBadgeStroke.Thickness = 1.5
+favBadgeStroke.Color = C.yellow
+favBadgeStroke.Transparency = 0
+favBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+favBadgeStroke.Parent = favBadge
 
-    local favBadgeLabel = Instance.new("TextLabel")
-    favBadgeLabel.Name = "FavLabel"
-    favBadgeLabel.Size = UDim2.new(1, -15, 1, 0)
-    favBadgeLabel.Position = UDim2.new(0, 15, 0, 0)
-    favBadgeLabel.BackgroundTransparency = 1
-    favBadgeLabel.Text = "Favorite"
-    favBadgeLabel.TextColor3 = C.yellow
-    favBadgeLabel.Font = Enum.Font.GothamBold
-    favBadgeLabel.TextSize = 9
-    favBadgeLabel.TextXAlignment = Enum.TextXAlignment.Center
-    favBadgeLabel.TextYAlignment = Enum.TextYAlignment.Center
-    favBadgeLabel.Parent = favBadge
+local favBadgeIcon = Instance.new("ImageLabel")
+favBadgeIcon.Name = "FavIcon"
+favBadgeIcon.Size = UDim2.new(0, 10, 0, 10)
+favBadgeIcon.Position = UDim2.new(0, 3, 0.5, -5)
+favBadgeIcon.BackgroundTransparency = 1
+favBadgeIcon.Image = "rbxassetid://113366714224251"
+favBadgeIcon.Parent = favBadge
+
+local favBadgeLabel = Instance.new("TextLabel")
+favBadgeLabel.Name = "FavLabel"
+favBadgeLabel.Size = UDim2.new(1, -14, 1, 0)  -- Changed from -15 to -14 (closer to icon)
+favBadgeLabel.Position = UDim2.new(0, 14, 0, 0)  -- Changed from 15 to 14 (closer to icon)
+favBadgeLabel.BackgroundTransparency = 1
+favBadgeLabel.Text = "Favorite"
+favBadgeLabel.TextColor3 = C.yellow
+favBadgeLabel.Font = Enum.Font.GothamBold
+favBadgeLabel.TextSize = 9
+favBadgeLabel.TextXAlignment = Enum.TextXAlignment.Center
+favBadgeLabel.TextYAlignment = Enum.TextYAlignment.Center
+favBadgeLabel.Parent = favBadge
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "NameLabel"
@@ -1423,8 +1423,7 @@ end
     end)
 
     tpButton.MouseButton1Click:Connect(function()
-        -- TODO: Add teleport functionality
-        print("Teleport to:", animalData.name)
+        
     end)
 
     -- Favorite Button
