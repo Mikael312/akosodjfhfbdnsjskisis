@@ -1164,109 +1164,109 @@ local function createAnimalCard(parent, animalData, rank)
         vpFrame.CurrentCamera = vpCamera
     end)
 
-    -- Rank Badge
-    local badgeColor, strokeColor, iconId
-    if rank == 1 then
-        badgeColor = Color3.fromRGB(219, 154, 2)
-        strokeColor = Color3.fromRGB(255, 215, 0)
-        iconId = "rbxassetid://75275446742454"
-    elseif rank == 2 then
-        badgeColor = Color3.fromRGB(166, 162, 162)
-        strokeColor = Color3.fromRGB(192, 192, 192)
-        iconId = "rbxassetid://105421235220109"
-    elseif rank == 3 then
-        badgeColor = Color3.fromRGB(143, 81, 20)
-        strokeColor = Color3.fromRGB(205, 127, 50)
-        iconId = "rbxassetid://104204204434785"
-    else
-        badgeColor = Color3.fromRGB(60, 60, 75)
-        strokeColor = Color3.fromRGB(100, 100, 120)
-        iconId = nil
-    end
+    -- Rank Badge (smaller size)
+local badgeColor, strokeColor, iconId
+if rank == 1 then
+    badgeColor = Color3.fromRGB(219, 154, 2)
+    strokeColor = Color3.fromRGB(255, 215, 0)
+    iconId = "rbxassetid://75275446742454"
+elseif rank == 2 then
+    badgeColor = Color3.fromRGB(166, 162, 162)
+    strokeColor = Color3.fromRGB(192, 192, 192)
+    iconId = "rbxassetid://105421235220109"
+elseif rank == 3 then
+    badgeColor = Color3.fromRGB(143, 81, 20)
+    strokeColor = Color3.fromRGB(205, 127, 50)
+    iconId = "rbxassetid://104204204434785"
+else
+    badgeColor = Color3.fromRGB(60, 60, 75)
+    strokeColor = Color3.fromRGB(100, 100, 120)
+    iconId = nil
+end
 
-    local rankBadge = Instance.new("Frame")
-    rankBadge.Name = "RankBadge"
-    rankBadge.Size = UDim2.new(0, 38, 0, 20)
-    rankBadge.Position = UDim2.new(0, 8, 0, 58)
-    rankBadge.BackgroundTransparency = 1
-    rankBadge.BorderSizePixel = 0
-    rankBadge.Parent = cardFrame
+local rankBadge = Instance.new("Frame")
+rankBadge.Name = "RankBadge"
+rankBadge.Size = UDim2.new(0, 32, 0, 18)  -- Smaller: 38x20 -> 32x18
+rankBadge.Position = UDim2.new(0, 8, 0, 58)
+rankBadge.BackgroundTransparency = 1
+rankBadge.BorderSizePixel = 0
+rankBadge.Parent = cardFrame
 
-    local badgeCorner = Instance.new("UICorner")
-    badgeCorner.CornerRadius = UDim.new(0.11, 0)
-    badgeCorner.Parent = rankBadge
+local badgeCorner = Instance.new("UICorner")
+badgeCorner.CornerRadius = UDim.new(0.11, 0)
+badgeCorner.Parent = rankBadge
 
-    local badgeStroke = Instance.new("UIStroke")
-    badgeStroke.Thickness = 1.8
-    badgeStroke.Color = strokeColor
-    badgeStroke.Transparency = 0
-    badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    badgeStroke.Parent = rankBadge
+local badgeStroke = Instance.new("UIStroke")
+badgeStroke.Thickness = 1.5  -- Slightly thinner
+badgeStroke.Color = strokeColor
+badgeStroke.Transparency = 0
+badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+badgeStroke.Parent = rankBadge
 
-    if iconId then
-        local iconImage = Instance.new("ImageLabel")
-        iconImage.Name = "RankIcon"
-        iconImage.Size = UDim2.new(0, 12, 0, 12)
-        iconImage.Position = UDim2.new(0, 3, 0.5, -6)
-        iconImage.BackgroundTransparency = 1
-        iconImage.Image = iconId
-        iconImage.Parent = rankBadge
-    end
+if iconId then
+    local iconImage = Instance.new("ImageLabel")
+    iconImage.Name = "RankIcon"
+    iconImage.Size = UDim2.new(0, 10, 0, 10)  -- Smaller: 12x12 -> 10x10
+    iconImage.Position = UDim2.new(0, 2, 0.5, -5)
+    iconImage.BackgroundTransparency = 1
+    iconImage.Image = iconId
+    iconImage.Parent = rankBadge
+end
 
-    local rankLabel = Instance.new("TextLabel")
-    rankLabel.Name = "RankLabel"
-    rankLabel.Size = UDim2.new(1, iconId and -15 or 0, 1, 0)
-    rankLabel.Position = UDim2.new(0, iconId and 15 or 0, 0, 0)
-    rankLabel.BackgroundTransparency = 1
-    rankLabel.Text = "#" .. tostring(rank)
-    rankLabel.TextColor3 = strokeColor
-    rankLabel.Font = Enum.Font.GothamBold
-    rankLabel.TextSize = 11
-    rankLabel.TextXAlignment = Enum.TextXAlignment.Center
-    rankLabel.TextYAlignment = Enum.TextYAlignment.Center
-    rankLabel.Parent = rankBadge
+local rankLabel = Instance.new("TextLabel")
+rankLabel.Name = "RankLabel"
+rankLabel.Size = UDim2.new(1, iconId and -12 or 0, 1, 0)
+rankLabel.Position = UDim2.new(0, iconId and 12 or 0, 0, 0)
+rankLabel.BackgroundTransparency = 1
+rankLabel.Text = "#" .. tostring(rank)
+rankLabel.TextColor3 = strokeColor
+rankLabel.Font = Enum.Font.GothamBold
+rankLabel.TextSize = 10  -- Smaller: 11 -> 10
+rankLabel.TextXAlignment = Enum.TextXAlignment.Center
+rankLabel.TextYAlignment = Enum.TextYAlignment.Center
+rankLabel.Parent = rankBadge
 
-    -- Favorite Badge (hidden by default)
-    local favBadge = Instance.new("Frame")
-    favBadge.Name = "FavoriteBadge"
-    favBadge.Size = UDim2.new(0, 75, 0, 20)
-    favBadge.Position = UDim2.new(0, 50, 0, 58)  -- Next to rank badge
-    favBadge.BackgroundTransparency = 1
-    favBadge.BorderSizePixel = 0
-    favBadge.Visible = false
-    favBadge.Parent = cardFrame
+-- Favorite Badge (smaller size, hidden by default)
+local favBadge = Instance.new("Frame")
+favBadge.Name = "FavoriteBadge"
+favBadge.Size = UDim2.new(0, 65, 0, 18)  -- Smaller: 75x20 -> 65x18
+favBadge.Position = UDim2.new(0, 44, 0, 58)  -- Adjusted position (32 + 4 spacing + 8 start)
+favBadge.BackgroundTransparency = 1
+favBadge.BorderSizePixel = 0
+favBadge.Visible = false
+favBadge.Parent = cardFrame
 
-    local favBadgeCorner = Instance.new("UICorner")
-    favBadgeCorner.CornerRadius = UDim.new(0.11, 0)
-    favBadgeCorner.Parent = favBadge
+local favBadgeCorner = Instance.new("UICorner")
+favBadgeCorner.CornerRadius = UDim.new(0.11, 0)
+favBadgeCorner.Parent = favBadge
 
-    local favBadgeStroke = Instance.new("UIStroke")
-    favBadgeStroke.Thickness = 1.8
-    favBadgeStroke.Color = C.yellow
-    favBadgeStroke.Transparency = 0
-    favBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    favBadgeStroke.Parent = favBadge
+local favBadgeStroke = Instance.new("UIStroke")
+favBadgeStroke.Thickness = 1.5  -- Match rank badge thickness
+favBadgeStroke.Color = C.yellow
+favBadgeStroke.Transparency = 0
+favBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+favBadgeStroke.Parent = favBadge
 
-    local favBadgeIcon = Instance.new("ImageLabel")
-    favBadgeIcon.Name = "FavIcon"
-    favBadgeIcon.Size = UDim2.new(0, 12, 0, 12)
-    favBadgeIcon.Position = UDim2.new(0, 4, 0.5, -6)
-    favBadgeIcon.BackgroundTransparency = 1
-    favBadgeIcon.Image = "rbxassetid://113366714224251"
-    favBadgeIcon.Parent = favBadge
+local favBadgeIcon = Instance.new("ImageLabel")
+favBadgeIcon.Name = "FavIcon"
+favBadgeIcon.Size = UDim2.new(0, 10, 0, 10)  -- Smaller: 12x12 -> 10x10
+favBadgeIcon.Position = UDim2.new(0, 3, 0.5, -5)
+favBadgeIcon.BackgroundTransparency = 1
+favBadgeIcon.Image = "rbxassetid://113366714224251"
+favBadgeIcon.Parent = favBadge
 
-    local favBadgeLabel = Instance.new("TextLabel")
-    favBadgeLabel.Name = "FavLabel"
-    favBadgeLabel.Size = UDim2.new(1, -18, 1, 0)
-    favBadgeLabel.Position = UDim2.new(0, 18, 0, 0)
-    favBadgeLabel.BackgroundTransparency = 1
-    favBadgeLabel.Text = "Favorite"
-    favBadgeLabel.TextColor3 = C.yellow
-    favBadgeLabel.Font = Enum.Font.GothamBold
-    favBadgeLabel.TextSize = 10
-    favBadgeLabel.TextXAlignment = Enum.TextXAlignment.Center
-    favBadgeLabel.TextYAlignment = Enum.TextYAlignment.Center
-    favBadgeLabel.Parent = favBadge
+local favBadgeLabel = Instance.new("TextLabel")
+favBadgeLabel.Name = "FavLabel"
+favBadgeLabel.Size = UDim2.new(1, -15, 1, 0)
+favBadgeLabel.Position = UDim2.new(0, 15, 0, 0)
+favBadgeLabel.BackgroundTransparency = 1
+favBadgeLabel.Text = "Favorite"
+favBadgeLabel.TextColor3 = C.yellow
+favBadgeLabel.Font = Enum.Font.GothamBold
+favBadgeLabel.TextSize = 9  -- Smaller: 10 -> 9
+favBadgeLabel.TextXAlignment = Enum.TextXAlignment.Center
+favBadgeLabel.TextYAlignment = Enum.TextYAlignment.Center
+favBadgeLabel.Parent = favBadge
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "NameLabel"
