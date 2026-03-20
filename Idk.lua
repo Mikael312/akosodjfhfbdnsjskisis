@@ -8,7 +8,6 @@ if not ALLOWED_PLACE_IDS[game.PlaceId] then
     return
 end
 
--- hookfunction paling atas sebelum services
 do
     local oldInfo
     oldInfo = hookfunction(debug.info, function(...)
@@ -20,7 +19,6 @@ do
     end)
 end
 
--- Services wrapped dalam table
 local S = {
     Players = game:GetService("Players"),
     TweenService = game:GetService("TweenService"),
@@ -58,6 +56,7 @@ local DefaultConfig = {
     },
     Settings = false,
     EspPlayers = false,
+    LockGui = false,
 }
 
 local Config = DefaultConfig
@@ -1626,12 +1625,98 @@ if featuresContent then
     end)
 end
 
+-- UI Tab
 local uiContent = tabContents["UI"]
 if uiContent then
     createSectionHeader(uiContent, "UI Panel")
+    
     createTabToggle(uiContent, "Steal Bar", "StealBar", function(ns, set)
         set(ns)
-        if ns then enableStealBar() else disableStealBar() end
+        if ns then
+            enableStealBar()
+        else
+            disableStealBar()
+        end
+    end)
+    
+    createSectionHeader(uiContent, "GUI Controls")
+    
+    -- Lock GUI Toggle
+    createTabToggle(uiContent, "Lock GUI", "LockGui", function(ns, set)
+        set(ns)
+        -- Lock/Unlock all draggable frames
+        creditFrame.Draggable = not ns
+        mainFrame.Draggable = not ns
+        menuFrame.Draggable = not ns
+    end)
+    
+    -- Reset Position Button (not a toggle, just a button)
+    local resetFrame = Instance.new("Frame")
+    resetFrame.Name = "ResetPositionFrame"
+    resetFrame.Size = UDim2.new(1, 0, 0, 30)
+    resetFrame.BackgroundColor3 = C.black
+    resetFrame.BackgroundTransparency = 0.20
+    resetFrame.BorderSizePixel = 0
+    resetFrame.Parent = uiContent
+    
+    local resetCorner = Instance.new("UICorner")
+    resetCorner.CornerRadius = UDim.new(0, 6)
+    resetCorner.Parent = resetFrame
+    
+    local resetLabel = Instance.new("TextLabel")
+    resetLabel.Size = UDim2.new(0, 180, 1, 0)
+    resetLabel.Position = UDim2.new(0, 10, 0, 0)
+    resetLabel.BackgroundTransparency = 1
+    resetLabel.Text = "Reset Position"
+    resetLabel.TextColor3 = C.white
+    resetLabel.Font = Enum.Font.Gotham
+    resetLabel.TextSize = 10
+    resetLabel.TextXAlignment = Enum.TextXAlignment.Left
+    resetLabel.TextYAlignment = Enum.TextYAlignment.Center
+    resetLabel.Parent = resetFrame
+    
+    local resetButton = Instance.new("TextButton")
+    resetButton.Size = UDim2.new(0, 50, 0, 20)
+    resetButton.Position = UDim2.new(1, -60, 0.5, -10)
+    resetButton.BackgroundColor3 = C.red
+    resetButton.BorderSizePixel = 0
+    resetButton.Text = "Reset"
+    resetButton.TextColor3 = C.white
+    resetButton.Font = Enum.Font.GothamBold
+    resetButton.TextSize = 9
+    resetButton.AutoButtonColor = false
+    resetButton.Parent = resetFrame
+    
+    local resetBtnCorner = Instance.new("UICorner")
+    resetBtnCorner.CornerRadius = UDim.new(0, 4)
+    resetBtnCorner.Parent = resetButton
+    
+    resetButton.MouseEnter:Connect(function()
+        resetButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    end)
+    
+    resetButton.MouseLeave:Connect(function()
+        resetButton.BackgroundColor3 = C.red
+    end)
+    
+    resetButton.MouseButton1Click:Connect(function()
+        -- Reset to default positions
+        Config.Positions.CreditFrame = DefaultConfig.Positions.CreditFrame
+        Config.Positions.MainFrame = DefaultConfig.Positions.MainFrame
+        Config.Positions.MenuFrame = DefaultConfig.Positions.MenuFrame
+        SaveConfig()
+        
+        -- Apply positions immediately
+        local creditPos = Config.Positions.CreditFrame
+        creditFrame.Position = UDim2.new(creditPos.X, -170, creditPos.Y, -25)
+        
+        local mainPos = Config.Positions.MainFrame
+        mainFrame.Position = UDim2.new(mainPos.X, -96.5, mainPos.Y, -142.5)
+        
+        local menuPos = Config.Positions.MenuFrame
+        menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160)
+        
+        showNotification({message = "GUI positions reset!", color = "Success", textColor = "White"})
     end)
 end
 
