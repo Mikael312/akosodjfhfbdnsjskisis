@@ -962,9 +962,9 @@ subtitleLabel.Parent = mainFrame
 -- ===== MENU FRAME =====
 local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
-menuFrame.Size = UDim2.new(0, 277, 0, 300)
+menuFrame.Size = UDim2.new(0, 290, 0, 320)
 local menuPos = Config.Positions.MenuFrame
-menuFrame.Position = UDim2.new(menuPos.X, -138.5, menuPos.Y, -150)
+menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160)  -- Adjust center position
 menuFrame.BackgroundColor3 = C.black
 menuFrame.BackgroundTransparency = 0.03
 menuFrame.BorderSizePixel = 0
@@ -1032,7 +1032,7 @@ local function createTabContent(name)
     contentFrame.Position = UDim2.new(0, 10, 0, 75)
     contentFrame.BackgroundTransparency = 1
     contentFrame.BorderSizePixel = 0
-    contentFrame.ScrollBarThickness = 6
+    contentFrame.ScrollBarThickness = 4
     contentFrame.ScrollBarImageColor3 = C.buttonBlue
     contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     contentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
