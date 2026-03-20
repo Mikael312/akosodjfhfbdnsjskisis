@@ -55,9 +55,6 @@ local DefaultConfig = {
     Favorites = {
         Animals = {},
     },
-    Keybinds = {
-        InstantClone = nil,
-    },
     Settings = false,
     EspPlayers = false,
     LockGui = false,
@@ -375,10 +372,6 @@ local function getFavoriteByPriority(allAnimalsCache)
 end
 
 -- ==================== VARIABLES ====================
--- Keybinds Variables
-local boundKeys = {}
-local toggleTriggers = {}
-local listeningPill = nil
 
 -- ESP Players Variables
 local espPlayersEnabled = false
@@ -392,76 +385,6 @@ local scannerConnections = {}
 local plotChannels = {}
 local lastAnimalData = {}
 local highestAnimal = nil
-
--- ==================== KEYBINDS FUNCTION ====================
--- KEYBIND SYSTEM
-local function keyName(kc)
-    local names = {
-        LeftBracket = "[", RightBracket = "]",
-        Semicolon = ";", Quote = "'",
-        Comma = ",", Period = ".", Slash = "/",
-        BackSlash = "\\", Minus = "-", Equals = "=",
-        BackQuote = "`"
-    }
-    return names[kc.Name] or kc.Name
-end
-
--- Load keybinds from config
-if Config.Keybinds then
-    for actionName, keyCodeName in pairs(Config.Keybinds) do
-        if keyCodeName then
-            boundKeys[actionName] = Enum.KeyCode[keyCodeName]
-        end
-    end
-end
-
--- Save keybinds (dalam InputBegan handler)
-local keybindsToSave = {}
-for action, kc in pairs(boundKeys) do
-    keybindsToSave[action] = kc and kc.Name or nil
-end
-Config.Keybinds = keybindsToSave
-SaveConfig()
-
--- Input handler
-S.UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-    
-    if listeningPill then
-        local data = listeningPill
-        listeningPill = nil
-        
-        if input.KeyCode == Enum.KeyCode.Escape then
-            boundKeys[data.actionName] = nil
-            data.pill.Text = "None"
-            data.pill.TextColor3 = Color3.fromRGB(90, 90, 105)
-        else
-            boundKeys[data.actionName] = input.KeyCode
-            data.pill.Text = keyName(input.KeyCode)
-            data.pill.TextColor3 = Color3.fromRGB(200, 200, 215)
-        end
-        
-        -- Save to config
-        local keybindsToSave = {}
-        for action, kc in pairs(boundKeys) do
-            keybindsToSave[action] = kc.Name
-        end
-        Config.Keybinds = keybindsToSave
-        SaveConfig()
-        
-        return
-    end
-    
-    -- Trigger bound actions
-    for actionName, kc in pairs(boundKeys) do
-        if kc and input.KeyCode == kc then
-            if toggleTriggers[actionName] then
-                toggleTriggers[actionName]()
-            end
-        end
-    end
-end)
 
 -- ==================== FUNCTIONALITY FUNCTIONS ====================
 
@@ -1370,93 +1293,6 @@ local function createTabButton(parent, name, iconId, callback)
     return buttonFrame
 end
 
-local function createKeybindRow(parent, actionName, actionLabel, triggerCallback)
-    local keybindFrame = Instance.new("Frame")
-    keybindFrame.Name = actionName .. "KeybindFrame"
-    keybindFrame.Size = UDim2.new(1, 0, 0, 30)
-    keybindFrame.BackgroundColor3 = C.black
-    keybindFrame.BackgroundTransparency = 0.20
-    keybindFrame.BorderSizePixel = 0
-    keybindFrame.Parent = parent
-    
-    local keybindCorner = Instance.new("UICorner")
-    keybindCorner.CornerRadius = UDim.new(0, 6)
-    keybindCorner.Parent = keybindFrame
-    
-    local keybindLabel = Instance.new("TextLabel")
-    keybindLabel.Name = "Label"
-    keybindLabel.Size = UDim2.new(0, 150, 1, 0)
-    keybindLabel.Position = UDim2.new(0, 10, 0, 0)
-    keybindLabel.BackgroundTransparency = 1
-    keybindLabel.Text = actionLabel
-    keybindLabel.TextColor3 = C.white
-    keybindLabel.Font = Enum.Font.Gotham
-    keybindLabel.TextSize = 10
-    keybindLabel.TextXAlignment = Enum.TextXAlignment.Left
-    keybindLabel.TextYAlignment = Enum.TextYAlignment.Center
-    keybindLabel.Parent = keybindFrame
-    
-    -- Key pill button
-    local keyPill = Instance.new("TextButton")
-    keyPill.Name = "KeyPill"
-    keyPill.Size = UDim2.new(0, 70, 0, 22)
-    keyPill.Position = UDim2.new(1, -80, 0.5, -11)
-    keyPill.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    keyPill.BorderSizePixel = 0
-    keyPill.Font = Enum.Font.GothamBold
-    keyPill.TextSize = 9
-    keyPill.AutoButtonColor = false
-    keyPill.Parent = keybindFrame
-    
-    local pillCorner = Instance.new("UICorner")
-    pillCorner.CornerRadius = UDim.new(0, 4)
-    pillCorner.Parent = keyPill
-    
-    local pillStroke = Instance.new("UIStroke")
-    pillStroke.Thickness = 1
-    pillStroke.Color = Color3.fromRGB(60, 60, 75)
-    pillStroke.Transparency = 0.5
-    pillStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    pillStroke.Parent = keyPill
-    
-    -- Set initial key display
-    if boundKeys[actionName] then
-        keyPill.Text = keyName(boundKeys[actionName])
-        keyPill.TextColor3 = Color3.fromRGB(200, 200, 215)
-    else
-        keyPill.Text = "None"
-        keyPill.TextColor3 = Color3.fromRGB(90, 90, 105)
-    end
-    
-    -- Register trigger
-    toggleTriggers[actionName] = triggerCallback
-    
-    -- Click to rebind
-    keyPill.MouseButton1Click:Connect(function()
-        listeningPill = {pill = keyPill, actionName = actionName}
-        keyPill.Text = "..."
-        keyPill.TextColor3 = C.blue1 
-        pillStroke.Color = C.blue2
-        pillStroke.Transparency = 0
-    end)
-    
-    keyPill.MouseEnter:Connect(function()
-        if not listeningPill or listeningPill.pill ~= keyPill then
-            pillStroke.Color = C.buttonBlue
-            pillStroke.Transparency = 0.3
-        end
-    end)
-    
-    keyPill.MouseLeave:Connect(function()
-        if not listeningPill or listeningPill.pill ~= keyPill then
-            pillStroke.Color = Color3.fromRGB(60, 60, 75)
-            pillStroke.Transparency = 0.5
-        end
-    end)
-    
-    return keybindFrame
-end
-
  local function createAnimalCard(parent, animalData, rank)
     local cardFrame = Instance.new("Frame")
     cardFrame.Name = "AnimalCard"
@@ -1902,22 +1738,6 @@ if uiContent then
         else
             disableStealBar()
         end
-    end)
-end
-
--- Keybinds Tab
-local keybindsContent = tabContents["Keybinds"]
-if keybindsContent then
-    createSectionHeader(keybindsContent, "Keybinds Settings")
-    
--- Keybinds Tab
-local keybindsContent = tabContents["Keybinds"]
-if keybindsContent then
-    createSectionHeader(keybindsContent, "Keybinds Settings")
-    
-    -- Instant Clone keybind
-    createKeybindRow(keybindsContent, "InstantClone", "Instant Clone", function()
-        -- TODO: Trigger instant clone
     end)
 end
 
