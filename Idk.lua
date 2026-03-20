@@ -1226,6 +1226,61 @@ local function createTabToggle(parent, name, configKey, callback)
     return toggleFrame
 end
 
+local function createTabButton(parent, name, callback)
+    local buttonFrame = Instance.new("Frame")
+    buttonFrame.Name = name .. "ButtonFrame"
+    buttonFrame.Size = UDim2.new(1, 0, 0, 30)
+    buttonFrame.BackgroundColor3 = C.black
+    buttonFrame.BackgroundTransparency = 0.20
+    buttonFrame.BorderSizePixel = 0
+    buttonFrame.Parent = parent
+    
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 6)
+    buttonCorner.Parent = buttonFrame
+    
+    local buttonLabel = Instance.new("TextLabel")
+    buttonLabel.Name = "Label"
+    buttonLabel.Size = UDim2.new(0, 180, 1, 0)
+    buttonLabel.Position = UDim2.new(0, 10, 0, 0)
+    buttonLabel.BackgroundTransparency = 1
+    buttonLabel.Text = name
+    buttonLabel.TextColor3 = C.white
+    buttonLabel.Font = Enum.Font.Gotham
+    buttonLabel.TextSize = 10
+    buttonLabel.TextXAlignment = Enum.TextXAlignment.Left
+    buttonLabel.TextYAlignment = Enum.TextYAlignment.Center
+    buttonLabel.Parent = buttonFrame
+    
+    local actionButton = Instance.new("ImageButton")
+    actionButton.Name = "ActionButton"
+    actionButton.Size = UDim2.new(0, 20, 0, 20)
+    actionButton.Position = UDim2.new(1, -30, 0.5, -10)
+    actionButton.BackgroundColor3 = C.blue1
+    actionButton.BorderSizePixel = 0
+    actionButton.Image = "rbxassetid://97462463002118"
+    actionButton.AutoButtonColor = false
+    actionButton.Parent = buttonFrame
+    
+    local actionCorner = Instance.new("UICorner")
+    actionCorner.CornerRadius = UDim.new(0, 4)
+    actionCorner.Parent = actionButton
+    
+    actionButton.MouseEnter:Connect(function()
+        actionButton.BackgroundColor3 = C.blue2
+    end)
+    
+    actionButton.MouseLeave:Connect(function()
+        actionButton.BackgroundColor3 = C.blue1
+    end)
+    
+    actionButton.MouseButton1Click:Connect(function()
+        if callback then callback() end
+    end)
+    
+    return buttonFrame
+end
+
  local function createAnimalCard(parent, animalData, rank)
     local cardFrame = Instance.new("Frame")
     cardFrame.Name = "AnimalCard"
@@ -1648,72 +1703,19 @@ if uiContent then
     
     createSectionHeader(uiContent, "GUI Controls")
     
-    -- Lock GUI Toggle
     createTabToggle(uiContent, "Lock GUI", "LockGui", function(ns, set)
         set(ns)
-        -- Lock/Unlock all draggable frames
         creditFrame.Draggable = not ns
         mainFrame.Draggable = not ns
         menuFrame.Draggable = not ns
     end)
     
-    -- Reset Position Button (not a toggle, just a button)
-    local resetFrame = Instance.new("Frame")
-    resetFrame.Name = "ResetPositionFrame"
-    resetFrame.Size = UDim2.new(1, 0, 0, 30)
-    resetFrame.BackgroundColor3 = C.black
-    resetFrame.BackgroundTransparency = 0.20
-    resetFrame.BorderSizePixel = 0
-    resetFrame.Parent = uiContent
-    
-    local resetCorner = Instance.new("UICorner")
-    resetCorner.CornerRadius = UDim.new(0, 6)
-    resetCorner.Parent = resetFrame
-    
-    local resetLabel = Instance.new("TextLabel")
-    resetLabel.Size = UDim2.new(0, 180, 1, 0)
-    resetLabel.Position = UDim2.new(0, 10, 0, 0)
-    resetLabel.BackgroundTransparency = 1
-    resetLabel.Text = "Reset Position"
-    resetLabel.TextColor3 = C.white
-    resetLabel.Font = Enum.Font.Gotham
-    resetLabel.TextSize = 10
-    resetLabel.TextXAlignment = Enum.TextXAlignment.Left
-    resetLabel.TextYAlignment = Enum.TextYAlignment.Center
-    resetLabel.Parent = resetFrame
-    
-    local resetButton = Instance.new("TextButton")
-    resetButton.Size = UDim2.new(0, 50, 0, 20)
-    resetButton.Position = UDim2.new(1, -60, 0.5, -10)
-    resetButton.BackgroundColor3 = C.red
-    resetButton.BorderSizePixel = 0
-    resetButton.Text = "Reset"
-    resetButton.TextColor3 = C.white
-    resetButton.Font = Enum.Font.GothamBold
-    resetButton.TextSize = 9
-    resetButton.AutoButtonColor = false
-    resetButton.Parent = resetFrame
-    
-    local resetBtnCorner = Instance.new("UICorner")
-    resetBtnCorner.CornerRadius = UDim.new(0, 4)
-    resetBtnCorner.Parent = resetButton
-    
-    resetButton.MouseEnter:Connect(function()
-        resetButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    end)
-    
-    resetButton.MouseLeave:Connect(function()
-        resetButton.BackgroundColor3 = C.red
-    end)
-    
-    resetButton.MouseButton1Click:Connect(function()
-        -- Reset to default positions
+    createTabButton(uiContent, "Reset Position", function()
         Config.Positions.CreditFrame = DefaultConfig.Positions.CreditFrame
         Config.Positions.MainFrame = DefaultConfig.Positions.MainFrame
         Config.Positions.MenuFrame = DefaultConfig.Positions.MenuFrame
         SaveConfig()
         
-        -- Apply positions immediately
         local creditPos = Config.Positions.CreditFrame
         creditFrame.Position = UDim2.new(creditPos.X, -170, creditPos.Y, -25)
         
