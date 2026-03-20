@@ -1,3 +1,13 @@
+local ALLOWED_PLACE_IDS = {
+    [109983668079237] = true,
+    [96342491571673] = true,
+}
+
+if not ALLOWED_PLACE_IDS[game.PlaceId] then
+    print("Wrong game boii")
+    return
+end
+
 -- hookfunction paling atas sebelum services
 do
     local oldInfo
