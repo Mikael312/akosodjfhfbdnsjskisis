@@ -1165,40 +1165,52 @@ local function createAnimalCard(parent, animalData, rank)
     end)
 
     -- Rank Badge (below viewport)
-    local badgeColor
-    if rank == 1 then
-        badgeColor = Color3.fromRGB(219, 154, 2)  -- Gold
-    elseif rank == 2 then
-        badgeColor = Color3.fromRGB(166, 162, 162)  -- Silver
-    elseif rank == 3 then
-        badgeColor = Color3.fromRGB(143, 81, 20)  -- Bronze
-    else
-        badgeColor = Color3.fromRGB(60, 60, 75)  -- Default grey
-    end
+local badgeColor, strokeColor
+if rank == 1 then
+    badgeColor = Color3.fromRGB(219, 154, 2)  -- Gold
+    strokeColor = Color3.fromRGB(255, 215, 0)  -- Brighter gold stroke
+elseif rank == 2 then
+    badgeColor = Color3.fromRGB(166, 162, 162)  -- Silver
+    strokeColor = Color3.fromRGB(192, 192, 192)  -- Brighter silver stroke
+elseif rank == 3 then
+    badgeColor = Color3.fromRGB(143, 81, 20)  -- Bronze
+    strokeColor = Color3.fromRGB(205, 127, 50)  -- Brighter bronze stroke
+else
+    badgeColor = Color3.fromRGB(60, 60, 75)  -- Default grey
+    strokeColor = Color3.fromRGB(100, 100, 120)  -- Brighter grey stroke
+end
 
-    local rankBadge = Instance.new("Frame")
-    rankBadge.Name = "RankBadge"
-    rankBadge.Size = UDim2.new(0, 45, 0, 22)
-    rankBadge.Position = UDim2.new(0, 8, 0, 58)  -- Below viewport
-    rankBadge.BackgroundColor3 = badgeColor
-    rankBadge.BorderSizePixel = 0
-    rankBadge.Parent = cardFrame
+local rankBadge = Instance.new("Frame")
+rankBadge.Name = "RankBadge"
+rankBadge.Size = UDim2.new(0, 45, 0, 22)
+rankBadge.Position = UDim2.new(0, 8, 0, 58)
+rankBadge.BackgroundTransparency = 1  -- Invisible background
+rankBadge.BorderSizePixel = 0
+rankBadge.Parent = cardFrame
 
-    local badgeCorner = Instance.new("UICorner")
-    badgeCorner.CornerRadius = UDim.new(0, 6)
-    badgeCorner.Parent = rankBadge
+local badgeCorner = Instance.new("UICorner")
+badgeCorner.CornerRadius = UDim.new(0, 6)
+badgeCorner.Parent = rankBadge
 
-    local rankLabel = Instance.new("TextLabel")
-    rankLabel.Name = "RankLabel"
-    rankLabel.Size = UDim2.new(1, 0, 1, 0)
-    rankLabel.BackgroundTransparency = 1
-    rankLabel.Text = "#" .. tostring(rank)
-    rankLabel.TextColor3 = C.white
-    rankLabel.Font = Enum.Font.GothamBold
-    rankLabel.TextSize = 12
-    rankLabel.TextXAlignment = Enum.TextXAlignment.Center
-    rankLabel.TextYAlignment = Enum.TextYAlignment.Center
-    rankLabel.Parent = rankBadge
+-- Stroke dengan color masing-masing
+local badgeStroke = Instance.new("UIStroke")
+badgeStroke.Thickness = 2
+badgeStroke.Color = strokeColor
+badgeStroke.Transparency = 0
+badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+badgeStroke.Parent = rankBadge
+
+local rankLabel = Instance.new("TextLabel")
+rankLabel.Name = "RankLabel"
+rankLabel.Size = UDim2.new(1, 0, 1, 0)
+rankLabel.BackgroundTransparency = 1
+rankLabel.Text = "#" .. tostring(rank)
+rankLabel.TextColor3 = strokeColor  -- Text same color as stroke
+rankLabel.Font = Enum.Font.GothamBold
+rankLabel.TextSize = 12
+rankLabel.TextXAlignment = Enum.TextXAlignment.Center
+rankLabel.TextYAlignment = Enum.TextYAlignment.Center
+rankLabel.Parent = rankBadge
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "NameLabel"
