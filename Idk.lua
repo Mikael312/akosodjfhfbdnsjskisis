@@ -370,6 +370,21 @@ local function getFavoriteByPriority(allAnimalsCache)
     return nil
 end
 
+-- ==================== VARIABLES ====================
+
+-- ESP Players Variables
+local espPlayersEnabled = false
+local espObjects = {}
+local updateConnection = nil
+local eventConnections = {}
+
+-- Scanner Variables
+local allAnimalsCache = {}
+local scannerConnections = {}
+local plotChannels = {}
+local lastAnimalData = {}
+local highestAnimal = nil
+
 -- ==================== FUNCTIONALITY FUNCTIONS ====================
 
 local function isMyBaseAnimal(animalData)
@@ -404,12 +419,6 @@ local function isPlayerPlot(plot)
     end
     return false
 end
-
--- ==================== ESP VARIABLES ====================
-local espPlayersEnabled = false
-local espObjects = {}
-local updateConnection = nil
-local eventConnections = {}
 
 -- ==================== ESP PLAYERS FUNCTIONS ====================
 local function getEquippedItem(character)
@@ -551,11 +560,6 @@ local function disableESPPlayers()
 end
 
 -- ==================== SCANNER ====================
-local allAnimalsCache = {}
-local scannerConnections = {}
-local plotChannels = {}
-local lastAnimalData = {}
-local highestAnimal = nil
 
 local function getAnimalHash(animalList)
     if not animalList then return "" end
