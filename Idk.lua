@@ -1863,12 +1863,9 @@ end
 local keybindsContent = tabContents["Keybinds"]
 if keybindsContent then
     createSectionHeader(keybindsContent, "Keybinds")
-
     createTabKeybind(keybindsContent, "Instant Clone", "CloneKey", "V", nil)
+end -- TAMBAH NI
 
-
-
--- Favorites Tab (BALANCED - EFFICIENT + SIMPLE)
 local favoritesContent = tabContents["Favorites"]
 local lastCacheCount = 0
 local lastTopUIDs = {}
