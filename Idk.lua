@@ -59,6 +59,7 @@ local DefaultConfig = {
     EspPlayers = false,
     LockGui = false,
     PlotBeam = false,
+    EspTimer = false,
 }
 
 local Config = DefaultConfig
@@ -708,6 +709,148 @@ end
 if Config.PlotBeam then
     task.spawn(function()
         enablePlotBeam()
+    end)
+end
+
+-- ==================== ESP TIMER ====================
+local timerEspEnabled = false
+local timerEspConnections = {}
+
+local function updateBillboard(mainPart, contentText, shouldShow, isUnlocked)
+    local existing = mainPart:FindFirstChild("RemainingTimeGui")
+    if shouldShow then
+        if not existing then
+            local gui = Instance.new("BillboardGui")
+            gui.Name = "RemainingTimeGui"
+            gui.Adornee = mainPart
+            gui.Size = UDim2.new(0, 90, 0, 20)
+            gui.StudsOffset = Vector3.new(0, 5, 0)
+            gui.AlwaysOnTop = true
+            gui.Parent = mainPart
+            local label = Instance.new("TextLabel")
+            label.Name = "Text"
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            if isUnlocked then
+                label.TextScaled = false
+                label.TextSize = 14
+                label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            else
+                label.TextScaled = true
+                label.TextColor3 = Color3.fromRGB(255, 255, 0)
+            end
+            label.TextStrokeTransparency = 0.2
+            label.Font = Enum.Font.GothamBold
+            label.Text = contentText
+            label.Parent = gui
+        else
+            local label = existing:FindFirstChild("Text")
+            if label then
+                label.Text = contentText
+                if isUnlocked then
+                    label.TextScaled = false
+                    label.TextSize = 14
+                    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                else
+                    label.TextScaled = true
+                    label.TextColor3 = Color3.fromRGB(255, 255, 0)
+                end
+            end
+        end
+    else
+        if existing then existing:Destroy() end
+    end
+end
+
+local function findLowestValidRemainingTime(purchases)
+    local lowest = nil
+    local lowestY = nil
+    for _, purchase in pairs(purchases:GetChildren()) do
+        local main = purchase:FindFirstChild("Main")
+        local gui = main and main:FindFirstChild("BillboardGui")
+        local remTime = gui and gui:FindFirstChild("RemainingTime")
+        local locked = gui and gui:FindFirstChild("Locked")
+        if main and remTime and locked and remTime:IsA("TextLabel") and locked:IsA("GuiObject") then
+            local y = main.Position.Y
+            if not lowestY or y < lowestY then
+                lowest = {remTime = remTime, locked = locked, main = main}
+                lowestY = y
+            end
+        end
+    end
+    return lowest
+end
+
+local function scanAndConnect()
+    local plots = S.Workspace:FindFirstChild("Plots")
+    if not plots then return end
+    for _, plot in pairs(plots:GetChildren()) do
+        local purchases = plot:FindFirstChild("Purchases")
+        if not purchases then continue end
+        local selected = findLowestValidRemainingTime(purchases)
+        for _, purchase in pairs(purchases:GetChildren()) do
+            local main = purchase:FindFirstChild("Main")
+            local gui = main and main:FindFirstChild("BillboardGui")
+            local remTime = gui and gui:FindFirstChild("RemainingTime")
+            local locked = gui and gui:FindFirstChild("Locked")
+            if main and remTime and locked and remTime:IsA("TextLabel") and locked:IsA("GuiObject") then
+                local isTarget = selected and remTime == selected.remTime
+                local isUnlocked = not locked.Visible
+                local displayText = isUnlocked and "Unlocked" or remTime.Text
+                updateBillboard(main, displayText, isTarget, isUnlocked)
+                local key = remTime:GetDebugId()
+                if isTarget and not timerEspConnections[key] then
+                    local function refresh()
+                        local stillTarget = (findLowestValidRemainingTime(purchases) or {}).remTime == remTime
+                        local unlocked = not locked.Visible
+                        local text = unlocked and "Unlocked" or remTime.Text
+                        updateBillboard(main, text, stillTarget, unlocked)
+                    end
+                    local conn1 = remTime:GetPropertyChangedSignal("Text"):Connect(refresh)
+                    local conn2 = locked:GetPropertyChangedSignal("Visible"):Connect(refresh)
+                    timerEspConnections[key] = {conn1, conn2}
+                end
+            end
+        end
+    end
+end
+
+local function toggleTimerESP(state)
+    timerEspEnabled = state
+    if state then
+        task.spawn(function()
+            while timerEspEnabled do
+                pcall(scanAndConnect)
+                task.wait(5)
+            end
+        end)
+    else
+        local plots = S.Workspace:FindFirstChild("Plots")
+        if plots then
+            for _, plot in pairs(plots:GetChildren()) do
+                local purchases = plot:FindFirstChild("Purchases")
+                if purchases then
+                    for _, purchase in pairs(purchases:GetChildren()) do
+                        local main = purchase:FindFirstChild("Main")
+                        if main then
+                            local gui = main:FindFirstChild("RemainingTimeGui")
+                            if gui then gui:Destroy() end
+                        end
+                    end
+                end
+            end
+        end
+        for _, connections in pairs(timerEspConnections) do
+            for _, conn in ipairs(connections) do conn:Disconnect() end
+        end
+        timerEspConnections = {}
+    end
+end
+
+-- auto start kalau config on
+if Config.EspTimer then
+    task.spawn(function()
+        toggleTimerESP(true)
     end)
 end
 
@@ -1924,6 +2067,10 @@ if featuresContent then
     createSectionHeader(featuresContent, "Features")
     createTabToggle(featuresContent, "Esp Players", "EspPlayers", function(ns, set)
         set(ns); if ns then enableESPPlayers() else disableESPPlayers() end
+    end)
+end
+    createTabToggle(featuresContent, "Esp Timer", "EspTimer", function(ns, set)
+        set(ns); toggleTimerESP(ns)
     end)
 end
 
