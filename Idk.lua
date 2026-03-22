@@ -719,8 +719,6 @@ if Config.PlotBeam then
     end)
 end
 
--- ==================== ESP TIMER ====================
-
 local function updateBillboard(mainPart, contentText, shouldShow, isUnlocked)
     local existing = mainPart:FindFirstChild("RemainingTimeGui")
     if shouldShow then
@@ -859,8 +857,6 @@ if Config.EspTimer then
     end)
 end
 
--- ==================== OPTIMIZER ====================
-
 local function storeOriginalSettings()
     pcall(function()
         originalSettings = {
@@ -960,7 +956,6 @@ if Config.Optimizer then
 end
 
 -- animation disabler
-
 local function disableAnimations()
     pcall(function()
         for _, obj in ipairs(S.Workspace:GetDescendants()) do
@@ -1031,13 +1026,35 @@ local MUT_COLORS = {
     Divine      = Color3.fromRGB(255, 255, 255),
 }
 
+local HOLY_LIST = {
+    "Strawberry Elephant",
+    "Meowl",
+    "Skibidi Toilet",
+    "Headless Horseman",
+}
+
+local function getBadgeText(data)
+    
+    if data.isDuelBase then return "・DUEL", Color3.fromRGB(255, 50, 50) end
+    
+    for _, name in ipairs(HOLY_LIST) do
+        if data.name and data.name:lower() == name:lower() then
+            return "・HOLY SHIT", Color3.fromRGB(255, 215, 0)
+        end
+    end
+    
+    if isFavorite(data.name) then return "・Favorite", Color3.fromRGB(241, 196, 15) end
+    
+    return nil, nil
+end
+
 local function createBrainrotBillboard(data)
     local hasMut = data.mutation and data.mutation ~= "None"
     local mutColor = hasMut and (MUT_COLORS[data.mutation] or Color3.fromRGB(200, 100, 255)) or Color3.fromRGB(200, 100, 255)
 
     local bb = Instance.new("BillboardGui")
     bb.Name = "BrainrotESP_" .. data.uid
-    bb.Size = UDim2.new(0, 160, 0, 48)
+    bb.Size = UDim2.new(0, 160, 0, 50)
     bb.StudsOffset = Vector3.new(0, 1.8, 0)
     bb.AlwaysOnTop = true
     bb.LightInfluence = 0
@@ -1055,11 +1072,27 @@ local function createBrainrotBillboard(data)
     stroke.Thickness = 1.5
     stroke.Transparency = 0.2
 
-    -- Mutation Label (paling atas)
+    -- Badge hujung kanan atas
+    local badgeText, badgeColor = getBadgeText(data)
+    if badgeText then
+        local badge = Instance.new("TextLabel", container)
+        badge.Size = UDim2.new(1, -6, 0, 12)
+        badge.Position = UDim2.new(0, 3, 0, 2)
+        badge.BackgroundTransparency = 1
+        badge.Font = Enum.Font.GothamBold
+        badge.TextSize = 9
+        badge.TextColor3 = badgeColor
+        badge.TextStrokeTransparency = 0
+        badge.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        badge.Text = badgeText
+        badge.TextXAlignment = Enum.TextXAlignment.Right
+    end
+
+    -- Mutation Label
     if hasMut then
         local mutationLabel = Instance.new("TextLabel", container)
         mutationLabel.Size = UDim2.new(1, -6, 0, 14)
-        mutationLabel.Position = UDim2.new(0, 3, 0, 2)
+        mutationLabel.Position = UDim2.new(0, 3, 0, badgeText and 12 or 2)
         mutationLabel.BackgroundTransparency = 1
         mutationLabel.Font = Enum.Font.GothamBold
         mutationLabel.TextSize = 10
@@ -1073,7 +1106,7 @@ local function createBrainrotBillboard(data)
     -- Name Label
     local nameLabel = Instance.new("TextLabel", container)
     nameLabel.Size = UDim2.new(1, -6, 0, 16)
-    nameLabel.Position = UDim2.new(0, 3, 0, hasMut and 16 or 4)
+    nameLabel.Position = UDim2.new(0, 3, 0, hasMut and (badgeText and 26 or 16) or (badgeText and 14 or 4))
     nameLabel.BackgroundTransparency = 1
     nameLabel.Font = Enum.Font.GothamBold
     nameLabel.TextSize = 12
@@ -1086,7 +1119,7 @@ local function createBrainrotBillboard(data)
     -- Gen Label
     local genLabel = Instance.new("TextLabel", container)
     genLabel.Size = UDim2.new(1, -6, 0, 14)
-    genLabel.Position = UDim2.new(0, 3, 0, hasMut and 32 or 20)
+    genLabel.Position = UDim2.new(0, 3, 0, hasMut and (badgeText and 42 or 32) or (badgeText and 30 or 20))
     genLabel.BackgroundTransparency = 1
     genLabel.Font = Enum.Font.GothamBold
     genLabel.TextSize = 10
