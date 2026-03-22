@@ -1375,9 +1375,10 @@ local function createTabKeybind(parent, name, configKey, default, onChanged)
     rowLabel.Parent = rowFrame
 
     local keyBtn = Instance.new("TextButton")
-    keyBtn.Size = UDim2.new(0, 55, 0, 20)
-    keyBtn.Position = UDim2.new(1, -63, 0.5, -10)
-    keyBtn.BackgroundColor3 = C.darkGrey
+    keyBtn.Size = UDim2.new(0, 45, 0, 18)
+    keyBtn.Position = UDim2.new(1, -53, 0.5, -9)
+    keyBtn.BackgroundColor3 = C.black
+    keyBtn.BackgroundTransparency = 0.20
     keyBtn.BorderSizePixel = 0
     keyBtn.Text = Config[configKey]
     keyBtn.TextColor3 = C.buttonBlue
@@ -1512,7 +1513,7 @@ end
 local rankBadge = Instance.new("Frame")
 rankBadge.Name = "RankBadge"
 rankBadge.Size = UDim2.new(0, 32, 0, 18)
-rankBadge.Position = UDim2.new(0, 8, 0, 65)  -- Changed from 58 to 63 (down 5px)
+rankBadge.Position = UDim2.new(0, 8, 0, 66)  -- Changed from 58 to 63 (down 5px)
 rankBadge.BackgroundTransparency = 1
 rankBadge.BorderSizePixel = 0
 rankBadge.Parent = cardFrame
@@ -1557,7 +1558,7 @@ local isFav = isFavorite(animalData.name)
 local favBadge = Instance.new("Frame")
 favBadge.Name = "FavoriteBadge"
 favBadge.Size = UDim2.new(0, 58, 0, 18)  -- Changed from 65 to 58 (smaller width)
-favBadge.Position = UDim2.new(0, 44, 0, 65)  -- Changed from 58 to 63 (down 5px)
+favBadge.Position = UDim2.new(0, 44, 0, 66)  -- Changed from 58 to 63 (down 5px)
 favBadge.BackgroundTransparency = 1
 favBadge.BorderSizePixel = 0
 favBadge.Visible = isFav
