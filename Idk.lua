@@ -1828,9 +1828,9 @@ end
 
 local uiContent = tabContents["UI"]
 if uiContent then
-    createSectionHeader(uiContent, "GUI Controls")
+    createSectionHeader(uiContent, "UI Panel")
 
-    createTabToggle(uiContent, "Lock GUI", "LockGui", function(ns, set)
+    createTabToggle(uiContent, "Lock Gui", "LockGui", function(ns, set)
         set(ns)
         creditFrame.Draggable = not ns
         mainFrame.Draggable = not ns
@@ -1859,6 +1859,14 @@ if uiContent then
         })
     end)
 end
+
+local keybindsContent = tabContents["Keybinds"]
+if keybindsContent then
+    createSectionHeader(keybindsContent, "Keybinds")
+
+    createTabKeybind(keybindsContent, "Instant Clone", "CloneKey", "V", nil)
+
+
 
 -- Favorites Tab (BALANCED - EFFICIENT + SIMPLE)
 local favoritesContent = tabContents["Favorites"]
@@ -1917,6 +1925,16 @@ if favoritesContent then
         end
     end)
 end
+
+    -- ==================== INPUT LISTENER ====================
+S.UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if S.UserInputService:GetFocusedTextBox() then return end
+
+    if Config.CloneKey and input.KeyCode == Enum.KeyCode[Config.CloneKey] then
+        task.spawn(instantClone)
+    end
+end)
 
 -- Show welcome notification
 showNotification({message = "ZynHub Private", subtext = "Welcome back!", color = "Violet", textColor = "White", subColor = "Violet"})
