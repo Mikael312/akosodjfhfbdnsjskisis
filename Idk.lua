@@ -735,10 +735,10 @@ local function updateBillboard(mainPart, contentText, shouldShow, isUnlocked)
             if isUnlocked then
                 label.TextScaled = false
                 label.TextSize = 14
-                label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                label.TextColor3 = Color3.fromRGB(53, 91, 242) -- C.blue2
             else
                 label.TextScaled = true
-                label.TextColor3 = Color3.fromRGB(255, 255, 0)
+                label.TextColor3 = Color3.fromRGB(70, 70, 180) -- timer color
             end
             label.TextStrokeTransparency = 0.2
             label.Font = Enum.Font.GothamBold
@@ -751,10 +751,10 @@ local function updateBillboard(mainPart, contentText, shouldShow, isUnlocked)
                 if isUnlocked then
                     label.TextScaled = false
                     label.TextSize = 14
-                    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    label.TextColor3 = Color3.fromRGB(53, 91, 242) -- C.blue2
                 else
                     label.TextScaled = true
-                    label.TextColor3 = Color3.fromRGB(255, 255, 0)
+                    label.TextColor3 = Color3.fromRGB(70, 70, 180) -- timer color
                 end
             end
         end
