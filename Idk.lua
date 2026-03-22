@@ -1293,6 +1293,80 @@ local function createTabButton(parent, name, iconId, callback)
     return buttonFrame
 end
 
+local function createTabKeybind(parent, name, configKey, default, onChanged)
+    if Config[configKey] == nil then
+        Config[configKey] = default
+        SaveConfig()
+    end
+
+    local rowFrame = Instance.new("Frame")
+    rowFrame.Name = name .. "KeybindRow"
+    rowFrame.Size = UDim2.new(1, 0, 0, 30)
+    rowFrame.BackgroundColor3 = C.black
+    rowFrame.BackgroundTransparency = 0.20
+    rowFrame.BorderSizePixel = 0
+    rowFrame.Parent = parent
+
+    local rowCorner = Instance.new("UICorner")
+    rowCorner.CornerRadius = UDim.new(0, 6)
+    rowCorner.Parent = rowFrame
+
+    local rowLabel = Instance.new("TextLabel")
+    rowLabel.Size = UDim2.new(0, 150, 1, 0)
+    rowLabel.Position = UDim2.new(0, 10, 0, 0)
+    rowLabel.BackgroundTransparency = 1
+    rowLabel.Text = name
+    rowLabel.TextColor3 = C.white
+    rowLabel.Font = Enum.Font.Gotham
+    rowLabel.TextSize = 10
+    rowLabel.TextXAlignment = Enum.TextXAlignment.Left
+    rowLabel.TextYAlignment = Enum.TextYAlignment.Center
+    rowLabel.Parent = rowFrame
+
+    local keyBtn = Instance.new("TextButton")
+    keyBtn.Size = UDim2.new(0, 55, 0, 20)
+    keyBtn.Position = UDim2.new(1, -63, 0.5, -10)
+    keyBtn.BackgroundColor3 = C.darkGrey
+    keyBtn.BorderSizePixel = 0
+    keyBtn.Text = Config[configKey]
+    keyBtn.TextColor3 = C.buttonBlue
+    keyBtn.Font = Enum.Font.GothamBold
+    keyBtn.TextSize = 9
+    keyBtn.AutoButtonColor = false
+    keyBtn.Parent = rowFrame
+
+    local keyBtnCorner = Instance.new("UICorner")
+    keyBtnCorner.CornerRadius = UDim.new(0, 5)
+    keyBtnCorner.Parent = keyBtn
+
+    local keyBtnStroke = Instance.new("UIStroke")
+    keyBtnStroke.Thickness = 1
+    keyBtnStroke.Color = C.buttonBlue
+    keyBtnStroke.Transparency = 0.5
+    keyBtnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    keyBtnStroke.Parent = keyBtn
+
+    keyBtn.MouseButton1Click:Connect(function()
+        keyBtn.Text = "..."
+        keyBtn.TextColor3 = C.blue1
+        keyBtnStroke.Transparency = 0
+        local con
+        con = S.UserInputService.InputBegan:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.Keyboard then
+                Config[configKey] = inp.KeyCode.Name
+                keyBtn.Text = inp.KeyCode.Name
+                keyBtn.TextColor3 = C.buttonBlue
+                keyBtnStroke.Transparency = 0.5
+                SaveConfig()
+                con:Disconnect()
+                if onChanged then onChanged(inp.KeyCode) end
+            end
+        end)
+    end)
+
+    return rowFrame
+end
+
  local function createAnimalCard(parent, animalData, rank)
     local cardFrame = Instance.new("Frame")
     cardFrame.Name = "AnimalCard"
@@ -1693,51 +1767,43 @@ if featuresContent then
         set(ns)
     end)
 
-    createSectionHeader(featuresContent, "Visual")
+    createSectionHeader(featuresContent, "Features")
     createTabToggle(featuresContent, "Esp Players", "EspPlayers", function(ns, set)
         set(ns); if ns then enableESPPlayers() else disableESPPlayers() end
     end)
 end
 
--- UI Tab
 local uiContent = tabContents["UI"]
 if uiContent then
     createSectionHeader(uiContent, "GUI Controls")
-    
+
     createTabToggle(uiContent, "Lock GUI", "LockGui", function(ns, set)
         set(ns)
         creditFrame.Draggable = not ns
         mainFrame.Draggable = not ns
         menuFrame.Draggable = not ns
     end)
-    
+
     createTabButton(uiContent, "Reset Position", "rbxassetid://97462463002118", function()
         Config.Positions.CreditFrame = DefaultConfig.Positions.CreditFrame
         Config.Positions.MainFrame = DefaultConfig.Positions.MainFrame
         Config.Positions.MenuFrame = DefaultConfig.Positions.MenuFrame
         SaveConfig()
-        
+
         local creditPos = Config.Positions.CreditFrame
         creditFrame.Position = UDim2.new(creditPos.X, -170, creditPos.Y, -25)
-        
+
         local mainPos = Config.Positions.MainFrame
         mainFrame.Position = UDim2.new(mainPos.X, -96.5, mainPos.Y, -142.5)
-        
+
         local menuPos = Config.Positions.MenuFrame
         menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160)
-        
-        showNotification({message = "GUI positions reset!", color = "Success", textColor = "White"})
-    end)
-    
-    createSectionHeader(uiContent, "UI Panel")
-    
-    createTabToggle(uiContent, "Steal Bar", "StealBar", function(ns, set)
-        set(ns)
-        if ns then
-            enableStealBar()
-        else
-            disableStealBar()
-        end
+
+        showNotification({
+            message = "GUI positions reset!",
+            color = "Success",
+            textColor = "White"
+        })
     end)
 end
 
