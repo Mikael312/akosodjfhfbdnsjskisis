@@ -1209,6 +1209,11 @@ local function scanSinglePlot(plot)
         if not owner or not S.Players:FindFirstChild(owner.Name) then return end
 
         local ownerName = owner and owner.Name or "Unknown"
+
+        -- check duel status
+        local ownerPlayer = S.Players:FindFirstChild(ownerName)
+        local isDuelBase = ownerPlayer and ownerPlayer:GetAttribute("__duels_block_steal") == true or false
+
         if not animalList then return end
 
         for slot, animalData in pairs(animalList) do
@@ -1239,6 +1244,7 @@ local function scanSinglePlot(plot)
                     slot        = tostring(slot),
                     uid         = plot.Name .. "_" .. tostring(slot),
                     modelName   = animalName,
+                    isDuelBase  = isDuelBase,
                 })
             end
         end
@@ -1328,7 +1334,24 @@ end)
 
 initializePlotScanner()
 
--- ==================== GUI CREATION ====================
+local function setupDuelListener(p)
+    p:GetAttributeChangedSignal("__duels_block_steal"):Connect(function()
+        local isDuel = p:GetAttribute("__duels_block_steal") == true
+        for _, animal in ipairs(allAnimalsCache) do
+            if animal.owner == p.Name then
+                animal.isDuelBase = isDuel
+            end
+        end
+    end)
+end
+
+for _, p in ipairs(S.Players:GetPlayers()) do
+    setupDuelListener(p)
+end
+
+S.Players.PlayerAdded:Connect(function(p)
+    setupDuelListener(p)
+end)
 
 local C = {
     white = Color3.fromRGB(255, 255, 255),
