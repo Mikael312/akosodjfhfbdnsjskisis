@@ -393,6 +393,9 @@ local plotBeamAtt0 = nil
 local plotBeamAtt1 = nil
 local plotBeamConn = nil
 
+local timerEspEnabled = false
+local timerEspConnections = {}
+
 -- ==================== FUNCTIONALITY FUNCTIONS ====================
 
 local function isMyBaseAnimal(animalData)
@@ -713,8 +716,6 @@ if Config.PlotBeam then
 end
 
 -- ==================== ESP TIMER ====================
-local timerEspEnabled = false
-local timerEspConnections = {}
 
 local function updateBillboard(mainPart, contentText, shouldShow, isUnlocked)
     local existing = mainPart:FindFirstChild("RemainingTimeGui")
@@ -2068,7 +2069,6 @@ if featuresContent then
     createTabToggle(featuresContent, "Esp Players", "EspPlayers", function(ns, set)
         set(ns); if ns then enableESPPlayers() else disableESPPlayers() end
     end)
-end
     createTabToggle(featuresContent, "Esp Timer", "EspTimer", function(ns, set)
         set(ns); toggleTimerESP(ns)
     end)
