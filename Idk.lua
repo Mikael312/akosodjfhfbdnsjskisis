@@ -560,6 +560,57 @@ local function disableESPPlayers()
     espObjects = {}
 end
 
+-- ==================== INSTANT CLONE ====================
+local isCloning = false
+
+local function instantClone()
+    if isCloning then return end
+    isCloning = true
+
+    pcall(function()
+        local char = player.Character or player.CharacterAdded:Wait()
+        local humanoid = char:WaitForChild("Humanoid")
+        local backpack = player:WaitForChild("Backpack")
+
+        local tool = backpack:FindFirstChild("Quantum Cloner") or char:FindFirstChild("Quantum Cloner")
+        if not tool then
+            isCloning = false
+            return
+        end
+
+        if tool.Parent == backpack then
+            humanoid:EquipTool(tool)
+            task.wait(0.1)
+        end
+
+        tool:Activate()
+
+        local cloneName = tostring(player.UserId) .. "_Clone"
+        local clone = nil
+
+        for _ = 1, 100 do
+            clone = Workspace:FindFirstChild(cloneName)
+            if clone then break end
+            task.wait(0.1)
+        end
+
+        if not clone then
+            isCloning = false
+            return
+        end
+
+        local teleportBtn = player.PlayerGui
+            :WaitForChild("ToolsFrames")
+            :WaitForChild("QuantumCloner")
+            :WaitForChild("TeleportToClone")
+
+        teleportBtn.Visible = true
+        firesignal(teleportBtn.MouseButton1Up)
+    end)
+
+    isCloning = false
+end
+
 -- ==================== SCANNER ====================
 
 local function getAnimalHash(animalList)
@@ -1709,7 +1760,9 @@ end
 
 -- ==================== CALLBACKS & UI POPULATION ====================
 
-local instantCloneBtn = createButton("Instant Clone", 45, function() end)
+local instantCloneBtn = createButton("Instant Clone", 45, function()
+    task.spawn(instantClone)
+end)
 
 local tpToBestBtn = createButton("Tp to Best", 80, function() end)
 
