@@ -60,6 +60,7 @@ local DefaultConfig = {
     LockGui = false,
     PlotBeam = false,
     EspTimer = false,
+    Optimizer = false,
 }
 
 local Config = DefaultConfig
@@ -395,6 +396,11 @@ local plotBeamConn = nil
 
 local timerEspEnabled = false
 local timerEspConnections = {}
+
+local fpsBoostEnabled = false
+local optimizerThreads = {}
+local optimizerConnections = {}
+local originalSettings = {}
 
 -- ==================== FUNCTIONALITY FUNCTIONS ====================
 
@@ -852,6 +858,106 @@ end
 if Config.EspTimer then
     task.spawn(function()
         toggleTimerESP(true)
+    end)
+end
+
+-- ==================== OPTIMIZER ====================
+
+local function storeOriginalSettings()
+    pcall(function()
+        originalSettings = {
+            qualityLevel = settings().Rendering.QualityLevel,
+            globalShadows = Lighting.GlobalShadows,
+            brightness = Lighting.Brightness,
+            fogEnd = Lighting.FogEnd,
+            decoration = S.Workspace.Terrain.Decoration,
+        }
+    end)
+end
+
+local function nukeVisualEffects()
+    pcall(function()
+        for _, obj in ipairs(S.Workspace:GetDescendants()) do
+            pcall(function()
+                if obj:IsA("ParticleEmitter") then obj.Enabled = false; obj:Destroy()
+                elseif obj:IsA("Trail") then obj.Enabled = false; obj:Destroy()
+                elseif obj:IsA("PointLight") or obj:IsA("SpotLight") or obj:IsA("SurfaceLight") then obj.Enabled = false; obj:Destroy()
+                elseif obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then obj.Enabled = false; obj:Destroy()
+                elseif obj:IsA("BasePart") then obj.CastShadow = false; obj.Material = Enum.Material.Plastic
+                end
+            end)
+        end
+    end)
+end
+
+local function optimizeCharacter(char)
+    if not char then return end
+    task.spawn(function()
+        task.wait(0.5)
+        pcall(function()
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then part.CastShadow = false; part.Material = Enum.Material.Plastic
+                elseif part:IsA("ParticleEmitter") or part:IsA("Trail") then part:Destroy()
+                end
+            end
+        end)
+    end)
+end
+
+local function toggleOptimizer(state)
+    fpsBoostEnabled = state
+    getgenv().OPTIMIZER_ACTIVE = state
+
+    if state then
+        storeOriginalSettings()
+
+        pcall(function()
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+            Lighting.GlobalShadows = false
+            Lighting.FogEnd = 9e9
+            Lighting.Technology = Enum.Technology.Legacy
+            S.Workspace.Terrain.Decoration = false
+        end)
+
+        table.insert(optimizerThreads, task.spawn(function()
+            task.wait(1); nukeVisualEffects()
+        end))
+
+        table.insert(optimizerConnections, S.Workspace.DescendantAdded:Connect(function(obj)
+            if not getgenv().OPTIMIZER_ACTIVE then return end
+            pcall(function()
+                if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Fire") then obj:Destroy()
+                elseif obj:IsA("BasePart") then obj.CastShadow = false
+                end
+            end)
+        end))
+
+        for _, p in ipairs(S.Players:GetPlayers()) do
+            if p.Character then optimizeCharacter(p.Character) end
+            table.insert(optimizerConnections, p.CharacterAdded:Connect(function(char)
+                if getgenv().OPTIMIZER_ACTIVE then optimizeCharacter(char) end
+            end))
+        end
+
+        pcall(function() setfpscap(999) end)
+    else
+        for _, t in ipairs(optimizerThreads) do pcall(function() task.cancel(t) end) end
+        optimizerThreads = {}
+        for _, c in ipairs(optimizerConnections) do pcall(function() c:Disconnect() end) end
+        optimizerConnections = {}
+
+        pcall(function()
+            settings().Rendering.QualityLevel = originalSettings.qualityLevel or Enum.QualityLevel.Automatic
+            Lighting.GlobalShadows = originalSettings.globalShadows ~= false
+            S.Workspace.Terrain.Decoration = originalSettings.decoration ~= false
+        end)
+    end
+end
+
+-- auto start kalau config on
+if Config.Optimizer then
+    task.spawn(function()
+        toggleOptimizer(true)
     end)
 end
 
@@ -2079,6 +2185,9 @@ if utilityContent then
     createSectionHeader(utilityContent, "Misc")
     createTabToggle(utilityContent, "Plot Beam", "PlotBeam", function(ns, set)
         set(ns); if ns then enablePlotBeam() else disablePlotBeam() end
+    end)
+    createTabToggle(utilityContent, "Optimizer", "Optimizer", function(ns, set)
+        set(ns); toggleOptimizer(ns)
     end)
 end
 
