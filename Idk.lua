@@ -2240,6 +2240,8 @@ if utilityContent then
     createTabToggle(utilityContent, "Plot Beam", "PlotBeam", function(ns, set)
         set(ns); if ns then enablePlotBeam() else disablePlotBeam() end
     end)
+
+    createSectionHeader(utilityContent, "Performance")
     createTabToggle(utilityContent, "Optimizer", "Optimizer", function(ns, set)
         set(ns); toggleOptimizer(ns)
     end)
