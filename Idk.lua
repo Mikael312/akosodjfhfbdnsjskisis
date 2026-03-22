@@ -399,6 +399,9 @@ local originalSettings = {}
 
 local animDisablerConnections = {}
 
+local brainrotESPEnabled = false
+local brainrotBillboards = {}
+
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
     local plots = workspace:FindFirstChild("Plots")
@@ -1012,6 +1015,158 @@ end
 if Config.AnimDisabler then
     task.spawn(function()
         enableAnimDisabler()
+    end)
+end
+
+local MUT_COLORS = {
+    Cursed      = Color3.fromRGB(255, 50, 50),
+    Gold        = Color3.fromRGB(255, 215, 0),
+    Diamond     = Color3.fromRGB(0, 255, 255),
+    YinYang     = Color3.fromRGB(220, 220, 220),
+    Rainbow     = Color3.fromRGB(255, 100, 200),
+    Lava        = Color3.fromRGB(255, 100, 20),
+    Candy       = Color3.fromRGB(255, 105, 180),
+    Bloodrot    = Color3.fromRGB(139, 0, 0),
+    Radioactive = Color3.fromRGB(0, 255, 0),
+    Divine      = Color3.fromRGB(255, 255, 255),
+}
+
+local function createBrainrotBillboard(data)
+    local hasMut = data.mutation and data.mutation ~= "None"
+    local color = hasMut and (MUT_COLORS[data.mutation] or Color3.fromRGB(200, 100, 255)) or Color3.fromRGB(0, 255, 150)
+
+    local bb = Instance.new("BillboardGui")
+    bb.Name = "BrainrotESP_" .. data.uid
+    bb.Size = UDim2.new(0, 160, 0, 38)
+    bb.StudsOffset = Vector3.new(0, 1.8, 0)
+    bb.AlwaysOnTop = true
+    bb.LightInfluence = 0
+    bb.MaxDistance = 3000
+
+    local container = Instance.new("Frame", bb)
+    container.Size = UDim2.new(1, 0, 1, 0)
+    container.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    container.BackgroundTransparency = 0.5
+    container.BorderSizePixel = 0
+    Instance.new("UICorner", container).CornerRadius = UDim.new(0, 4)
+
+    local stroke = Instance.new("UIStroke", container)
+    stroke.Color = color
+    stroke.Thickness = 1.5
+    stroke.Transparency = 0.2
+
+    local nameLabel = Instance.new("TextLabel", container)
+    nameLabel.Size = UDim2.new(1, -6, 0, 18)
+    nameLabel.Position = UDim2.new(0, 3, 0, 2)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Font = Enum.Font.GothamBlack
+    nameLabel.TextSize = 13
+    nameLabel.TextColor3 = color
+    nameLabel.TextStrokeTransparency = 0
+    nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    nameLabel.Text = data.name or "???"
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+    local genLabel = Instance.new("TextLabel", container)
+    genLabel.Size = UDim2.new(1, -6, 0, 14)
+    genLabel.Position = UDim2.new(0, 3, 0, 20)
+    genLabel.BackgroundTransparency = 1
+    genLabel.Font = Enum.Font.GothamBold
+    genLabel.TextSize = 11
+    genLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    genLabel.TextStrokeTransparency = 0
+    genLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    genLabel.Text = data.genText or ""
+    genLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+    if hasMut then
+        local mutBadge = Instance.new("TextLabel", bb)
+        mutBadge.Size = UDim2.new(0, 60, 0, 14)
+        mutBadge.Position = UDim2.new(0.5, -30, 0, -16)
+        mutBadge.BackgroundColor3 = color
+        mutBadge.BackgroundTransparency = 0.3
+        mutBadge.Font = Enum.Font.GothamBlack
+        mutBadge.TextSize = 9
+        mutBadge.TextColor3 = Color3.fromRGB(255, 255, 255)
+        mutBadge.TextStrokeTransparency = 0
+        mutBadge.Text = data.mutation:upper()
+        Instance.new("UICorner", mutBadge).CornerRadius = UDim.new(0, 3)
+    end
+
+    return bb
+end
+
+local function findAdornee(animalData)
+    if not animalData then return nil end
+    local plots = S.Workspace:FindFirstChild("Plots")
+    if not plots then return nil end
+    local plot = plots:FindFirstChild(animalData.plot)
+    if not plot then return nil end
+    local podiums = plot:FindFirstChild("AnimalPodiums")
+    if not podiums then return nil end
+    local podium = podiums:FindFirstChild(animalData.slot)
+    if not podium then return nil end
+    local base = podium:FindFirstChild("Base")
+    if not base then return nil end
+    local spawn = base:FindFirstChild("Spawn")
+    if spawn then return spawn end
+    return base:FindFirstChildWhichIsA("BasePart") or base
+end
+
+local function refreshBrainrotESP()
+    if not brainrotESPEnabled then return end
+    if not allAnimalsCache or #allAnimalsCache == 0 then return end
+
+    local seen = {}
+
+    for _, data in ipairs(allAnimalsCache) do
+        seen[data.uid] = true
+
+        if not brainrotBillboards[data.uid] then
+            local adornee = findAdornee(data)
+            if adornee then
+                local bb = createBrainrotBillboard(data)
+                bb.Adornee = adornee
+                bb.Parent = adornee
+                brainrotBillboards[data.uid] = bb
+            end
+        end
+    end
+
+    for uid, bb in pairs(brainrotBillboards) do
+        if not seen[uid] then
+            if bb and bb.Parent then bb:Destroy() end
+            brainrotBillboards[uid] = nil
+        end
+    end
+end
+
+local function clearBrainrotESP()
+    for _, bb in pairs(brainrotBillboards) do
+        if bb and bb.Parent then bb:Destroy() end
+    end
+    brainrotBillboards = {}
+end
+
+local function enableBrainrotESP()
+    brainrotESPEnabled = true
+    task.spawn(function()
+        while brainrotESPEnabled do
+            pcall(refreshBrainrotESP)
+            task.wait(0.3)
+        end
+    end)
+end
+
+local function disableBrainrotESP()
+    brainrotESPEnabled = false
+    clearBrainrotESP()
+end
+
+-- auto start kalau config on
+if Config.EspBest then
+    task.spawn(function()
+        enableBrainrotESP()
     end)
 end
 
@@ -2231,6 +2386,9 @@ if featuresContent then
     end)
     createTabToggle(featuresContent, "Esp Timer", "EspTimer", function(ns, set)
         set(ns); toggleTimerESP(ns)
+    end)
+    createTabToggle(featuresContent, "Esp Best", "EspBest", function(ns, set)
+        set(ns); if ns then enableBrainrotESP() else disableBrainrotESP() end
     end)
 end
 
