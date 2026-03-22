@@ -44,7 +44,6 @@ S.AnimalsShared = require(Shared:WaitForChild("Animals"))
 S.NumberUtils = require(Utils:WaitForChild("NumberUtils"))
 S.RaritiesData = require(Datas:WaitForChild("Rarities"))
 
--- ==================== CONFIG SYSTEM ====================
 local FileName = "ZynHubPrivate_v2.json"
 local DefaultConfig = {
     Positions = {
@@ -61,6 +60,7 @@ local DefaultConfig = {
     PlotBeam = false,
     EspTimer = false,
     Optimizer = false,
+    AnimDisabler = false,
 }
 
 local Config = DefaultConfig
@@ -98,7 +98,6 @@ local function SaveConfig()
     end
 end
 
--- ==================== NOTIFICATION SYSTEM ====================
 local activeNotifications = {}
 local NOTIF_HEIGHT = 56
 local NOTIF_SPACING = 10
@@ -262,8 +261,6 @@ local function showNotification(opts)
     task.delay(2, dismiss)
 end
 
--- ==================== FAVORITES SYSTEM ====================
-
 local FAVORITES_LIST = {
     "Strawberry Elephant",
     "Meowl",
@@ -374,8 +371,6 @@ local function getFavoriteByPriority(allAnimalsCache)
     return nil
 end
 
--- ==================== VARIABLES ====================
-
 -- ESP Players Variables
 local espPlayersEnabled = false
 local espObjects = {}
@@ -402,7 +397,7 @@ local optimizerThreads = {}
 local optimizerConnections = {}
 local originalSettings = {}
 
--- ==================== FUNCTIONALITY FUNCTIONS ====================
+local animDisablerConnections = {}
 
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
@@ -958,6 +953,65 @@ end
 if Config.Optimizer then
     task.spawn(function()
         toggleOptimizer(true)
+    end)
+end
+
+-- animation disabler
+
+local function disableAnimations()
+    pcall(function()
+        for _, obj in ipairs(S.Workspace:GetDescendants()) do
+            if obj:IsA("Animator") then
+                pcall(function()
+                    local model = obj:FindFirstAncestorOfClass("Model")
+                    local isPlayer = model and S.Players:GetPlayerFromCharacter(model) ~= nil
+                    if not isPlayer then
+                        for _, track in pairs(obj:GetPlayingAnimationTracks()) do
+                            track:Stop(0)
+                        end
+                        obj.AnimationPlayed:Connect(function(track)
+                            track:Stop(0)
+                        end)
+                    end
+                end)
+            end
+        end
+    end)
+end
+
+local function enableAnimDisabler()
+    disableAnimations()
+
+    table.insert(animDisablerConnections, S.Workspace.DescendantAdded:Connect(function(obj)
+        if not Config.AnimDisabler then return end
+        if obj:IsA("Animator") then
+            pcall(function()
+                local model = obj:FindFirstAncestorOfClass("Model")
+                local isPlayer = model and S.Players:GetPlayerFromCharacter(model) ~= nil
+                if not isPlayer then
+                    for _, track in pairs(obj:GetPlayingAnimationTracks()) do
+                        track:Stop(0)
+                    end
+                    obj.AnimationPlayed:Connect(function(track)
+                        track:Stop(0)
+                    end)
+                end
+            end)
+        end
+    end))
+end
+
+local function disableAnimDisabler()
+    for _, c in ipairs(animDisablerConnections) do
+        pcall(function() c:Disconnect() end)
+    end
+    animDisablerConnections = {}
+end
+
+-- auto start kalau config on
+if Config.AnimDisabler then
+    task.spawn(function()
+        enableAnimDisabler()
     end)
 end
 
@@ -2188,6 +2242,9 @@ if utilityContent then
     end)
     createTabToggle(utilityContent, "Optimizer", "Optimizer", function(ns, set)
         set(ns); toggleOptimizer(ns)
+    end)
+    createTabToggle(utilityContent, "Animation Disabler", "AnimDisabler", function(ns, set)
+        set(ns); if ns then enableAnimDisabler() else disableAnimDisabler() end
     end)
 end
 
