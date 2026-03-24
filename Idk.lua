@@ -1398,7 +1398,7 @@ local C = {
     green = Color3.fromRGB(46, 204, 113),
     yellow = Color3.fromRGB(241, 196, 15),
     red = Color3.fromRGB(231, 76, 60),
-    coolBlue = Color3.fromRGB(19, 72, 232),
+    coolBlue = Color3.fromRGB(5, 52, 153),
 }
 
 local function addTextGradient(textElement, color1, color2, rotation)
