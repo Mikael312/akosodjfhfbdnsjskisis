@@ -1153,24 +1153,40 @@ local function refreshBrainrotESP()
     if not brainrotESPEnabled then return end
     if not allAnimalsCache or #allAnimalsCache == 0 then return end
 
-    local seen = {}
+    local activeUIDs = {}
+    local highestUID = allAnimalsCache[1] and allAnimalsCache[1].uid or nil
 
-    for _, data in ipairs(allAnimalsCache) do
-        seen[data.uid] = true
+    for _, animalData in ipairs(allAnimalsCache) do
+        local shouldShow = false
 
-        if not brainrotBillboards[data.uid] then
-            local adornee = findAdornee(data)
-            if adornee then
-                local bb = createBrainrotBillboard(data)
-                bb.Adornee = adornee
-                bb.Parent = adornee
-                brainrotBillboards[data.uid] = bb
+        if animalData.uid == highestUID then
+            shouldShow = true
+        end
+
+        if animalData.genValue >= 50000000 then
+            shouldShow = true
+        end
+
+        if isFavorite(animalData.name) then
+            shouldShow = true
+        end
+
+        if shouldShow then
+            activeUIDs[animalData.uid] = true
+            if not brainrotBillboards[animalData.uid] then
+                local adornee = findAdornee(animalData)
+                if adornee then
+                    local bb = createBrainrotBillboard(animalData)
+                    bb.Adornee = adornee
+                    bb.Parent = adornee
+                    brainrotBillboards[animalData.uid] = bb
+                end
             end
         end
     end
 
     for uid, bb in pairs(brainrotBillboards) do
-        if not seen[uid] then
+        if not activeUIDs[uid] then
             if bb and bb.Parent then bb:Destroy() end
             brainrotBillboards[uid] = nil
         end
