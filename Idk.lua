@@ -133,8 +133,8 @@ local function showNotification(opts)
     local message  = opts.message  or ""
     local subtext  = opts.subtext  or nil
     local color    = opts.color and NotifColors[opts.color] or NotifColors.Default
-    local textColor = opts.textColor and NotifColors[opts.textColor] or color  -- Custom text color
-    local subColor = opts.subColor and NotifColors[opts.subColor] or color    -- Custom subtext color
+    local textColor = opts.textColor and NotifColors[opts.textColor] or color  
+    local subColor = opts.subColor and NotifColors[opts.subColor] or color    
 
     if #activeNotifications >= MAX_NOTIFS then
         local oldest = activeNotifications[1]
@@ -207,7 +207,7 @@ local function showNotification(opts)
         subLabel.Position = UDim2.new(0, 30, 0, 28)
         subLabel.BackgroundTransparency = 1
         subLabel.Text = subtext
-        subLabel.TextColor3 = subColor  -- Custom subtext color
+        subLabel.TextColor3 = subColor  
         subLabel.TextSize = 10
         subLabel.Font = Enum.Font.Gotham
         subLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1058,7 +1058,6 @@ local function createBrainrotBillboard(data)
     stroke.Thickness = 1.5
     stroke.Transparency = 0.2
 
-    -- Badge hujung kanan atas
     local badgeText, badgeColor = getBadgeText(data)
     if badgeText then
         local badge = Instance.new("TextLabel", container)
@@ -1074,7 +1073,6 @@ local function createBrainrotBillboard(data)
         badge.TextXAlignment = Enum.TextXAlignment.Right
     end
 
-    -- Mutation Label
     if hasMut then
         local mutationLabel = Instance.new("TextLabel", container)
         mutationLabel.Size = UDim2.new(1, -6, 0, 14)
@@ -1242,7 +1240,6 @@ local function scanSinglePlot(plot)
 
         local ownerName = owner and owner.Name or "Unknown"
 
-        -- check duel status
         local ownerPlayer = S.Players:FindFirstChild(ownerName)
         local isDuelBase = ownerPlayer and ownerPlayer:GetAttribute("__duels_block_steal") == true or false
 
@@ -1401,7 +1398,7 @@ local C = {
     green = Color3.fromRGB(46, 204, 113),
     yellow = Color3.fromRGB(241, 196, 15),
     red = Color3.fromRGB(231, 76, 60),
-    CoolBlue = Color3.fromRGB(19, 72, 232),
+    coolBlue = Color3.fromRGB(19, 72, 232),
 }
 
 local function addTextGradient(textElement, color1, color2, rotation)
@@ -1451,7 +1448,6 @@ local function trackPosition(target, saveKey)
     end)
 end
 
--- ===== CREDIT FRAME =====
 local creditFrame = Instance.new("Frame")
 creditFrame.Name = "CreditFrame"
 creditFrame.Size = UDim2.new(0, 340, 0, 50)
@@ -1662,8 +1658,8 @@ menuFrameCorner.Parent = menuFrame
 local menuFrameGradient = Instance.new("UIGradient")
 menuFrameGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0,    C.black),
-    ColorSequenceKeypoint.new(0.35, C.CoolBlue),
-    ColorSequenceKeypoint.new(0.65, C.black),
+    ColorSequenceKeypoint.new(0.35, C.black),
+    ColorSequenceKeypoint.new(0.65, C.coolBlue),
     ColorSequenceKeypoint.new(1,    C.black),
 })
 menuFrameGradient.Rotation = 135
