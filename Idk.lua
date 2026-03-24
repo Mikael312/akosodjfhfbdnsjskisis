@@ -1103,7 +1103,6 @@ local function createBrainrotBillboard(data)
         mutationLabel.TextXAlignment = Enum.TextXAlignment.Left
     end
 
-    -- Name Label
     local nameLabel = Instance.new("TextLabel", container)
     nameLabel.Size = UDim2.new(1, -6, 0, 16)
     nameLabel.Position = UDim2.new(0, 3, 0, hasMut and (badgeText and 26 or 16) or (badgeText and 14 or 4))
@@ -1116,7 +1115,6 @@ local function createBrainrotBillboard(data)
     nameLabel.Text = data.name or "???"
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Gen Label
     local genLabel = Instance.new("TextLabel", container)
     genLabel.Size = UDim2.new(1, -6, 0, 14)
     genLabel.Position = UDim2.new(0, 3, 0, hasMut and (badgeText and 42 or 32) or (badgeText and 30 or 20))
@@ -1215,7 +1213,6 @@ local function disableBrainrotESP()
     clearBrainrotESP()
 end
 
--- auto start kalau config on
 if Config.EspBest then
     task.spawn(function()
         enableBrainrotESP()
@@ -1418,6 +1415,7 @@ local C = {
     green = Color3.fromRGB(46, 204, 113),
     yellow = Color3.fromRGB(241, 196, 15),
     red = Color3.fromRGB(231, 76, 60),
+    CoolBlue = Color3.fromRGB(19, 72, 232),
 }
 
 local function addTextGradient(textElement, color1, color2, rotation)
@@ -1676,6 +1674,22 @@ trackPosition(menuFrame, "MenuFrame")
 local menuFrameCorner = Instance.new("UICorner")
 menuFrameCorner.CornerRadius = UDim.new(0, 9)
 menuFrameCorner.Parent = menuFrame
+
+local menuFrameGradient = Instance.new("UIGradient")
+menuFrameGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0,    C.black),
+    ColorSequenceKeypoint.new(0.35, C.CoolBlue),
+    ColorSequenceKeypoint.new(0.65, C.black),
+    ColorSequenceKeypoint.new(1,    C.CoolBlue),
+})
+menuFrameGradient.Rotation = 135
+menuFrameGradient.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0,    0.85),
+    NumberSequenceKeypoint.new(0.35, 0.7),
+    NumberSequenceKeypoint.new(0.65, 0.85),
+    NumberSequenceKeypoint.new(1,    0.7),
+})
+menuFrameGradient.Parent = menuFrame
 
 -- Selepas buat semua frames, before TAB CONTENT
 if Config.LockGui then
