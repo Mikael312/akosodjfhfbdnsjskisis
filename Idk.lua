@@ -1649,7 +1649,7 @@ menuFrame.Size = UDim2.new(0, 290, 0, 320)
 local menuPos = Config.Positions.MenuFrame
 menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160)  -- Adjust center position
 menuFrame.BackgroundColor3 = C.white
-menuFrame.BackgroundTransparency = 0
+menuFrame.BackgroundTransparency = 0.03
 menuFrame.BorderSizePixel = 0
 menuFrame.Active = true
 menuFrame.Draggable = true
@@ -1661,12 +1661,13 @@ local menuFrameCorner = Instance.new("UICorner")
 menuFrameCorner.CornerRadius = UDim.new(0, 9)
 menuFrameCorner.Parent = menuFrame
 
-local menuFrameGradient = Instance.new("UIGradient")
 menuFrameGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0,    C.black),
-    ColorSequenceKeypoint.new(0.35, C.CoolBlue),
-    ColorSequenceKeypoint.new(0.65, C.black),
-    ColorSequenceKeypoint.new(1,    C.CoolBlue),
+    ColorSequenceKeypoint.new(0.25, C.black),
+    ColorSequenceKeypoint.new(0.45, C.CoolBlue),
+    ColorSequenceKeypoint.new(0.55, C.CoolBlue),
+    ColorSequenceKeypoint.new(0.75, C.black),
+    ColorSequenceKeypoint.new(1,    C.black),
 })
 menuFrameGradient.Rotation = 135
 menuFrameGradient.Parent = menuFrame
