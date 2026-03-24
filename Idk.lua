@@ -1926,7 +1926,6 @@ local function createTabButton(parent, name, iconId, callback)
     buttonLabel.TextYAlignment = Enum.TextYAlignment.Center
     buttonLabel.Parent = buttonFrame
     
-    -- Icon decoration (no background)
     local iconDecor = Instance.new("ImageLabel")
     iconDecor.Name = "Icon"
     iconDecor.Size = UDim2.new(0, 18, 0, 18)
@@ -1936,7 +1935,6 @@ local function createTabButton(parent, name, iconId, callback)
     iconDecor.ImageColor3 = C.blue1
     iconDecor.Parent = buttonFrame
     
-    -- Click area covers whole frame
     local clickButton = Instance.new("TextButton")
     clickButton.Name = "ClickButton"
     clickButton.Size = UDim2.new(1, 0, 1, 0)
@@ -2108,7 +2106,6 @@ end
         vpFrame.CurrentCamera = vpCamera
     end)
 
-    -- Rank Badge
 local badgeColor, strokeColor, iconId
 if rank == 1 then
     badgeColor = Color3.fromRGB(219, 154, 2)
@@ -2131,7 +2128,7 @@ end
 local rankBadge = Instance.new("Frame")
 rankBadge.Name = "RankBadge"
 rankBadge.Size = UDim2.new(0, 32, 0, 18)
-rankBadge.Position = UDim2.new(0, 8, 0, 66)  -- Changed from 58 to 63 (down 5px)
+rankBadge.Position = UDim2.new(0, 8, 0, 67)  
 rankBadge.BackgroundTransparency = 1
 rankBadge.BorderSizePixel = 0
 rankBadge.Parent = cardFrame
@@ -2170,13 +2167,12 @@ rankLabel.TextXAlignment = Enum.TextXAlignment.Center
 rankLabel.TextYAlignment = Enum.TextYAlignment.Center
 rankLabel.Parent = rankBadge
 
--- Favorite Badge (check if animal is favorited on creation)
 local isFav = isFavorite(animalData.name)
 
 local favBadge = Instance.new("Frame")
 favBadge.Name = "FavoriteBadge"
-favBadge.Size = UDim2.new(0, 58, 0, 18)  -- Changed from 65 to 58 (smaller width)
-favBadge.Position = UDim2.new(0, 44, 0, 66)  -- Changed from 58 to 63 (down 5px)
+favBadge.Size = UDim2.new(0, 58, 0, 18)  
+favBadge.Position = UDim2.new(0, 44, 0, 67)  
 favBadge.BackgroundTransparency = 1
 favBadge.BorderSizePixel = 0
 favBadge.Visible = isFav
@@ -2298,7 +2294,6 @@ favBadgeLabel.Parent = favBadge
         
     end)
 
-    -- Favorite Button
     local favButton = Instance.new("TextButton")
     favButton.Name = "FavoriteButton"
     favButton.Size = UDim2.new(0, 26, 0, 26)
@@ -2349,35 +2344,29 @@ favBadgeLabel.Parent = favBadge
             -- Add to favorites
             addFavorite(animalData.name)
             
-            -- Update button appearance
             favButton.BackgroundColor3 = C.yellow
             favButton.BackgroundTransparency = 0
             favButton.TextColor3 = C.white
             favStroke.Color = C.yellow
             favStroke.Transparency = 0
             
-            -- Show favorite badge
             favBadge.Visible = true
         else
-            -- Remove from favorites
+            
             removeFavorite(animalData.name)
             
-            -- Update button appearance
             favButton.BackgroundColor3 = C.black
             favButton.BackgroundTransparency = 0.15
             favButton.TextColor3 = Color3.fromRGB(150, 150, 150)
             favStroke.Color = Color3.fromRGB(100, 100, 115)
             favStroke.Transparency = 0.5
             
-            -- Hide favorite badge
             favBadge.Visible = false
         end
     end)
 
     return cardFrame
 end
-
--- ==================== CALLBACKS & UI POPULATION ====================
 
 local instantCloneBtn = createButton("Instant Clone", 45, function()
     task.spawn(instantClone)
@@ -2429,7 +2418,6 @@ local settingsBtn = createToggle("Settings", 220, "Settings", function(ns, set)
     menuFrame.Visible = ns
 end)
 
--- ===== TAB CONTENT =====
 task.wait(0.1)
 
 local featuresContent = tabContents["Features"]
@@ -2505,7 +2493,7 @@ local keybindsContent = tabContents["Keybinds"]
 if keybindsContent then
     createSectionHeader(keybindsContent, "Keybinds")
     createTabKeybind(keybindsContent, "Instant Clone", "CloneKey", "V", nil)
-end -- TAMBAH NI
+end 
 
 local favoritesContent = tabContents["Favorites"]
 local lastCacheCount = 0
@@ -2564,7 +2552,7 @@ if favoritesContent then
     end)
 end
 
-    -- ==================== INPUT LISTENER ====================
+-- ok
 S.UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if S.UserInputService:GetFocusedTextBox() then return end
