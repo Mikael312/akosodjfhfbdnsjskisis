@@ -61,6 +61,7 @@ local DefaultConfig = {
     EspTimer = false,
     Optimizer = false,
     AnimDisabler = false,
+    XrayBase = false,
 }
 
 local Config = DefaultConfig
@@ -399,6 +400,10 @@ local animDisablerConnections = {}
 local brainrotESPEnabled = false
 local brainrotBillboards = {}
 
+local xrayEnabled = false
+local xrayOriginal = {}
+local xrayDescConn = nil
+
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
     local plots = workspace:FindFirstChild("Plots")
@@ -730,7 +735,7 @@ local function updateBillboard(mainPart, contentText, shouldShow, isUnlocked)
                 label.TextColor3 = Color3.fromRGB(53, 91, 242) -- C.blue2
             else
                 label.TextScaled = true
-                label.TextColor3 = Color3.fromRGB(70, 70, 180) -- timer color
+                label.TextColor3 = Color3.fromRGB(2, 90, 222) -- timer color
             end
             label.TextStrokeTransparency = 0.2
             label.Font = Enum.Font.GothamBold
@@ -746,7 +751,7 @@ local function updateBillboard(mainPart, contentText, shouldShow, isUnlocked)
                     label.TextColor3 = Color3.fromRGB(53, 91, 242) -- C.blue2
                 else
                     label.TextScaled = true
-                    label.TextColor3 = Color3.fromRGB(70, 70, 180) -- timer color
+                    label.TextColor3 = Color3.fromRGB(2, 90, 222) -- timer color
                 end
             end
         end
@@ -1197,6 +1202,47 @@ end
 if Config.EspBest then
     task.spawn(function()
         enableBrainrotESP()
+    end)
+end
+
+local function isBaseWall(obj)
+    if not obj:IsA("BasePart") then return false end
+    local name = obj.Name:lower()
+    local parentName = (obj.Parent and obj.Parent.Name:lower()) or ""
+    return name:find("base") or parentName:find("base")
+end
+
+local function enableXray()
+    xrayEnabled = true
+    for _, obj in ipairs(S.Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Anchored and isBaseWall(obj) then
+            xrayOriginal[obj] = obj.LocalTransparencyModifier
+            obj.LocalTransparencyModifier = 0.85
+        end
+    end
+    xrayDescConn = S.Workspace.DescendantAdded:Connect(function(obj)
+        if not xrayEnabled then return end
+        if obj:IsA("BasePart") and obj.Anchored and isBaseWall(obj) then
+            xrayOriginal[obj] = obj.LocalTransparencyModifier
+            obj.LocalTransparencyModifier = 0.85
+        end
+    end)
+end
+
+local function disableXray()
+    xrayEnabled = false
+    if xrayDescConn then xrayDescConn:Disconnect(); xrayDescConn = nil end
+    for part, val in pairs(xrayOriginal) do
+        if part and part.Parent then
+            part.LocalTransparencyModifier = val
+        end
+    end
+    xrayOriginal = {}
+end
+
+if Config.XrayBase then
+    task.spawn(function()
+        enableXray()
     end)
 end
 
@@ -2444,6 +2490,9 @@ if utilityContent then
     createSectionHeader(utilityContent, "Misc")
     createTabToggle(utilityContent, "Plot Beam", "PlotBeam", function(ns, set)
         set(ns); if ns then enablePlotBeam() else disablePlotBeam() end
+    end)
+    createTabToggle(utilityContent, "Xray Base", "XrayBase", function(ns, set)
+        set(ns); if ns then enableXray() else disableXray() end
     end)
 
     createSectionHeader(utilityContent, "Performance")
