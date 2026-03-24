@@ -1663,7 +1663,7 @@ menuFrame.Size = UDim2.new(0, 290, 0, 320)
 local menuPos = Config.Positions.MenuFrame
 menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160)  -- Adjust center position
 menuFrame.BackgroundColor3 = C.black
-menuFrame.BackgroundTransparency = 0
+menuFrame.BackgroundTransparency = 0.03
 menuFrame.BorderSizePixel = 0
 menuFrame.Active = true
 menuFrame.Draggable = true
@@ -1683,15 +1683,8 @@ menuFrameGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(1,    C.CoolBlue),
 })
 menuFrameGradient.Rotation = 135
-menuFrameGradient.Transparency = NumberSequence.new({
-    NumberSequenceKeypoint.new(0,    0.85),
-    NumberSequenceKeypoint.new(0.35, 0.7),
-    NumberSequenceKeypoint.new(0.65, 0.85),
-    NumberSequenceKeypoint.new(1,    0.7),
-})
 menuFrameGradient.Parent = menuFrame
 
--- Selepas buat semua frames, before TAB CONTENT
 if Config.LockGui then
     creditFrame.Draggable = false
     mainFrame.Draggable = false
