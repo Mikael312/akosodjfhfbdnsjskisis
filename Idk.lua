@@ -1598,7 +1598,6 @@ creditsLabel.TextXAlignment = Enum.TextXAlignment.Left
 creditsLabel.TextYAlignment = Enum.TextYAlignment.Center
 creditsLabel.Parent = creditFrame
 
--- ===== MAIN FRAME =====
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 193, 0, 285)
 local mainPos = Config.Positions.MainFrame
@@ -1661,7 +1660,7 @@ local menuFrameCorner = Instance.new("UICorner")
 menuFrameCorner.CornerRadius = UDim.new(0, 9)
 menuFrameCorner.Parent = menuFrame
 
-menuFrameGradient.Color = ColorSequence.new({
+local menuFrameGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0,    C.black),
     ColorSequenceKeypoint.new(0.25, C.black),
     ColorSequenceKeypoint.new(0.45, C.CoolBlue),
