@@ -1205,7 +1205,7 @@ if Config.EspBest then
     end)
 end
 
--- ==================== SCANNER ====================
+-- scanner
 
 local function getAnimalHash(animalList)
     if not animalList then return "" end
@@ -1641,12 +1641,11 @@ subtitleLabel.TextXAlignment = Enum.TextXAlignment.Center
 subtitleLabel.TextYAlignment = Enum.TextYAlignment.Center
 subtitleLabel.Parent = mainFrame
 
--- ===== MENU FRAME =====
 local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
 menuFrame.Size = UDim2.new(0, 290, 0, 320)
 local menuPos = Config.Positions.MenuFrame
-menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160)  -- Adjust center position
+menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160) 
 menuFrame.BackgroundColor3 = C.white
 menuFrame.BackgroundTransparency = 0.03
 menuFrame.BorderSizePixel = 0
@@ -1660,12 +1659,11 @@ local menuFrameCorner = Instance.new("UICorner")
 menuFrameCorner.CornerRadius = UDim.new(0, 9)
 menuFrameCorner.Parent = menuFrame
 
-local menuFrameGradient.Color = ColorSequence.new({
+local menuFrameGradient = Instance.new("UIGradient")
+menuFrameGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0,    C.black),
-    ColorSequenceKeypoint.new(0.25, C.black),
-    ColorSequenceKeypoint.new(0.45, C.CoolBlue),
-    ColorSequenceKeypoint.new(0.55, C.CoolBlue),
-    ColorSequenceKeypoint.new(0.75, C.black),
+    ColorSequenceKeypoint.new(0.35, C.CoolBlue),
+    ColorSequenceKeypoint.new(0.65, C.black),
     ColorSequenceKeypoint.new(1,    C.black),
 })
 menuFrameGradient.Rotation = 135
