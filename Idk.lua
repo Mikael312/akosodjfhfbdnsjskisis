@@ -287,7 +287,6 @@ local FAVORITES_LIST = {
     "La Taco Combinasion"
 }
 
--- Load favorites from config or use default list
 local FAVORITES = {}
 
 if Config.Favorites.Animals and #Config.Favorites.Animals > 0 then
@@ -371,13 +370,11 @@ local function getFavoriteByPriority(allAnimalsCache)
     return nil
 end
 
--- ESP Players Variables
 local espPlayersEnabled = false
 local espObjects = {}
 local updateConnection = nil
 local eventConnections = {}
 
--- Scanner Variables
 local allAnimalsCache = {}
 local scannerConnections = {}
 local plotChannels = {}
@@ -435,7 +432,6 @@ local function isPlayerPlot(plot)
     return false
 end
 
--- ==================== ESP PLAYERS FUNCTIONS ====================
 local function getEquippedItem(character)
     for _, child in pairs(character:GetChildren()) do
         if child:IsA("Tool") then return child.Name end
@@ -574,7 +570,6 @@ local function disableESPPlayers()
     espObjects = {}
 end
 
--- ==================== INSTANT CLONE ====================
 local isCloning = false
 
 local function instantClone()
@@ -624,8 +619,6 @@ local function instantClone()
 
     isCloning = false
 end
-
--- ==================== PLOT BEAM ====================
 
 local function findMyPlot()
     local plots = workspace:FindFirstChild("Plots")
@@ -683,7 +676,6 @@ end
 local function enablePlotBeam()
     createPlotBeam()
 
-    -- auto refresh setiap 30 heartbeat
     local counter = 0
     plotBeamConn = S.RunService.Heartbeat:Connect(function()
         if not Config.PlotBeam then return end
@@ -696,7 +688,6 @@ local function enablePlotBeam()
         end
     end)
 
-    -- recreate bila respawn
     player.CharacterAdded:Connect(function()
         task.wait(0.5)
         if Config.PlotBeam then
@@ -712,7 +703,6 @@ local function disablePlotBeam()
     if plotBeamAtt1 then pcall(function() plotBeamAtt1:Destroy() end); plotBeamAtt1 = nil end
 end
 
--- auto start kalau config on
 if Config.PlotBeam then
     task.spawn(function()
         enablePlotBeam()
@@ -850,7 +840,6 @@ local function toggleTimerESP(state)
     end
 end
 
--- auto start kalau config on
 if Config.EspTimer then
     task.spawn(function()
         toggleTimerESP(true)
@@ -948,14 +937,12 @@ local function toggleOptimizer(state)
     end
 end
 
--- auto start kalau config on
 if Config.Optimizer then
     task.spawn(function()
         toggleOptimizer(true)
     end)
 end
 
--- animation disabler
 local function disableAnimations()
     pcall(function()
         for _, obj in ipairs(S.Workspace:GetDescendants()) do
@@ -1006,7 +993,6 @@ local function disableAnimDisabler()
     animDisablerConnections = {}
 end
 
--- auto start kalau config on
 if Config.AnimDisabler then
     task.spawn(function()
         enableAnimDisabler()
@@ -1662,7 +1648,7 @@ menuFrame.Name = "MenuFrame"
 menuFrame.Size = UDim2.new(0, 290, 0, 320)
 local menuPos = Config.Positions.MenuFrame
 menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160)  -- Adjust center position
-menuFrame.BackgroundColor3 = C.black
+menuFrame.BackgroundColor3 = C.white
 menuFrame.BackgroundTransparency = 0
 menuFrame.BorderSizePixel = 0
 menuFrame.Active = true
