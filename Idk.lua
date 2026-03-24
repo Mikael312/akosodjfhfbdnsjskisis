@@ -1020,17 +1020,13 @@ local HOLY_LIST = {
 }
 
 local function getBadgeText(data)
-    
-    if data.isDuelBase then return "・DUEL", Color3.fromRGB(255, 50, 50) end
-    
+    if data.isDuelBase then return "[DUEL]", Color3.fromRGB(255, 50, 50) end
     for _, name in ipairs(HOLY_LIST) do
         if data.name and data.name:lower() == name:lower() then
-            return "・HOLY SHIT", Color3.fromRGB(255, 215, 0)
+            return "[HOLY SHIT]", Color3.fromRGB(255, 215, 0)
         end
     end
-    
-    if isFavorite(data.name) then return "・Favorite", Color3.fromRGB(241, 196, 15) end
-    
+    if isFavorite(data.name) then return "[Favorites]", Color3.fromRGB(241, 196, 15) end
     return nil, nil
 end
 
@@ -1061,8 +1057,8 @@ local function createBrainrotBillboard(data)
     local badgeText, badgeColor = getBadgeText(data)
     if badgeText then
         local badge = Instance.new("TextLabel", container)
-        badge.Size = UDim2.new(1, -6, 0, 12)
-        badge.Position = UDim2.new(0, 3, 0, 2)
+        badge.Size = UDim2.new(0.5, -3, 0, 12)
+        badge.Position = UDim2.new(0.5, 0, 0, 2)
         badge.BackgroundTransparency = 1
         badge.Font = Enum.Font.GothamBold
         badge.TextSize = 9
@@ -1071,12 +1067,13 @@ local function createBrainrotBillboard(data)
         badge.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         badge.Text = badgeText
         badge.TextXAlignment = Enum.TextXAlignment.Right
+        badge.ZIndex = 2
     end
 
     if hasMut then
         local mutationLabel = Instance.new("TextLabel", container)
         mutationLabel.Size = UDim2.new(1, -6, 0, 14)
-        mutationLabel.Position = UDim2.new(0, 3, 0, badgeText and 12 or 2)
+        mutationLabel.Position = UDim2.new(0, 3, 0, 2)
         mutationLabel.BackgroundTransparency = 1
         mutationLabel.Font = Enum.Font.GothamBold
         mutationLabel.TextSize = 10
@@ -1087,29 +1084,29 @@ local function createBrainrotBillboard(data)
         mutationLabel.TextXAlignment = Enum.TextXAlignment.Left
     end
 
-    local nameLabel = Instance.new("TextLabel", container)
-    nameLabel.Size = UDim2.new(1, -6, 0, 16)
-    nameLabel.Position = UDim2.new(0, 3, 0, hasMut and (badgeText and 26 or 16) or (badgeText and 14 or 4))
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.TextSize = 12
-    nameLabel.TextColor3 = Color3.fromRGB(22, 105, 240)
-    nameLabel.TextStrokeTransparency = 0
-    nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    nameLabel.Text = data.name or "???"
-    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+local nameLabel = Instance.new("TextLabel", container)
+nameLabel.Size = UDim2.new(1, -6, 0, 16)
+nameLabel.Position = UDim2.new(0, 3, 0, hasMut and 16 or 4)
+nameLabel.BackgroundTransparency = 1
+nameLabel.Font = Enum.Font.GothamBold
+nameLabel.TextSize = 12
+nameLabel.TextColor3 = Color3.fromRGB(22, 105, 240)
+nameLabel.TextStrokeTransparency = 0
+nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+nameLabel.Text = data.name or "???"
+nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-    local genLabel = Instance.new("TextLabel", container)
-    genLabel.Size = UDim2.new(1, -6, 0, 14)
-    genLabel.Position = UDim2.new(0, 3, 0, hasMut and (badgeText and 42 or 32) or (badgeText and 30 or 20))
-    genLabel.BackgroundTransparency = 1
-    genLabel.Font = Enum.Font.GothamBold
-    genLabel.TextSize = 10
-    genLabel.TextColor3 = Color3.fromRGB(0, 186, 31)
-    genLabel.TextStrokeTransparency = 0
-    genLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    genLabel.Text = data.genText or ""
-    genLabel.TextXAlignment = Enum.TextXAlignment.Left
+local genLabel = Instance.new("TextLabel", container)
+genLabel.Size = UDim2.new(1, -6, 0, 14)
+genLabel.Position = UDim2.new(0, 3, 0, hasMut and 32 or 20)
+genLabel.BackgroundTransparency = 1
+genLabel.Font = Enum.Font.GothamBold
+genLabel.TextSize = 10
+genLabel.TextColor3 = Color3.fromRGB(0, 186, 31)
+genLabel.TextStrokeTransparency = 0
+genLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+genLabel.Text = data.genText or ""
+genLabel.TextXAlignment = Enum.TextXAlignment.Left
 
     return bb
 end
