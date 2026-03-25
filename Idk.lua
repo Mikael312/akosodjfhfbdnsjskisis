@@ -400,9 +400,10 @@ local animDisablerConnections = {}
 local brainrotESPEnabled = false
 local brainrotBillboards = {}
 
-local xrayEnabled = false
-local xrayOriginal = {}
-local xrayDescConn = nil
+local xrayBaseEnabled = false
+local invisibleWallsLoaded = false
+local originalTransparency = {}
+local xrayBaseConnection = nil
 
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
@@ -1207,43 +1208,58 @@ end
 
 local function isBaseWall(obj)
     if not obj:IsA("BasePart") then return false end
-    local name = obj.Name:lower()
-    local parentName = (obj.Parent and obj.Parent.Name:lower()) or ""
-    return name:find("base") or parentName:find("base")
+    local n = obj.Name:lower()
+    local parent = obj.Parent and obj.Parent.Name:lower() or ""
+    return n:find("base") or parent:find("base")
 end
 
-local function enableXray()
-    xrayEnabled = true
-    for _, obj in ipairs(S.Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Anchored and isBaseWall(obj) then
-            xrayOriginal[obj] = obj.LocalTransparencyModifier
-            obj.LocalTransparencyModifier = 0.85
+local function tryApplyInvisibleWalls()
+    if not xrayBaseEnabled or invisibleWallsLoaded then return end
+    local plots = S.Workspace:FindFirstChild("Plots")
+    if not plots or #plots:GetChildren() == 0 then return end
+    for _, plot in pairs(plots:GetChildren()) do
+        for _, obj in pairs(plot:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Anchored and obj.CanCollide and isBaseWall(obj) then
+                if not originalTransparency[obj] then
+                    originalTransparency[obj] = obj.LocalTransparencyModifier
+                    obj.LocalTransparencyModifier = 0.85
+                end
+            end
         end
     end
-    xrayDescConn = S.Workspace.DescendantAdded:Connect(function(obj)
-        if not xrayEnabled then return end
-        if obj:IsA("BasePart") and obj.Anchored and isBaseWall(obj) then
-            xrayOriginal[obj] = obj.LocalTransparencyModifier
-            obj.LocalTransparencyModifier = 0.85
+    invisibleWallsLoaded = true
+end
+
+local function enableXrayBase()
+    if xrayBaseEnabled then return end
+    xrayBaseEnabled = true
+    invisibleWallsLoaded = false
+    tryApplyInvisibleWalls()
+    xrayBaseConnection = S.Workspace.DescendantAdded:Connect(function(obj)
+        if not xrayBaseEnabled then return end
+        task.wait(0.1)
+        if isBaseWall(obj) and obj:IsA("BasePart") and obj.Anchored and obj.CanCollide then
+            if not originalTransparency[obj] then
+                originalTransparency[obj] = obj.LocalTransparencyModifier
+                obj.LocalTransparencyModifier = 0.85
+            end
         end
     end)
 end
 
-local function disableXray()
-    xrayEnabled = false
-    if xrayDescConn then xrayDescConn:Disconnect(); xrayDescConn = nil end
-    for part, val in pairs(xrayOriginal) do
-        if part and part.Parent then
-            part.LocalTransparencyModifier = val
-        end
+local function disableXrayBase()
+    if not xrayBaseEnabled then return end
+    xrayBaseEnabled = false
+    invisibleWallsLoaded = false
+    if xrayBaseConnection then xrayBaseConnection:Disconnect(); xrayBaseConnection = nil end
+    for obj, value in pairs(originalTransparency) do
+        if obj and obj.Parent then pcall(function() obj.LocalTransparencyModifier = value end) end
     end
-    xrayOriginal = {}
+    originalTransparency = {}
 end
 
 if Config.XrayBase then
-    task.spawn(function()
-        enableXray()
-    end)
+    task.spawn(function() task.wait(); enableXrayBase() end)
 end
 
 -- scanner
