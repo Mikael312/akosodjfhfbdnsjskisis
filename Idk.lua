@@ -70,6 +70,7 @@ local DefaultConfig = {
     Optimizer = false,
     AnimDisabler = false,
     KickAfterSteal = false,
+    DesyncOnStart = false,
 }
 
 local Config = DefaultConfig
@@ -1327,7 +1328,22 @@ if Config.KickAfterSteal then
     end)
 end
 
--- scanner
+local function runDesync()
+    pcall(function()
+        raknet.desync(true)
+    end)
+    showNotification({
+        message = "Desync Running",
+        color = "Success",
+        textColor = "White"
+    })
+end
+
+if Config.DesyncOnStart then
+    task.spawn(function()
+        runDesync()
+    end)
+end
 
 local function getAnimalHash(animalList)
     if not animalList then return "" end
@@ -2578,6 +2594,12 @@ task.wait(0.1)
 
 local featuresContent = tabContents["Features"]
 if featuresContent then
+    createSectionHeader(featuresContent, "Desync")
+    createTabToggle(featuresContent, "Desync on Start", "DesyncOnStart", function(ns, set)
+        set(ns)
+        if ns then runDesync() end
+    end)
+
     createSectionHeader(featuresContent, "Teleport")
     createTabToggle(featuresContent, "Auto Tp on Start", "AutoTponStart", function(ns, set)
         set(ns)
