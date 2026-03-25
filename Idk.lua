@@ -54,14 +54,21 @@ local DefaultConfig = {
     Favorites = {
         Animals = {},
     },
+    Keybinds = {
+        CloneKey = "V",
+        CarpetSpeedKey = "Q",
+    },
     Settings = false,
     EspPlayers = false,
     LockGui = false,
     PlotBeam = false,
     EspTimer = false,
+    EspBest = false,
+    XrayBase = false,
+    CarpetSpeed = false,
+    CarpetTool = "Flying Carpet",
     Optimizer = false,
     AnimDisabler = false,
-    XrayBase = false,
 }
 
 local Config = DefaultConfig
@@ -400,10 +407,13 @@ local animDisablerConnections = {}
 local brainrotESPEnabled = false
 local brainrotBillboards = {}
 
-local XrayBaseEnabled = false
+local xrayBaseEnabled = false
 local invisibleWallsLoaded = false
 local originalTransparency = {}
 local xrayBaseConnection = nil
+
+local carpetSpeedEnabled = false
+local carpetSpeedConn = nil
 
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
@@ -1260,9 +1270,45 @@ end
 
 if Config.XrayBase then
     task.spawn(function() 
-        task.wait(1)
         enableXrayBase() 
     end)
+end
+
+local function enableCarpetSpeed()
+    if carpetSpeedConn then carpetSpeedConn:Disconnect(); carpetSpeedConn = nil end
+    carpetSpeedConn = S.RunService.Heartbeat:Connect(function()
+        local char = player.Character
+        if not char then return end
+        local hum = char:FindFirstChild("Humanoid")
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hum or not hrp then return end
+
+        local toolName = Config.CarpetTool or "Flying Carpet"
+        local hasTool = char:FindFirstChild(toolName)
+
+        if not hasTool then
+            local tb = player.Backpack:FindFirstChild(toolName)
+            if tb then hum:EquipTool(tb) end
+        end
+
+        if char:FindFirstChild(toolName) then
+            local md = hum.MoveDirection
+            if md.Magnitude > 0 then
+                hrp.AssemblyLinearVelocity = Vector3.new(md.X * 140, hrp.AssemblyLinearVelocity.Y, md.Z * 140)
+            else
+                hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y, 0)
+            end
+        end
+    end)
+end
+
+local function disableCarpetSpeed()
+    if carpetSpeedConn then carpetSpeedConn:Disconnect(); carpetSpeedConn = nil end
+end
+
+local function toggleCarpetSpeed()
+    carpetSpeedEnabled = not carpetSpeedEnabled
+    if carpetSpeedEnabled then enableCarpetSpeed() else disableCarpetSpeed() end
 end
 
 -- scanner
@@ -2026,8 +2072,8 @@ local function createTabButton(parent, name, iconId, callback)
 end
 
 local function createTabKeybind(parent, name, configKey, default, onChanged)
-    if Config[configKey] == nil then
-        Config[configKey] = default
+    if Config.Keybinds[configKey] == nil then
+        Config.Keybinds[configKey] = default
         SaveConfig()
     end
 
@@ -2061,7 +2107,7 @@ local function createTabKeybind(parent, name, configKey, default, onChanged)
     keyBtn.BackgroundColor3 = C.black
     keyBtn.BackgroundTransparency = 0.20
     keyBtn.BorderSizePixel = 0
-    keyBtn.Text = Config[configKey]
+    keyBtn.Text = Config.Keybinds[configKey]
     keyBtn.TextColor3 = C.buttonBlue
     keyBtn.Font = Enum.Font.GothamBold
     keyBtn.TextSize = 9
@@ -2086,7 +2132,7 @@ local function createTabKeybind(parent, name, configKey, default, onChanged)
         local con
         con = S.UserInputService.InputBegan:Connect(function(inp)
             if inp.UserInputType == Enum.UserInputType.Keyboard then
-                Config[configKey] = inp.KeyCode.Name
+                Config.Keybinds[configKey] = inp.KeyCode.Name
                 keyBtn.Text = inp.KeyCode.Name
                 keyBtn.TextColor3 = C.buttonBlue
                 keyBtnStroke.Transparency = 0.5
@@ -2511,8 +2557,11 @@ if utilityContent then
         set(ns); if ns then enablePlotBeam() else disablePlotBeam() end
     end)
     createTabToggle(utilityContent, "Xray Base", "XrayBase", function(ns, set)
-        set(ns); if ns then enableXray() else disableXray() end
-    end)
+    set(ns); if ns then enableXrayBase() else disableXrayBase() end
+end)
+createTabToggle(utilityContent, "Carpet Speed", "CarpetSpeed", function(ns, set)
+    set(ns); if ns then enableCarpetSpeed() else disableCarpetSpeed() end
+end)
 
     createSectionHeader(utilityContent, "Performance")
     createTabToggle(utilityContent, "Optimizer", "Optimizer", function(ns, set)
@@ -2561,7 +2610,7 @@ local keybindsContent = tabContents["Keybinds"]
 if keybindsContent then
     createSectionHeader(keybindsContent, "Keybinds")
     createTabKeybind(keybindsContent, "Instant Clone", "CloneKey", "V", nil)
-end 
+    createTabKeybind(keybindsContent, "Carpet Speed", "CarpetSpeedKey", "Q", nil)
 
 local favoritesContent = tabContents["Favorites"]
 local lastCacheCount = 0
@@ -2625,8 +2674,14 @@ S.UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if S.UserInputService:GetFocusedTextBox() then return end
 
-    if Config.CloneKey and input.KeyCode == Enum.KeyCode[Config.CloneKey] then
+    if Config.Keybinds.CloneKey and input.KeyCode == Enum.KeyCode[Config.Keybinds.CloneKey] then
         task.spawn(instantClone)
+    end
+
+    if Config.Keybinds.CarpetSpeedKey and input.KeyCode == Enum.KeyCode[Config.Keybinds.CarpetSpeedKey] then
+        toggleCarpetSpeed()
+        Config.CarpetSpeed = carpetSpeedEnabled
+        SaveConfig()
     end
 end)
 
