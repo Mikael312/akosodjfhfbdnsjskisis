@@ -613,13 +613,21 @@ local function instantClone()
         local clone = S.Workspace:WaitForChild(player.UserId .. "_Clone", 10)
 
         if clone then
-            local teleportBtn = player.PlayerGui
-                :WaitForChild("ToolsFrames")
-                :WaitForChild("QuantumCloner")
-                :WaitForChild("TeleportToClone")
+            pcall(function()
+                for _, part in ipairs(clone:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end)
 
-            firesignal(teleportBtn.MouseButton1Up)
-        end
+    local teleportBtn = player.PlayerGui
+        :WaitForChild("ToolsFrames")
+        :WaitForChild("QuantumCloner")
+        :WaitForChild("TeleportToClone")
+
+    firesignal(teleportBtn.MouseButton1Up)
+            end
     end)
 
     isCloning = false
