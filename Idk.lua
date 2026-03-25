@@ -2611,6 +2611,7 @@ if keybindsContent then
     createSectionHeader(keybindsContent, "Keybinds")
     createTabKeybind(keybindsContent, "Instant Clone", "CloneKey", "V", nil)
     createTabKeybind(keybindsContent, "Carpet Speed", "CarpetSpeedKey", "Q", nil)
+end
 
 local favoritesContent = tabContents["Favorites"]
 local lastCacheCount = 0
