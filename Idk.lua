@@ -69,6 +69,7 @@ local DefaultConfig = {
     CarpetTool = "Flying Carpet",
     Optimizer = false,
     AnimDisabler = false,
+    KickAfterSteal = false,
 }
 
 local Config = DefaultConfig
@@ -414,6 +415,8 @@ local xrayBaseConnection = nil
 
 local carpetSpeedEnabled = false
 local carpetSpeedConn = nil
+
+local kickAfterStealConn = nil
 
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
@@ -1309,6 +1312,30 @@ end
 local function toggleCarpetSpeed()
     carpetSpeedEnabled = not carpetSpeedEnabled
     if carpetSpeedEnabled then enableCarpetSpeed() else disableCarpetSpeed() end
+end
+
+local function enableKickAfterSteal()
+    if kickAfterStealConn then kickAfterStealConn:Disconnect(); kickAfterStealConn = nil end
+    kickAfterStealConn = S.RunService.Heartbeat:Connect(function()
+        if not Config.KickAfterSteal then return end
+        for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
+            local txt = (gui:IsA("TextLabel") or gui:IsA("TextButton")) and gui.Text
+            if txt and string.find(txt, "You stole") then
+                player:Kick("\nZynHub Private")
+                return
+            end
+        end
+    end)
+end
+
+local function disableKickAfterSteal()
+    if kickAfterStealConn then kickAfterStealConn:Disconnect(); kickAfterStealConn = nil end
+end
+
+if Config.KickAfterSteal then
+    task.spawn(function()
+        enableKickAfterSteal()
+    end)
 end
 
 -- scanner
@@ -2559,10 +2586,13 @@ if utilityContent then
     createTabToggle(utilityContent, "Xray Base", "XrayBase", function(ns, set)
     set(ns); if ns then enableXrayBase() else disableXrayBase() end
 end)
-createTabToggle(utilityContent, "Carpet Speed", "CarpetSpeed", function(ns, set)
+    createTabToggle(utilityContent, "Carpet Speed", "CarpetSpeed", function(ns, set)
     set(ns); if ns then enableCarpetSpeed() else disableCarpetSpeed() end
 end)
-
+    createTabToggle(utilityContent, "Kick After Steal", "KickAfterSteal", function(ns, set)
+    set(ns); if ns then enableKickAfterSteal() else disableKickAfterSteal() end
+end)
+    
     createSectionHeader(utilityContent, "Performance")
     createTabToggle(utilityContent, "Optimizer", "Optimizer", function(ns, set)
         set(ns); toggleOptimizer(ns)
