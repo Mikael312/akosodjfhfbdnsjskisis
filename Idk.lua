@@ -1733,7 +1733,7 @@ creditsLabel.TextYAlignment = Enum.TextYAlignment.Center
 creditsLabel.Parent = creditFrame
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 193, 0, 285)
+mainFrame.Size = UDim2.new(0, 193, 0, 277)
 local mainPos = Config.Positions.MainFrame
 mainFrame.Position = UDim2.new(mainPos.X, -96.5, mainPos.Y, -142.5)
 mainFrame.BackgroundColor3 = C.black
