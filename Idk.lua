@@ -416,7 +416,7 @@ local xrayBaseConnection = nil
 local carpetSpeedEnabled = false
 local carpetSpeedConn = nil
 
-local kickAfterStealConn = nil
+local kickAfterStealActive = false
 
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
@@ -1315,21 +1315,24 @@ local function toggleCarpetSpeed()
 end
 
 local function enableKickAfterSteal()
-    if kickAfterStealConn then kickAfterStealConn:Disconnect(); kickAfterStealConn = nil end
-    kickAfterStealConn = S.RunService.Heartbeat:Connect(function()
-        if not Config.KickAfterSteal then return end
-        for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
-            local txt = (gui:IsA("TextLabel") or gui:IsA("TextButton")) and gui.Text
-            if txt and string.find(txt, "You stole") then
-                player:Kick("\nZynHub Private")
-                return
+    if kickAfterStealActive then return end
+    kickAfterStealActive = true
+    task.spawn(function()
+        while kickAfterStealActive do
+            task.wait(0.5)
+            for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
+                local txt = (gui:IsA("TextLabel") or gui:IsA("TextButton")) and gui.Text
+                if txt and string.find(txt, "You stole") then
+                    player:Kick("\nZynHub Private")
+                    return
+                end
             end
         end
     end)
 end
 
 local function disableKickAfterSteal()
-    if kickAfterStealConn then kickAfterStealConn:Disconnect(); kickAfterStealConn = nil end
+    kickAfterStealActive = false
 end
 
 if Config.KickAfterSteal then
