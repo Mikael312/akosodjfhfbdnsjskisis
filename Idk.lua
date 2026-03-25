@@ -400,7 +400,7 @@ local animDisablerConnections = {}
 local brainrotESPEnabled = false
 local brainrotBillboards = {}
 
-local xrayBaseEnabled = false
+local XrayBaseEnabled = false
 local invisibleWallsLoaded = false
 local originalTransparency = {}
 local xrayBaseConnection = nil
@@ -1259,7 +1259,10 @@ local function disableXrayBase()
 end
 
 if Config.XrayBase then
-    task.spawn(function() task.wait(); enableXrayBase() end)
+    task.spawn(function() 
+        task.wait(1)
+        enableXrayBase() 
+    end)
 end
 
 -- scanner
