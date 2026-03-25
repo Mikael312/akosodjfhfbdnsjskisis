@@ -418,6 +418,8 @@ local carpetSpeedConn = nil
 
 local kickAfterStealActive = false
 
+local isCloning = false
+
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
     local plots = workspace:FindFirstChild("Plots")
@@ -589,22 +591,17 @@ local function disableESPPlayers()
     espObjects = {}
 end
 
-local isCloning = false
-
 local function instantClone()
     if isCloning then return end
     isCloning = true
 
     pcall(function()
+        local backpack = player:WaitForChild("Backpack")
         local char = player.Character or player.CharacterAdded:Wait()
         local humanoid = char:WaitForChild("Humanoid")
-        local backpack = player:WaitForChild("Backpack")
 
         local tool = backpack:FindFirstChild("Quantum Cloner") or char:FindFirstChild("Quantum Cloner")
-        if not tool then
-            isCloning = false
-            return
-        end
+        if not tool then isCloning = false; return end
 
         if tool.Parent == backpack then
             humanoid:EquipTool(tool)
@@ -613,27 +610,16 @@ local function instantClone()
 
         tool:Activate()
 
-        local cloneName = tostring(player.UserId) .. "_Clone"
-        local clone = nil
+        local clone = S.Workspace:WaitForChild(player.UserId .. "_Clone", 10)
 
-        for _ = 1, 100 do
-            clone = Workspace:FindFirstChild(cloneName)
-            if clone then break end
-            task.wait(0.1)
+        if clone then
+            local teleportBtn = player.PlayerGui
+                :WaitForChild("ToolsFrames")
+                :WaitForChild("QuantumCloner")
+                :WaitForChild("TeleportToClone")
+
+            firesignal(teleportBtn.MouseButton1Up)
         end
-
-        if not clone then
-            isCloning = false
-            return
-        end
-
-        local teleportBtn = player.PlayerGui
-            :WaitForChild("ToolsFrames")
-            :WaitForChild("QuantumCloner")
-            :WaitForChild("TeleportToClone")
-
-        teleportBtn.Visible = true
-        firesignal(teleportBtn.MouseButton1Up)
     end)
 
     isCloning = false
