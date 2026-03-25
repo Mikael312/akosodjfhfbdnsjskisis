@@ -1762,6 +1762,35 @@ titleLabel.TextYAlignment = Enum.TextYAlignment.Center
 titleLabel.Parent = mainFrame
 addTextGradient(titleLabel, C.blue1, C.blue2, 45)
 
+local versionBadge = Instance.new("Frame")
+versionBadge.Size = UDim2.new(0, 55, 0, 22)
+versionBadge.Position = UDim2.new(0, 195, 0, 7)
+versionBadge.BackgroundColor3 = Color3.fromRGB(30, 20, 60)
+versionBadge.BorderSizePixel = 0
+versionBadge.Parent = menuFrame
+
+local versionBadgeCorner = Instance.new("UICorner")
+versionBadgeCorner.CornerRadius = UDim.new(1, 0)  -- pill shape
+versionBadgeCorner.Parent = versionBadge
+
+local versionBadgeStroke = Instance.new("UIStroke")
+versionBadgeStroke.Thickness = 1.5
+versionBadgeStroke.Color = C.CoolBlue
+versionBadgeStroke.Transparency = 0.3
+versionBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+versionBadgeStroke.Parent = versionBadge
+
+local versionLabel = Instance.new("TextLabel")
+versionLabel.Size = UDim2.new(1, 0, 1, 0)
+versionLabel.BackgroundTransparency = 1
+versionLabel.Text = "v1.0"
+versionLabel.Font = Enum.Font.GothamBold
+versionLabel.TextSize = 11
+versionLabel.TextXAlignment = Enum.TextXAlignment.Center
+versionLabel.TextYAlignment = Enum.TextYAlignment.Center
+versionLabel.Parent = versionBadge
+addTextGradient(versionLabel, C.blue1, C.CoolBlue, 45)
+
 local subtitleLabel = Instance.new("TextLabel")
 subtitleLabel.Name = "SubtitleLabel"
 subtitleLabel.Size = UDim2.new(1, 0, 0, 20)
