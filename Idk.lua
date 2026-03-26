@@ -1889,7 +1889,7 @@ addTextGradient(menuTitleLabel, C.blue1, C.blue2, 45)
 
 local versionBadge = Instance.new("Frame")
 versionBadge.Size = UDim2.new(0, 45, 0, 18)
-versionBadge.Position = UDim2.new(0, 135, 0, 9)
+versionBadge.Position = UDim2.new(0, 125, 0, 7)
 versionBadge.BackgroundColor3 = C.black
 versionBadge.BorderSizePixel = 0
 versionBadge.Parent = menuFrame
