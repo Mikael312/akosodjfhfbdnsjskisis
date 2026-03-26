@@ -1038,7 +1038,7 @@ end
 
 local function createBrainrotBillboard(data)
     local hasMut = data.mutation and data.mutation ~= "None"
-    local mutColor = hasMut and (MUT_COLORS[data.mutation] or Color3.fromRGB(200, 100, 255)) or Color3.fromRGB(200, 100, 255)
+    local mutColor = hasMut and (MUT_COLORS[data.mutation] or Color3.fromRGB(200, 100, 255)) or Color3.fromRGB(54, 52, 207)
 
     local bb = Instance.new("BillboardGui")
     bb.Name = "BrainrotESP_" .. data.uid
@@ -1060,6 +1060,14 @@ local function createBrainrotBillboard(data)
     stroke.Thickness = 1.5
     stroke.Transparency = 0.2
 
+    local divider = Instance.new("Frame", container)
+    divider.Name = "LeftDivider"
+    divider.Size = UDim2.new(0, 2, 1, -6)
+    divider.Position = UDim2.new(0, 2, 0, 3)
+    divider.BackgroundColor3 = mutColor
+    divider.BorderSizePixel = 0
+    Instance.new("UICorner", divider).CornerRadius = UDim.new(1, 0)
+
     local badgeText, badgeColor = getBadgeText(data)
     if badgeText then
         local badge = Instance.new("TextLabel", container)
@@ -1079,7 +1087,7 @@ local function createBrainrotBillboard(data)
     if hasMut then
         local mutationLabel = Instance.new("TextLabel", container)
         mutationLabel.Size = UDim2.new(1, -6, 0, 14)
-        mutationLabel.Position = UDim2.new(0, 3, 0, 2)
+        mutationLabel.Position = UDim2.new(0, 7, 0, 2)
         mutationLabel.BackgroundTransparency = 1
         mutationLabel.Font = Enum.Font.GothamBold
         mutationLabel.TextSize = 10
@@ -1090,29 +1098,29 @@ local function createBrainrotBillboard(data)
         mutationLabel.TextXAlignment = Enum.TextXAlignment.Left
     end
 
-local nameLabel = Instance.new("TextLabel", container)
-nameLabel.Size = UDim2.new(1, -6, 0, 16)
-nameLabel.Position = UDim2.new(0, 3, 0, hasMut and 16 or 4)
-nameLabel.BackgroundTransparency = 1
-nameLabel.Font = Enum.Font.GothamBold
-nameLabel.TextSize = 12
-nameLabel.TextColor3 = Color3.fromRGB(22, 105, 240)
-nameLabel.TextStrokeTransparency = 0
-nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-nameLabel.Text = data.name or "???"
-nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    local nameLabel = Instance.new("TextLabel", container)
+    nameLabel.Size = UDim2.new(1, -6, 0, 16)
+    nameLabel.Position = UDim2.new(0, 7, 0, hasMut and 16 or 4)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextSize = 12
+    nameLabel.TextColor3 = Color3.fromRGB(22, 105, 240)
+    nameLabel.TextStrokeTransparency = 0
+    nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    nameLabel.Text = data.name or "???"
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-local genLabel = Instance.new("TextLabel", container)
-genLabel.Size = UDim2.new(1, -6, 0, 14)
-genLabel.Position = UDim2.new(0, 3, 0, hasMut and 32 or 20)
-genLabel.BackgroundTransparency = 1
-genLabel.Font = Enum.Font.GothamBold
-genLabel.TextSize = 10
-genLabel.TextColor3 = Color3.fromRGB(0, 186, 31)
-genLabel.TextStrokeTransparency = 0
-genLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-genLabel.Text = data.genText or ""
-genLabel.TextXAlignment = Enum.TextXAlignment.Left
+    local genLabel = Instance.new("TextLabel", container)
+    genLabel.Size = UDim2.new(1, -6, 0, 14)
+    genLabel.Position = UDim2.new(0, 7, 0, hasMut and 32 or 20)
+    genLabel.BackgroundTransparency = 1
+    genLabel.Font = Enum.Font.GothamBold
+    genLabel.TextSize = 10
+    genLabel.TextColor3 = Color3.fromRGB(0, 186, 31)
+    genLabel.TextStrokeTransparency = 0
+    genLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    genLabel.Text = data.genText or ""
+    genLabel.TextXAlignment = Enum.TextXAlignment.Left
 
     return bb
 end
