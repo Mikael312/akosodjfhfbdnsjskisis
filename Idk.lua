@@ -71,6 +71,7 @@ local DefaultConfig = {
     AnimDisabler = false,
     KickAfterSteal = false,
     DesyncOnStart = false,
+    InfJump = false,
 }
 
 local Config = DefaultConfig
@@ -420,6 +421,9 @@ local carpetSpeedConn = nil
 local kickAfterStealActive = false
 
 local isCloning = false
+
+local infiniteJumpEnabled = false
+local jumpRequestConnection = nil
 
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
@@ -1353,6 +1357,56 @@ if Config.DesyncOnStart then
     end)
 end
 
+local function doJump()
+    local char = player.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local rootPart = char:FindFirstChild("HumanoidRootPart")
+    if hum and hum.Health > 0 and rootPart then
+        rootPart.Velocity = Vector3.new(rootPart.Velocity.X, 50, rootPart.Velocity.Z)
+    end
+end
+
+local function setupJumpRequest()
+    if jumpRequestConnection then
+        jumpRequestConnection:Disconnect()
+        jumpRequestConnection = nil
+    end
+    jumpRequestConnection = S.UserInputService.JumpRequest:Connect(function()
+        if infiniteJumpEnabled then doJump() end
+    end)
+end
+
+local function initializeJumpForCharacter(char)
+    char:WaitForChild("Humanoid")
+    setupJumpRequest()
+    char.ChildAdded:Connect(function(child)
+        if child:IsA("Humanoid") then setupJumpRequest() end
+    end)
+end
+
+local function toggleInfJump(enabled)
+    infiniteJumpEnabled = enabled
+    if enabled then
+        local char = player.Character
+        if char then initializeJumpForCharacter(char) end
+        player.CharacterAdded:Connect(function(char)
+            if infiniteJumpEnabled then initializeJumpForCharacter(char) end
+        end)
+    else
+        if jumpRequestConnection then
+            jumpRequestConnection:Disconnect()
+            jumpRequestConnection = nil
+        end
+    end
+end
+
+if Config.InfJump then
+    task.spawn(function()
+        toggleInfJump(true)
+    end)
+end
+
 local function getAnimalHash(animalList)
     if not animalList then return "" end
     local hash = ""
@@ -2218,7 +2272,7 @@ end
  local function createAnimalCard(parent, animalData, rank)
     local cardFrame = Instance.new("Frame")
     cardFrame.Name = "AnimalCard"
-    cardFrame.Size = UDim2.new(1, 0, 0, 100)  -- Increased from 95 to 100
+    cardFrame.Size = UDim2.new(1, 0, 0, 100)  
     cardFrame.BackgroundColor3 = C.black
     cardFrame.BackgroundTransparency = 0.15
     cardFrame.BorderSizePixel = 0
@@ -2379,8 +2433,8 @@ favBadgeIcon.Parent = favBadge
 
 local favBadgeLabel = Instance.new("TextLabel")
 favBadgeLabel.Name = "FavLabel"
-favBadgeLabel.Size = UDim2.new(1, -14, 1, 0)  -- Changed from -15 to -14 (closer to icon)
-favBadgeLabel.Position = UDim2.new(0, 14, 0, 0)  -- Changed from 15 to 14 (closer to icon)
+favBadgeLabel.Size = UDim2.new(1, -14, 1, 0)  
+favBadgeLabel.Position = UDim2.new(0, 14, 0, 0)  
 favBadgeLabel.BackgroundTransparency = 1
 favBadgeLabel.Text = "Favorite"
 favBadgeLabel.TextColor3 = C.yellow
@@ -2647,6 +2701,10 @@ end)
     end)
     createTabToggle(utilityContent, "Animation Disabler", "AnimDisabler", function(ns, set)
         set(ns); if ns then enableAnimDisabler() else disableAnimDisabler() end
+    end)
+    createSectionHeader(utilityContent, "Movement")
+    createTabToggle(utilityContent, "Inf Jump", "InfJump", function(ns, set)
+        set(ns); toggleInfJump(ns)
     end)
 end
 
