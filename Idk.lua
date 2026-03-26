@@ -409,6 +409,9 @@ local animDisablerConnections = {}
 
 local brainrotESPEnabled = false
 local brainrotBillboards = {}
+local tracerBeam = nil
+local tracerAtt0 = nil
+local tracerAtt1 = nil
 
 local xrayBaseEnabled = false
 local invisibleWallsLoaded = false
@@ -1067,7 +1070,7 @@ local function createBrainrotBillboard(data)
     local divider = Instance.new("Frame", container)
     divider.Name = "LeftDivider"
     divider.Size = UDim2.new(0, 2, 1, -6)
-    divider.Position = UDim2.new(0, 2, 0, 3)
+    divider.Position = UDim2.new(0, 1, 0, 3)
     divider.BackgroundColor3 = mutColor
     divider.BorderSizePixel = 0
     Instance.new("UICorner", divider).CornerRadius = UDim.new(1, 0)
@@ -1146,12 +1149,57 @@ local function findAdornee(animalData)
     return base:FindFirstChildWhichIsA("BasePart") or base
 end
 
+local function updateTracer(highestAdornee)
+    if not brainrotESPEnabled or not highestAdornee then
+        if tracerBeam then tracerBeam:Destroy(); tracerBeam = nil end
+        if tracerAtt0 then tracerAtt0:Destroy(); tracerAtt0 = nil end
+        if tracerAtt1 then tracerAtt1:Destroy(); tracerAtt1 = nil end
+        return
+    end
+
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    if not tracerAtt0 or tracerAtt0.Parent ~= hrp then
+        if tracerAtt0 then tracerAtt0:Destroy() end
+        tracerAtt0 = Instance.new("Attachment", hrp)
+    end
+
+    if not tracerAtt1 or tracerAtt1.Parent ~= highestAdornee then
+        if tracerAtt1 then tracerAtt1:Destroy() end
+        tracerAtt1 = Instance.new("Attachment", highestAdornee)
+    end
+
+    if not tracerBeam then
+        tracerBeam = Instance.new("Beam", S.Workspace)
+        tracerBeam.FaceCamera = true
+        tracerBeam.Width0 = 0.5
+        tracerBeam.Width1 = 0.5
+        tracerBeam.LightEmission = 1
+        tracerBeam.TextureMode = Enum.TextureMode.Static
+    end
+
+    tracerBeam.Attachment0 = tracerAtt0
+    tracerBeam.Attachment1 = tracerAtt1
+    tracerBeam.Enabled = true
+
+    local highestAnimalData = allAnimalsCache[1]
+    local hasMut = highestAnimalData and highestAnimalData.mutation and highestAnimalData.mutation ~= "None"
+    local tracerColor = hasMut and (MUT_COLORS[highestAnimalData.mutation] or Color3.fromRGB(54, 52, 207)) or Color3.fromRGB(54, 52, 207)
+    tracerBeam.Color = ColorSequence.new(tracerColor)
+end
+
 local function refreshBrainrotESP()
-    if not brainrotESPEnabled then return end
+    if not brainrotESPEnabled then
+        updateTracer(nil)
+        return
+    end
     if not allAnimalsCache or #allAnimalsCache == 0 then return end
 
     local activeUIDs = {}
     local highestUID = allAnimalsCache[1] and allAnimalsCache[1].uid or nil
+    local highestAdornee = nil
 
     for _, animalData in ipairs(allAnimalsCache) do
         local shouldShow = false
@@ -1159,11 +1207,9 @@ local function refreshBrainrotESP()
         if animalData.uid == highestUID then
             shouldShow = true
         end
-
         if animalData.genValue >= 50000000 then
             shouldShow = true
         end
-
         if isFavorite(animalData.name) then
             shouldShow = true
         end
@@ -1177,6 +1223,15 @@ local function refreshBrainrotESP()
                     bb.Adornee = adornee
                     bb.Parent = adornee
                     brainrotBillboards[animalData.uid] = bb
+
+                    if animalData.uid == highestUID then
+                        highestAdornee = adornee
+                    end
+                end
+            else
+                if animalData.uid == highestUID then
+                    local bb = brainrotBillboards[animalData.uid]
+                    highestAdornee = bb and bb.Adornee or nil
                 end
             end
         end
@@ -1188,6 +1243,8 @@ local function refreshBrainrotESP()
             brainrotBillboards[uid] = nil
         end
     end
+
+    updateTracer(highestAdornee)
 end
 
 local function clearBrainrotESP()
@@ -1210,6 +1267,7 @@ end
 local function disableBrainrotESP()
     brainrotESPEnabled = false
     clearBrainrotESP()
+    updateTracer(nil)
 end
 
 if Config.EspBest then
