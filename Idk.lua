@@ -72,6 +72,7 @@ local DefaultConfig = {
     KickAfterSteal = false,
     DesyncOnStart = false,
     InfJump = false,
+    AntiBee = false,
 }
 
 local Config = DefaultConfig
@@ -427,6 +428,16 @@ local isCloning = false
 
 local infiniteJumpEnabled = false
 local jumpRequestConnection = nil
+
+local antiBeeConnections = {}
+local antiBeeEnabled = false
+
+local badLightingNames = {
+    Blue = true,
+    DiscoEffect = true,
+    BeeBlur = true,
+    ColorCorrection = true,
+}
 
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
@@ -1069,7 +1080,7 @@ local function createBrainrotBillboard(data)
 
     local divider = Instance.new("Frame", container)
     divider.Name = "LeftDivider"
-    divider.Size = UDim2.new(0, 3, 1, -6)
+    divider.Size = UDim2.new(0, 2, 1, -6)
     divider.Position = UDim2.new(0, 0, 0, 3)
     divider.BackgroundColor3 = mutColor
     divider.BorderSizePixel = 0
@@ -1464,6 +1475,56 @@ end
 if Config.InfJump then
     task.spawn(function()
         toggleInfJump(true)
+    end)
+end
+
+local function nukeAntiBeeObj(obj)
+    if not obj or not obj.Parent then return end
+    if badLightingNames[obj.Name] then
+        pcall(function() obj:Destroy() end)
+    end
+end
+
+local function enableAntiBee()
+    if antiBeeEnabled then return end
+    antiBeeEnabled = true
+
+    for _, inst in ipairs(game:GetService("Lighting"):GetDescendants()) do
+        nukeAntiBeeObj(inst)
+    end
+
+    table.insert(antiBeeConnections, game:GetService("Lighting").DescendantAdded:Connect(function(obj)
+        if not antiBeeEnabled then return end
+        nukeAntiBeeObj(obj)
+    end))
+
+    table.insert(antiBeeConnections, S.RunService.Heartbeat:Connect(function()
+        if not antiBeeEnabled then return end
+        pcall(function()
+            local beeScript = player.PlayerScripts:FindFirstChild("Bee", true)
+            if beeScript then
+                local buzzing = beeScript:FindFirstChild("Buzzing")
+                if buzzing and buzzing:IsA("Sound") then
+                    buzzing:Stop()
+                    buzzing.Volume = 0
+                end
+            end
+        end)
+    end))
+end
+
+local function disableAntiBee()
+    if not antiBeeEnabled then return end
+    antiBeeEnabled = false
+    for _, conn in ipairs(antiBeeConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    antiBeeConnections = {}
+end
+
+if Config.AntiBee then
+    task.spawn(function()
+        enableAntiBee()
     end)
 end
 
@@ -2746,25 +2807,29 @@ if utilityContent then
         set(ns); if ns then enablePlotBeam() else disablePlotBeam() end
     end)
     createTabToggle(utilityContent, "Xray Base", "XrayBase", function(ns, set)
-    set(ns); if ns then enableXrayBase() else disableXrayBase() end
-end)
-    createTabToggle(utilityContent, "Carpet Speed", "CarpetSpeed", function(ns, set)
-    set(ns); if ns then enableCarpetSpeed() else disableCarpetSpeed() end
-end)
+        set(ns); if ns then enableXrayBase() else disableXrayBase() end
+    end)
     createTabToggle(utilityContent, "Kick After Steal", "KickAfterSteal", function(ns, set)
-    set(ns); if ns then enableKickAfterSteal() else disableKickAfterSteal() end
-end)
-    
+        set(ns); if ns then enableKickAfterSteal() else disableKickAfterSteal() end
+    end)
+    createTabToggle(utilityContent, "Anti Bee & Boogie", "AntiBee", function(ns, set)
+        set(ns); if ns then enableAntiBee() else disableAntiBee() end
+    end)
+
+    createSectionHeader(utilityContent, "Movement")
+    createTabToggle(utilityContent, "Carpet Speed", "CarpetSpeed", function(ns, set)
+        set(ns); if ns then enableCarpetSpeed() else disableCarpetSpeed() end
+    end)
+    createTabToggle(utilityContent, "Inf Jump", "InfJump", function(ns, set)
+        set(ns); toggleInfJump(ns)
+    end)
+
     createSectionHeader(utilityContent, "Performance")
     createTabToggle(utilityContent, "Optimizer", "Optimizer", function(ns, set)
         set(ns); toggleOptimizer(ns)
     end)
     createTabToggle(utilityContent, "Animation Disabler", "AnimDisabler", function(ns, set)
         set(ns); if ns then enableAnimDisabler() else disableAnimDisabler() end
-    end)
-    createSectionHeader(utilityContent, "Movement")
-    createTabToggle(utilityContent, "Inf Jump", "InfJump", function(ns, set)
-        set(ns); toggleInfJump(ns)
     end)
 end
 
