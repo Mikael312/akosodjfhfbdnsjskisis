@@ -73,6 +73,7 @@ local DefaultConfig = {
     DesyncOnStart = false,
     InfJump = false,
     AntiBee = false,
+    AntiLag = false,
 }
 
 local Config = DefaultConfig
@@ -429,15 +430,14 @@ local isCloning = false
 local infiniteJumpEnabled = false
 local jumpRequestConnection = nil
 
-local antiBeeConnections = {}
-local antiBeeEnabled = false
+local antiBeeDiscoRunning = false
+local antiBeeDiscoConnections = {}
+local controlsProtected = false
+local originalMoveFunction = nil
 
-local badLightingNames = {
-    Blue = true,
-    DiscoEffect = true,
-    BeeBlur = true,
-    ColorCorrection = true,
-}
+local antiLagRunning = false
+local antiLagConnections = {}
+local cleanedCharacters = {}
 
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
@@ -1478,53 +1478,235 @@ if Config.InfJump then
     end)
 end
 
-local function nukeAntiBeeObj(obj)
+local FOV_MANAGER = {
+    activeCount = 0,
+    conn = nil,
+    forcedFOV = 70,
+}
+
+local BAD_LIGHTING_NAMES = {
+    Blue = true,
+    DiscoEffect = true,
+    BeeBlur = true,
+    ColorCorrection = true,
+}
+
+function FOV_MANAGER:Start()
+    if self.conn then return end
+    self.conn = S.RunService.RenderStepped:Connect(function()
+        local cam = workspace.CurrentCamera
+        if cam and cam.FieldOfView ~= self.forcedFOV then
+            cam.FieldOfView = self.forcedFOV
+        end
+    end)
+end
+
+function FOV_MANAGER:Stop()
+    if self.conn then self.conn:Disconnect(); self.conn = nil end
+end
+
+function FOV_MANAGER:Push()
+    self.activeCount += 1
+    self:Start()
+end
+
+function FOV_MANAGER:Pop()
+    if self.activeCount > 0 then self.activeCount -= 1 end
+    if self.activeCount == 0 then self:Stop() end
+end
+
+local function antiBeeDiscoNuke(obj)
     if not obj or not obj.Parent then return end
-    if badLightingNames[obj.Name] then
+    if BAD_LIGHTING_NAMES[obj.Name] then
         pcall(function() obj:Destroy() end)
     end
 end
 
-local function enableAntiBee()
-    if antiBeeEnabled then return end
-    antiBeeEnabled = true
-
-    for _, inst in ipairs(game:GetService("Lighting"):GetDescendants()) do
-        nukeAntiBeeObj(inst)
+local function antiBeeDiscoDisconnectAll()
+    for _, conn in ipairs(antiBeeDiscoConnections) do
+        if typeof(conn) == "RBXScriptConnection" then conn:Disconnect() end
     end
+    antiBeeDiscoConnections = {}
+end
 
-    table.insert(antiBeeConnections, game:GetService("Lighting").DescendantAdded:Connect(function(obj)
-        if not antiBeeEnabled then return end
-        nukeAntiBeeObj(obj)
-    end))
+local function blockBuzzingSound()
+    pcall(function()
+        local beeScript = player.PlayerScripts:FindFirstChild("Bee", true)
+        if beeScript then
+            local buzzing = beeScript:FindFirstChild("Buzzing")
+            if buzzing and buzzing:IsA("Sound") then
+                buzzing:Stop()
+                buzzing.Volume = 0
+            end
+        end
+    end)
+end
 
-    table.insert(antiBeeConnections, S.RunService.Heartbeat:Connect(function()
-        if not antiBeeEnabled then return end
-        pcall(function()
-            local beeScript = player.PlayerScripts:FindFirstChild("Bee", true)
-            if beeScript then
-                local buzzing = beeScript:FindFirstChild("Buzzing")
-                if buzzing and buzzing:IsA("Sound") then
-                    buzzing:Stop()
-                    buzzing.Volume = 0
-                end
+local function protectControls()
+    if controlsProtected then return end
+    pcall(function()
+        local PlayerModule = player.PlayerScripts:FindFirstChild("PlayerModule")
+        if not PlayerModule then return end
+        local Controls = require(PlayerModule):GetControls()
+        if not Controls then return end
+        if not originalMoveFunction then originalMoveFunction = Controls.moveFunction end
+        local function protectedMoveFunction(self, moveVector, relativeToCamera)
+            if originalMoveFunction then originalMoveFunction(self, moveVector, relativeToCamera) end
+        end
+        local controlCheckConn = S.RunService.Heartbeat:Connect(function()
+            if not antiBeeDiscoRunning then return end
+            if Controls.moveFunction ~= protectedMoveFunction then
+                Controls.moveFunction = protectedMoveFunction
             end
         end)
+        table.insert(antiBeeDiscoConnections, controlCheckConn)
+        Controls.moveFunction = protectedMoveFunction
+        controlsProtected = true
+    end)
+end
+
+local function restoreControls()
+    if not controlsProtected then return end
+    pcall(function()
+        local PlayerModule = player.PlayerScripts:FindFirstChild("PlayerModule")
+        if not PlayerModule then return end
+        local Controls = require(PlayerModule):GetControls()
+        if not Controls or not originalMoveFunction then return end
+        Controls.moveFunction = originalMoveFunction
+        controlsProtected = false
+    end)
+end
+
+local function enableAntiBee()
+    if antiBeeDiscoRunning then return end
+    antiBeeDiscoRunning = true
+    for _, inst in ipairs(game:GetService("Lighting"):GetDescendants()) do
+        antiBeeDiscoNuke(inst)
+    end
+    table.insert(antiBeeDiscoConnections, game:GetService("Lighting").DescendantAdded:Connect(function(obj)
+        if not antiBeeDiscoRunning then return end
+        antiBeeDiscoNuke(obj)
     end))
+    protectControls()
+    table.insert(antiBeeDiscoConnections, S.RunService.Heartbeat:Connect(function()
+        if not antiBeeDiscoRunning then return end
+        blockBuzzingSound()
+    end))
+    FOV_MANAGER:Push()
 end
 
 local function disableAntiBee()
-    if not antiBeeEnabled then return end
-    antiBeeEnabled = false
-    for _, conn in ipairs(antiBeeConnections) do
-        pcall(function() conn:Disconnect() end)
-    end
-    antiBeeConnections = {}
+    if not antiBeeDiscoRunning then return end
+    antiBeeDiscoRunning = false
+    restoreControls()
+    antiBeeDiscoDisconnectAll()
+    FOV_MANAGER:Pop()
 end
 
 if Config.AntiBee then
     task.spawn(function()
         enableAntiBee()
+    end)
+end
+
+local function cleanCharacter(char)
+    if not char or not antiLagRunning then return end
+    pcall(function()
+        for _, child in ipairs(char:GetChildren()) do
+            if child:IsA("Accessory") or child:IsA("Hat") or
+               child:IsA("Shirt") or child:IsA("Pants") or
+               child:IsA("ShirtGraphic") or child:IsA("CharacterMesh") then
+                child:Destroy()
+            end
+        end
+        for _, child in ipairs(char:GetDescendants()) do
+            if child:IsA("ParticleEmitter") or child:IsA("Trail") or child:IsA("Beam") or
+               child:IsA("PointLight") or child:IsA("SpotLight") or child:IsA("SurfaceLight") or
+               child:IsA("Fire") or child:IsA("Smoke") or child:IsA("Sparkles") or
+               child:IsA("Highlight") then
+                child:Destroy()
+            end
+        end
+    end)
+    cleanedCharacters[char] = true
+end
+
+local function cleanBackpack(plr)
+    if not antiLagRunning then return end
+    pcall(function()
+        local backpack = plr:FindFirstChild("Backpack")
+        if not backpack then return end
+        for _, tool in ipairs(backpack:GetChildren()) do
+            if tool:IsA("Tool") then
+                for _, desc in ipairs(tool:GetDescendants()) do
+                    if desc:IsA("ParticleEmitter") or desc:IsA("Trail") or desc:IsA("Beam") or
+                       desc:IsA("PointLight") or desc:IsA("SpotLight") or
+                       desc:IsA("Fire") or desc:IsA("Smoke") or desc:IsA("Sparkles") then
+                        desc:Destroy()
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function watchPlayer(plr)
+    table.insert(antiLagConnections, plr.CharacterAdded:Connect(function(char)
+        if not antiLagRunning then return end
+        task.wait(0.5)
+        cleanCharacter(char)
+        cleanBackpack(plr)
+        table.insert(antiLagConnections, char.ChildAdded:Connect(function(child)
+            if not antiLagRunning then return end
+            task.wait(0.1)
+            if child:IsA("Accessory") or child:IsA("Hat") or
+               child:IsA("Shirt") or child:IsA("Pants") then
+                child:Destroy()
+            end
+        end))
+    end))
+    if plr.Backpack then
+        table.insert(antiLagConnections, plr.Backpack.ChildAdded:Connect(function()
+            if antiLagRunning then task.wait(0.1); cleanBackpack(plr) end
+        end))
+    end
+end
+
+local function toggleAntiLag(state)
+    antiLagRunning = state
+    if state then
+        for _, plr in ipairs(S.Players:GetPlayers()) do
+            if plr.Character then cleanCharacter(plr.Character) end
+            cleanBackpack(plr)
+            watchPlayer(plr)
+        end
+        table.insert(antiLagConnections, S.Players.PlayerAdded:Connect(function(plr)
+            watchPlayer(plr)
+            if plr.Character then cleanCharacter(plr.Character) end
+        end))
+        task.spawn(function()
+            while antiLagRunning do
+                task.wait(3)
+                for _, plr in ipairs(S.Players:GetPlayers()) do
+                    if plr.Character and not cleanedCharacters[plr.Character] then
+                        cleanCharacter(plr.Character)
+                        cleanBackpack(plr)
+                    end
+                end
+            end
+        end)
+    else
+        for _, conn in ipairs(antiLagConnections) do
+            if typeof(conn) == "RBXScriptConnection" then conn:Disconnect() end
+        end
+        antiLagConnections = {}
+        cleanedCharacters = {}
+    end
+end
+
+if Config.AntiLag then
+    task.spawn(function()
+        toggleAntiLag(true)
     end)
 end
 
@@ -2827,6 +3009,9 @@ if utilityContent then
     createSectionHeader(utilityContent, "Performance")
     createTabToggle(utilityContent, "Optimizer", "Optimizer", function(ns, set)
         set(ns); toggleOptimizer(ns)
+    end)
+    createTabToggle(utilityContent, "Anti Lag", "AntiLag", function(ns, set)
+        set(ns); toggleAntiLag(ns)
     end)
     createTabToggle(utilityContent, "Animation Disabler", "AnimDisabler", function(ns, set)
         set(ns); if ns then enableAnimDisabler() else disableAnimDisabler() end
