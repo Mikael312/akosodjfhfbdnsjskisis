@@ -1176,7 +1176,9 @@ local function updateTracer(highestAdornee)
         tracerBeam.FaceCamera = true
         tracerBeam.Width0 = 0.5
         tracerBeam.Width1 = 0.5
-        tracerBeam.LightEmission = 1
+        tracerBeam.LightEmission = 0        
+        tracerBeam.LightInfluence = 1       
+        tracerBeam.Transparency = NumberSequence.new(0)
         tracerBeam.TextureMode = Enum.TextureMode.Static
     end
 
