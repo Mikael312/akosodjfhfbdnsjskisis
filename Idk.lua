@@ -656,7 +656,6 @@ local function createPlotBeam()
     local plotPart = myPlot:FindFirstChildWhichIsA("BasePart")
     if not plotPart then return end
 
-    -- bersih dulu
     if plotBeam then pcall(function() plotBeam:Destroy() end) end
     if plotBeamAtt0 then pcall(function() plotBeamAtt0:Destroy() end) end
     if plotBeamAtt1 then pcall(function() plotBeamAtt1:Destroy() end) end
@@ -676,7 +675,8 @@ local function createPlotBeam()
     plotBeam.Attachment0 = plotBeamAtt0
     plotBeam.Attachment1 = plotBeamAtt1
     plotBeam.FaceCamera = true
-    plotBeam.LightEmission = 1
+    plotBeam.LightEmission = 0
+    tracerBeam.LightInfluence = 1
     plotBeam.Color = ColorSequence.new(Color3.fromRGB(80, 150, 255))
     plotBeam.Transparency = NumberSequence.new(0)
     plotBeam.Width0 = 0.5
