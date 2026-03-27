@@ -676,7 +676,7 @@ local function createPlotBeam()
     plotBeam.Attachment1 = plotBeamAtt1
     plotBeam.FaceCamera = true
     plotBeam.LightEmission = 0
-    tracerBeam.LightInfluence = 1
+    plotBeam.LightInfluence = 1
     plotBeam.Color = ColorSequence.new(Color3.fromRGB(80, 150, 255))
     plotBeam.Transparency = NumberSequence.new(0)
     plotBeam.Width0 = 0.5
