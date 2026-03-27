@@ -1069,8 +1069,8 @@ local function createBrainrotBillboard(data)
 
     local divider = Instance.new("Frame", container)
     divider.Name = "LeftDivider"
-    divider.Size = UDim2.new(0, 4, 1, -6)
-    divider.Position = UDim2.new(0, 1, 0, 3)
+    divider.Size = UDim2.new(0, 3, 1, -6)
+    divider.Position = UDim2.new(0, 0, 0, 3)
     divider.BackgroundColor3 = mutColor
     divider.BorderSizePixel = 0
     Instance.new("UICorner", divider).CornerRadius = UDim.new(1, 0)
