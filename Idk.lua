@@ -430,10 +430,15 @@ local isCloning = false
 local infiniteJumpEnabled = false
 local jumpRequestConnection = nil
 
-local antiBeeDiscoRunning = false
-local antiBeeDiscoConnections = {}
-local controlsProtected = false
-local originalMoveFunction = nil
+local antiBeeConnections = {}
+local antiBeeEnabled = false
+
+local badLightingNames = {
+    Blue = true,
+    DiscoEffect = true,
+    BeeBlur = true,
+    ColorCorrection = true,
+}
 
 local antiLagRunning = false
 local antiLagConnections = {}
@@ -1478,129 +1483,51 @@ if Config.InfJump then
     end)
 end
 
-local FOV_MANAGER = {
-    activeCount = 0,
-    conn = nil,
-    forcedFOV = 70,
-}
-
-local BAD_LIGHTING_NAMES = {
-    Blue = true,
-    DiscoEffect = true,
-    BeeBlur = true,
-    ColorCorrection = true,
-}
-
-function FOV_MANAGER:Start()
-    if self.conn then return end
-    self.conn = S.RunService.RenderStepped:Connect(function()
-        local cam = workspace.CurrentCamera
-        if cam and cam.FieldOfView ~= self.forcedFOV then
-            cam.FieldOfView = self.forcedFOV
-        end
-    end)
-end
-
-function FOV_MANAGER:Stop()
-    if self.conn then self.conn:Disconnect(); self.conn = nil end
-end
-
-function FOV_MANAGER:Push()
-    self.activeCount += 1
-    self:Start()
-end
-
-function FOV_MANAGER:Pop()
-    if self.activeCount > 0 then self.activeCount -= 1 end
-    if self.activeCount == 0 then self:Stop() end
-end
-
-local function antiBeeDiscoNuke(obj)
+local function nukeAntiBeeObj(obj)
     if not obj or not obj.Parent then return end
-    if BAD_LIGHTING_NAMES[obj.Name] then
+    if badLightingNames[obj.Name] then
         pcall(function() obj:Destroy() end)
     end
 end
 
-local function antiBeeDiscoDisconnectAll()
-    for _, conn in ipairs(antiBeeDiscoConnections) do
-        if typeof(conn) == "RBXScriptConnection" then conn:Disconnect() end
+local function enableAntiBee()
+    if antiBeeEnabled then return end
+    antiBeeEnabled = true
+
+    -- buang effect yang dah ada
+    for _, inst in ipairs(game:GetService("Lighting"):GetDescendants()) do
+        nukeAntiBeeObj(inst)
     end
-    antiBeeDiscoConnections = {}
-end
 
-local function blockBuzzingSound()
-    pcall(function()
-        local beeScript = player.PlayerScripts:FindFirstChild("Bee", true)
-        if beeScript then
-            local buzzing = beeScript:FindFirstChild("Buzzing")
-            if buzzing and buzzing:IsA("Sound") then
-                buzzing:Stop()
-                buzzing.Volume = 0
-            end
-        end
-    end)
-end
+    -- block effect baru
+    table.insert(antiBeeConnections, game:GetService("Lighting").DescendantAdded:Connect(function(obj)
+        if not antiBeeEnabled then return end
+        nukeAntiBeeObj(obj)
+    end))
 
-local function protectControls()
-    if controlsProtected then return end
-    pcall(function()
-        local PlayerModule = player.PlayerScripts:FindFirstChild("PlayerModule")
-        if not PlayerModule then return end
-        local Controls = require(PlayerModule):GetControls()
-        if not Controls then return end
-        if not originalMoveFunction then originalMoveFunction = Controls.moveFunction end
-        local function protectedMoveFunction(self, moveVector, relativeToCamera)
-            if originalMoveFunction then originalMoveFunction(self, moveVector, relativeToCamera) end
-        end
-        local controlCheckConn = S.RunService.Heartbeat:Connect(function()
-            if not antiBeeDiscoRunning then return end
-            if Controls.moveFunction ~= protectedMoveFunction then
-                Controls.moveFunction = protectedMoveFunction
+    -- block buzzing sound
+    table.insert(antiBeeConnections, S.RunService.Heartbeat:Connect(function()
+        if not antiBeeEnabled then return end
+        pcall(function()
+            local beeScript = player.PlayerScripts:FindFirstChild("Bee", true)
+            if beeScript then
+                local buzzing = beeScript:FindFirstChild("Buzzing")
+                if buzzing and buzzing:IsA("Sound") then
+                    buzzing:Stop()
+                    buzzing.Volume = 0
+                end
             end
         end)
-        table.insert(antiBeeDiscoConnections, controlCheckConn)
-        Controls.moveFunction = protectedMoveFunction
-        controlsProtected = true
-    end)
-end
-
-local function restoreControls()
-    if not controlsProtected then return end
-    pcall(function()
-        local PlayerModule = player.PlayerScripts:FindFirstChild("PlayerModule")
-        if not PlayerModule then return end
-        local Controls = require(PlayerModule):GetControls()
-        if not Controls or not originalMoveFunction then return end
-        Controls.moveFunction = originalMoveFunction
-        controlsProtected = false
-    end)
-end
-
-local function enableAntiBee()
-    if antiBeeDiscoRunning then return end
-    antiBeeDiscoRunning = true
-    for _, inst in ipairs(game:GetService("Lighting"):GetDescendants()) do
-        antiBeeDiscoNuke(inst)
-    end
-    table.insert(antiBeeDiscoConnections, game:GetService("Lighting").DescendantAdded:Connect(function(obj)
-        if not antiBeeDiscoRunning then return end
-        antiBeeDiscoNuke(obj)
     end))
-    protectControls()
-    table.insert(antiBeeDiscoConnections, S.RunService.Heartbeat:Connect(function()
-        if not antiBeeDiscoRunning then return end
-        blockBuzzingSound()
-    end))
-    FOV_MANAGER:Push()
 end
 
 local function disableAntiBee()
-    if not antiBeeDiscoRunning then return end
-    antiBeeDiscoRunning = false
-    restoreControls()
-    antiBeeDiscoDisconnectAll()
-    FOV_MANAGER:Pop()
+    if not antiBeeEnabled then return end
+    antiBeeEnabled = false
+    for _, conn in ipairs(antiBeeConnections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    antiBeeConnections = {}
 end
 
 if Config.AntiBee then
