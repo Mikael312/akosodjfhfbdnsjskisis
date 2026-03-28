@@ -3402,6 +3402,8 @@ task.spawn(function()
     end
 end)
 
+end
+
 -- ok
 S.UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
