@@ -435,6 +435,9 @@ local antiLagRunning = false
 local antiLagConnections = {}
 local cleanedCharacters = {}
 
+local subspaceMineESPData = {}
+local subspaceMineESPRunning = false
+
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
     local plots = workspace:FindFirstChild("Plots")
