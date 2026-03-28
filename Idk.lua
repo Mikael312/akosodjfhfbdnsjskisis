@@ -75,7 +75,6 @@ local DefaultConfig = {
     InfJump = false,
     AntiLag = false,
     EspMine = false,
-    AntiRagdoll = false,
 }
 
 local Config = DefaultConfig
@@ -435,10 +434,6 @@ local jumpRequestConnection = nil
 local antiLagRunning = false
 local antiLagConnections = {}
 local cleanedCharacters = {}
-
-local antiRagdollMode = nil
-local ragdollConnections = {}
-local cachedCharData = {}
 
 local function isMyBaseAnimal(animalData)
     if not animalData or not animalData.plot then return false end
@@ -1749,120 +1744,6 @@ if Config.EspMine then
     end)
 end
 
-local function cacheCharacterData()
-    local char = player.Character
-    if not char then return false end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if not hum or not root then return false end
-    cachedCharData = {
-        character = char,
-        humanoid = hum,
-        root = root,
-    }
-    return true
-end
-
-local function disconnectAllRagdoll()
-    for _, conn in ipairs(ragdollConnections) do
-        pcall(function() conn:Disconnect() end)
-    end
-    ragdollConnections = {}
-end
-
-local function isRagdolled()
-    if not cachedCharData.humanoid then return false end
-    local hum = cachedCharData.humanoid
-    local ragdollStates = {
-        [Enum.HumanoidStateType.Physics] = true,
-        [Enum.HumanoidStateType.Ragdoll] = true,
-        [Enum.HumanoidStateType.FallingDown] = true,
-    }
-    if ragdollStates[hum:GetState()] then return true end
-    local endTime = player:GetAttribute("RagdollEndTime")
-    if endTime and (endTime - workspace:GetServerTimeNow()) > 0 then return true end
-    return false
-end
-
-local function removeRagdollConstraints()
-    if not cachedCharData.character then return end
-    for _, d in ipairs(cachedCharData.character:GetDescendants()) do
-        if d:IsA("BallSocketConstraint") or
-           (d:IsA("Attachment") and d.Name:find("RagdollAttachment")) then
-            pcall(function() d:Destroy() end)
-        end
-    end
-end
-
-local function forceExitRagdoll()
-    if not cachedCharData.humanoid or not cachedCharData.root then return end
-    local hum = cachedCharData.humanoid
-    local root = cachedCharData.root
-    pcall(function()
-        player:SetAttribute("RagdollEndTime", workspace:GetServerTimeNow())
-    end)
-    if hum.Health > 0 then
-        hum:ChangeState(Enum.HumanoidStateType.Running)
-    end
-    root.Anchored = false
-    root.AssemblyLinearVelocity = Vector3.zero
-    root.AssemblyAngularVelocity = Vector3.zero
-end
-
-local function setupCameraBinding()
-    if not cachedCharData.humanoid then return end
-    local conn = S.RunService.RenderStepped:Connect(function()
-        if antiRagdollMode ~= "v2" then return end
-        local cam = workspace.CurrentCamera
-        if cam and cachedCharData.humanoid and cam.CameraSubject ~= cachedCharData.humanoid then
-            cam.CameraSubject = cachedCharData.humanoid
-        end
-    end)
-    table.insert(ragdollConnections, conn)
-end
-
-local function v2HeartbeatLoop()
-    while antiRagdollMode == "v2" and cachedCharData.humanoid do
-        task.wait()
-        if isRagdolled() then
-            removeRagdollConstraints()
-            forceExitRagdoll()
-        end
-    end
-end
-
-local function onRagdollCharacterAdded(char)
-    task.wait(0.5)
-    if not antiRagdollMode then return end
-    if cacheCharacterData() then
-        setupCameraBinding()
-        task.spawn(v2HeartbeatLoop)
-    end
-end
-
-local function enableAntiRagdoll()
-    if antiRagdollMode == "v2" then return end
-    disconnectAllRagdoll()
-    if not cacheCharacterData() then return end
-    antiRagdollMode = "v2"
-    local charConn = player.CharacterAdded:Connect(onRagdollCharacterAdded)
-    table.insert(ragdollConnections, charConn)
-    setupCameraBinding()
-    task.spawn(v2HeartbeatLoop)
-end
-
-local function disableAntiRagdoll()
-    antiRagdollMode = nil
-    cachedCharData = {}
-    disconnectAllRagdoll()
-end
-
-if Config.AntiRagdoll then
-    task.spawn(function()
-        enableAntiRagdoll()
-    end)
-end
-
 local function getAnimalHash(animalList)
     if not animalList then return "" end
     local hash = ""
@@ -3150,9 +3031,6 @@ if utilityContent then
     createTabToggle(utilityContent, "Kick After Steal", "KickAfterSteal", function(ns, set)
         set(ns); if ns then enableKickAfterSteal() else disableKickAfterSteal() end
     end)
-    createTabToggle(utilityContent, "Anti Ragdoll", "AntiRagdoll", function(ns, set)
-        set(ns); if ns then enableAntiRagdoll() else disableAntiRagdoll() end
-    end)
 
     createSectionHeader(utilityContent, "Movement")
     createTabToggle(utilityContent, "Carpet Speed", "CarpetSpeed", function(ns, set)
@@ -3288,5 +3166,4 @@ S.UserInputService.InputBegan:Connect(function(input, processed)
     end
 end)
 
--- Show welcome notification
 showNotification({message = "ZynHub Private", subtext = "Welcome back!", color = "Violet", textColor = "White", subColor = "Violet"})
