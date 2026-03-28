@@ -2959,7 +2959,7 @@ if utilityContent then
         set(ns); toggleOptimizer(ns)
     end)
     createTabToggle(utilityContent, "Anti Lag", "AntiLag", function(ns, set)
-        set(ns); toggleAntiLag(ns)
+        set(ns); if ns then enableAntiLag() else disableAntiLag() end
     end)
     createTabToggle(utilityContent, "Animation Disabler", "AnimDisabler", function(ns, set)
         set(ns); if ns then enableAnimDisabler() else disableAnimDisabler() end
