@@ -384,6 +384,8 @@ local function getFavoriteByPriority(allAnimalsCache)
     return nil
 end
 
+_G.isCloning = false
+
 local espPlayersEnabled = false
 local espObjects = {}
 local updateConnection = nil
@@ -425,8 +427,6 @@ local carpetSpeedEnabled = false
 local carpetSpeedConn = nil
 
 local kickAfterStealActive = false
-
-local isCloning = false
 
 local infiniteJumpEnabled = false
 local jumpRequestConnection = nil
@@ -610,37 +610,29 @@ local function disableESPPlayers()
 end
 
 local function instantClone()
-    if isCloning then return end
-    isCloning = true
-
+    if _G.isCloning then return end
+    _G.isCloning = true
     pcall(function()
         local backpack = player:WaitForChild("Backpack")
         local char = player.Character or player.CharacterAdded:Wait()
         local humanoid = char:WaitForChild("Humanoid")
-
         local tool = backpack:FindFirstChild("Quantum Cloner") or char:FindFirstChild("Quantum Cloner")
-        if not tool then isCloning = false; return end
-
+        if not tool then _G.isCloning = false; return end
         if tool.Parent == backpack then
             humanoid:EquipTool(tool)
             task.wait(0.1)
         end
-
         tool:Activate()
-
         local clone = S.Workspace:WaitForChild(player.UserId .. "_Clone", 10)
-
         if clone then
             local teleportBtn = player.PlayerGui
                 :WaitForChild("ToolsFrames")
                 :WaitForChild("QuantumCloner")
                 :WaitForChild("TeleportToClone")
-
             firesignal(teleportBtn.MouseButton1Up)
         end
     end)
-
-    isCloning = false
+    _G.isCloning = false
 end
 
 local function findMyPlot()
