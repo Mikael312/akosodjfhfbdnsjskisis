@@ -29,6 +29,7 @@ local S = {
     ReplicatedStorage = game:GetService("ReplicatedStorage"),
     Workspace = game:GetService("Workspace"),
     UserInputService = game:GetService("UserInputService"),
+    Lighting = game:GetService("Lighting"),
 }
 
 local player = S.Players.LocalPlayer
