@@ -1747,6 +1747,204 @@ if Config.EspMine then
     end)
 end
 
+local function equipFlyingCarpet()
+    local success, result = pcall(function()
+        local character = LocalPlayer.Character
+        if not character then return false end
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if not (humanoid and humanoid.Health > 0) then return false end
+        humanoid:UnequipTools()
+        local backpack = player:WaitForChild("Backpack")
+        local carpet = backpack:FindFirstChild("Flying Carpet")
+        if carpet then
+            humanoid:EquipTool(carpet)
+            return true
+        end
+        return false
+    end)
+    return success and result
+end
+
+local function findLowestPlotBlock(plot)
+    local lowestPart = nil
+    local lowestY = math.huge
+    local purchases = plot:FindFirstChild("Purchases")
+    local plotBlockFolder = purchases and purchases:FindFirstChild("PlotBlock")
+    if not plotBlockFolder then return nil end
+    for _, descendant in ipairs(plotBlockFolder:GetDescendants()) do
+        if descendant:IsA("BasePart") and descendant.Name == "Main" then
+            local y = descendant.Position.Y
+            if y < lowestY then lowestY = y; lowestPart = descendant end
+        end
+    end
+    return lowestPart
+end
+
+local function getPlotBlockBounds(plot)
+    local main = findLowestPlotBlock(plot)
+    if not main then return nil end
+    local pos = main.Position
+    local size = main.Size
+    local halfSizeX = size.X * 0.5
+    return {
+        centerX = pos.X, centerY = pos.Y, centerZ = pos.Z,
+        halfSizeX = halfSizeX, halfSizeY = size.Y * 0.5,
+        minX = pos.X - halfSizeX, maxX = pos.X + halfSizeX,
+        minY = pos.Y - size.Y * 0.5, maxY = pos.Y + size.Y * 0.5,
+    }
+end
+
+local function lookAtPlotBlockX(hrp, info)
+    if not hrp or not info then return end
+    local playerPos = hrp.Position
+    local dirX = info.centerX - playerPos.X
+    if math.abs(dirX) < 1 then return end
+    local lookDir = dirX > 0 and Vector3.new(1, 0, 0) or Vector3.new(-1, 0, 0)
+    hrp.CFrame = CFrame.new(playerPos, playerPos + lookDir)
+end
+
+local unwalkAnimEnabled = false
+local unwalkAnimConnections = {}
+
+local function setupNoWalkAnimation(character)
+    if not character then return end
+    local humanoid = character:WaitForChild("Humanoid")
+    local animator = humanoid:WaitForChild("Animator")
+    for _, track in pairs(animator:GetPlayingAnimationTracks()) do track:Stop(0) end
+    table.insert(unwalkAnimConnections, animator.AnimationPlayed:Connect(function(track)
+        track:Stop(0)
+    end))
+end
+
+local function enableUnwalkAnim()
+    if unwalkAnimEnabled then return end
+    unwalkAnimEnabled = true
+    if player.Character then setupNoWalkAnimation(player.Character) end
+    table.insert(unwalkAnimConnections, player.CharacterAdded:Connect(setupNoWalkAnimation))
+end
+
+local function disableUnwalkAnim()
+    if not unwalkAnimEnabled then return end
+    unwalkAnimEnabled = false
+    for _, conn in pairs(unwalkAnimConnections) do if conn then conn:Disconnect() end end
+    unwalkAnimConnections = {}
+end
+
+local function findBestPet()
+    for _, animalData in ipairs(allAnimalsCache) do
+        if not isMyBaseAnimal(animalData) then
+            local plots = S.Workspace:FindFirstChild("Plots")
+            local plot = plots and plots:FindFirstChild(animalData.plot)
+            local targetPos = nil
+            local targetPart = nil
+
+            if plot then
+                local podiums = plot:FindFirstChild("AnimalPodiums")
+                local animalFolder = podiums and podiums:FindFirstChild(animalData.slot)
+                if animalFolder then
+                    local allParts = {}
+                    local function scanParts(obj)
+                        for _, child in ipairs(obj:GetChildren()) do
+                            if child:IsA("BasePart") then table.insert(allParts, child)
+                            else scanParts(child) end
+                        end
+                    end
+                    scanParts(animalFolder)
+                    if #allParts > 0 then
+                        local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                        local closest, minDist = nil, math.huge
+                        for _, part in ipairs(allParts) do
+                            local dist = hrp and (part.Position - hrp.Position).Magnitude or 0
+                            if dist < minDist then minDist = dist; closest = part end
+                        end
+                        if closest then targetPos = closest.Position; targetPart = closest end
+                    end
+                end
+                if not targetPos then
+                    local spawnPart = plot:FindFirstChild("Spawn")
+                    if spawnPart and spawnPart:IsA("BasePart") then
+                        targetPos = spawnPart.Position; targetPart = spawnPart
+                    end
+                end
+            end
+
+            return {
+                plot = plot,
+                plotName = animalData.plot,
+                petName = animalData.name,
+                part = targetPart,
+                position = targetPos,
+                value = animalData.genValue,
+            }
+        end
+    end
+    return nil
+end
+
+local function safeTeleportToPet()
+    local character = player.Character
+    if not character then return false end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChild("Humanoid")
+    if not hrp or not humanoid then return false end
+
+    enableUnwalkAnim()
+
+    local bestPet = findBestPet()
+    if not bestPet or not bestPet.position then
+        disableUnwalkAnim()
+        return false
+    end
+
+    local currentPos = hrp.Position
+    local targetPos = bestPet.position
+    local plot = bestPet.plot
+    local info = plot and getPlotBlockBounds(plot)
+
+    lookAtPlotBlockX(hrp, info)
+    equipFlyingCarpet()
+    task.wait(0.1)
+
+    hrp.AssemblyLinearVelocity = Vector3.new(hrp.AssemblyLinearVelocity.X, 200, hrp.AssemblyLinearVelocity.Z)
+    task.wait(0.3)
+
+    local finalPos
+    if info then
+        local MARGIN = targetPos.Y > 10 and 39.9 or 41.3
+        local dirX = currentPos.X - info.centerX
+        local targetX = dirX > 0 and info.maxX + MARGIN or info.minX - MARGIN
+        local targetY = targetPos.Y > 10 and 20 or targetPos.Y + 2
+        finalPos = Vector3.new(targetX, targetY, info.centerZ)
+    else
+        finalPos = Vector3.new(targetPos.X, targetPos.Y > 10 and 20 or targetPos.Y, targetPos.Z)
+    end
+
+    if info then
+        hrp.CFrame = CFrame.new(finalPos, Vector3.new(info.centerX, finalPos.Y, info.centerZ))
+    else
+        hrp.CFrame = CFrame.new(finalPos)
+    end
+
+    task.wait(0.1)
+
+    local randomSide = math.random(0, 1) == 0 and -15 or 15
+    local forwardOffset = targetPos.Y > 10 and 2 or 0.5
+    local randomPos = Vector3.new(finalPos.X + forwardOffset, finalPos.Y, finalPos.Z + randomSide)
+    local lookX = info and info.centerX or finalPos.X
+    local lookDir = lookX > randomPos.X and Vector3.new(1, 0, 0) or Vector3.new(-1, 0, 0)
+    hrp.CFrame = CFrame.new(randomPos, randomPos + lookDir)
+
+    task.wait(0.1)
+    disableUnwalkAnim()
+    instantClone()
+
+    return true
+end
+
+player.CharacterAdded:Connect(function()
+    disableUnwalkAnim()
+end)
+
 local function getAnimalHash(animalList)
     if not animalList then return "" end
     local hash = ""
@@ -2946,7 +3144,9 @@ local instantCloneBtn = createButton("Instant Clone", 45, function()
     task.spawn(instantClone)
 end)
 
-local tpToBestBtn = createButton("Tp to Best", 80, function() end)
+local tpToBestBtn = createButton("Tp to Best", 80, function()
+    task.spawn(safeTeleportToPet)
+end)
 
 local ragdollSelfBtn = createButton("Ragdoll Self", 115, function() end)
 
