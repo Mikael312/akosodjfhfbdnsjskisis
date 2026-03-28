@@ -74,6 +74,7 @@ local DefaultConfig = {
     DesyncOnStart = false,
     InfJump = false,
     AntiLag = false,
+    EspMine = false,
 }
 
 local Config = DefaultConfig
@@ -1661,6 +1662,88 @@ if Config.AntiLag then
     end)
 end
 
+local function createMineESP(mine)
+    local ownerName = mine.Name:match("SubspaceTripmine(.+)") or "Unknown"
+    local ownerPlayer = S.Players:FindFirstChild(ownerName)
+    local displayName = ownerPlayer and ownerPlayer.DisplayName or ownerName
+
+    local selectionBox = Instance.new("SelectionBox")
+    selectionBox.Name = "ESP_Hitbox"
+    selectionBox.Adornee = mine
+    selectionBox.Color3 = Color3.fromRGB(167, 142, 255)
+    selectionBox.LineThickness = 0.05
+    selectionBox.Parent = mine
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESP_Label"
+    billboard.Adornee = mine
+    billboard.Size = UDim2.new(0, 250, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.AlwaysOnTop = false
+    billboard.Parent = mine
+
+    local textLabel = Instance.new("TextLabel", billboard)
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = displayName .. "'s Subspace Mine"
+    textLabel.TextColor3 = Color3.fromRGB(167, 142, 255)
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.TextStrokeTransparency = 0
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 16
+
+    return { selectionBox = selectionBox, billboard = billboard, mine = mine }
+end
+
+local function refreshSubspaceMineESP()
+    local toolsFolder = S.Workspace:FindFirstChild("ToolsAdds")
+    if not toolsFolder then return end
+
+    local currentMines = {}
+    for _, obj in pairs(toolsFolder:GetChildren()) do
+        if obj.Name:match("^SubspaceTripmine") and obj:IsA("BasePart") then
+            currentMines[obj] = true
+            if not subspaceMineESPData[obj] then
+                subspaceMineESPData[obj] = createMineESP(obj)
+            end
+        end
+    end
+
+    for mineObj, data in pairs(subspaceMineESPData) do
+        if not currentMines[mineObj] or not mineObj.Parent then
+            if data.selectionBox and data.selectionBox.Parent then data.selectionBox:Destroy() end
+            if data.billboard and data.billboard.Parent then data.billboard:Destroy() end
+            subspaceMineESPData[mineObj] = nil
+        end
+    end
+end
+
+local function enableSubspaceMineESP()
+    if subspaceMineESPRunning then return end
+    subspaceMineESPRunning = true
+    task.spawn(function()
+        while subspaceMineESPRunning do
+            pcall(refreshSubspaceMineESP)
+            task.wait(0.5)
+        end
+    end)
+end
+
+local function disableSubspaceMineESP()
+    subspaceMineESPRunning = false
+    for _, data in pairs(subspaceMineESPData) do
+        if data.selectionBox and data.selectionBox.Parent then data.selectionBox:Destroy() end
+        if data.billboard and data.billboard.Parent then data.billboard:Destroy() end
+    end
+    subspaceMineESPData = {}
+end
+
+if Config.EspMine then
+    task.spawn(function()
+        enableSubspaceMineESP()
+    end)
+end
+
 local function getAnimalHash(animalList)
     if not animalList then return "" end
     local hash = ""
@@ -2921,12 +3004,15 @@ if featuresContent then
         set(ns)
     end)
 
-    createSectionHeader(featuresContent, "Features")
+    createSectionHeader(featuresContent, "Visual")
     createTabToggle(featuresContent, "Esp Players", "EspPlayers", function(ns, set)
         set(ns); if ns then enableESPPlayers() else disableESPPlayers() end
     end)
     createTabToggle(featuresContent, "Esp Timer", "EspTimer", function(ns, set)
         set(ns); toggleTimerESP(ns)
+    end)
+    createTabToggle(featuresContent, "Esp Mine", "EspMine", function(ns, set)
+        set(ns); if ns then enableSubspaceMineESP() else disableSubspaceMineESP() end
     end)
     createTabToggle(featuresContent, "Esp Best", "EspBest", function(ns, set)
         set(ns); if ns then enableBrainrotESP() else disableBrainrotESP() end
