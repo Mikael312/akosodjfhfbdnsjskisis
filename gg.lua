@@ -370,7 +370,11 @@ local function getFavoriteByPriority(allAnimalsCache)
     return nil
 end
 
-
+local allAnimalsCache = {}
+local scannerConnections = {}
+local plotChannels = {}
+local lastAnimalData = {}
+local highestAnimal = nil
 
 local function getAnimalHash(animalList)
     if not animalList then return "" end
@@ -1716,21 +1720,5 @@ if favoritesContent then
         end
     end)
 end
-
--- ok
-S.UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
-    if S.UserInputService:GetFocusedTextBox() then return end
-
-    if Config.Keybinds.CloneKey and input.KeyCode == Enum.KeyCode[Config.Keybinds.CloneKey] then
-        task.spawn(instantClone)
-    end
-
-    if Config.Keybinds.CarpetSpeedKey and input.KeyCode == Enum.KeyCode[Config.Keybinds.CarpetSpeedKey] then
-        toggleCarpetSpeed()
-        Config.CarpetSpeed = carpetSpeedEnabled
-        SaveConfig()
-    end
-end)
 
 showNotification({message = "ZynHub Private", subtext = "Welcome back!", color = "Violet", textColor = "White", subColor = "Violet"})
