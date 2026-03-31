@@ -554,22 +554,22 @@ S.Players.PlayerAdded:Connect(function(p)
 end)
 
 local C = {
-    white = Color3.fromRGB(255, 255, 255),
-    black = Color3.fromRGB(0, 0, 0),
-    blue1 = Color3.fromRGB(2, 142, 217),
-    blue2 = Color3.fromRGB(53, 91, 242),
-    buttonBlue = Color3.fromRGB(80, 150, 255),
-    darkGrey = Color3.fromRGB(22, 22, 41),
-    toggleOn = Color3.fromRGB(20, 23, 204),
-    subtitleGrey = Color3.fromRGB(150, 160, 180),
-    dividerGrey = Color3.fromRGB(60, 60, 70),
-    decorBlue = Color3.fromRGB(100, 180, 255),
-    tabActive = Color3.fromRGB(80, 150, 255),
-    tabInactive = Color3.fromRGB(100, 100, 120),
-    green = Color3.fromRGB(46, 204, 113),
-    yellow = Color3.fromRGB(241, 196, 15),
-    red = Color3.fromRGB(231, 76, 60),
-    coolBlue = Color3.fromRGB(5, 52, 153),
+    white        = Color3.fromRGB(255, 255, 255),
+    black        = Color3.fromRGB(0, 0, 0),
+    bg           = Color3.fromRGB(8, 8, 15),        
+    primary      = Color3.fromRGB(120, 40, 220),    
+    accent       = Color3.fromRGB(180, 120, 255),   
+    buttonPurple = Color3.fromRGB(150, 80, 240),
+    darkPurple   = Color3.fromRGB(30, 15, 60),      
+    toggleOn     = Color3.fromRGB(120, 40, 220),    
+    subtitleGrey = Color3.fromRGB(150, 140, 180),   
+    dividerGrey  = Color3.fromRGB(50, 40, 70),      
+    decorPurple  = Color3.fromRGB(160, 100, 255),   
+    tabActive    = Color3.fromRGB(180, 120, 255),   
+    tabInactive  = Color3.fromRGB(100, 80, 130),
+    green        = Color3.fromRGB(46, 204, 113),
+    yellow       = Color3.fromRGB(241, 196, 15),
+    red          = Color3.fromRGB(231, 76, 60),
 }
 
 local function addTextGradient(textElement, color1, color2, rotation)
