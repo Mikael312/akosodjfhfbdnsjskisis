@@ -45,7 +45,7 @@ S.AnimalsShared = require(Shared:WaitForChild("Animals"))
 S.NumberUtils = require(Utils:WaitForChild("NumberUtils"))
 S.RaritiesData = require(Datas:WaitForChild("Rarities"))
 
-local FileName = "ZynHubPrivate_v2.json"
+local FileName = "RenHubPrivate_v1.json"
 local DefaultConfig = {
     Positions = {
         CreditFrame = {X = 0.5, Y = 0.065},
@@ -98,18 +98,19 @@ local function SaveConfig()
     end
 end
 
+-- ==================== NOTIFICATION SYSTEM ====================
 local activeNotifications = {}
 local NOTIF_HEIGHT = 56
 local NOTIF_SPACING = 10
 local MAX_NOTIFS = 3
 
 local NotifColors = {
-    Default = Color3.fromRGB(180, 180, 200),
+    Default = Color3.fromRGB(180, 140, 255),
     Failed  = Color3.fromRGB(220, 40,  40),
-    Success = Color3.fromRGB(14, 154, 235),
+    Success = Color3.fromRGB(120, 40, 220),
     White   = Color3.fromRGB(255, 255, 255),
-    Blue    = Color3.fromRGB(60,  160, 255),
-    Violet  = Color3.fromRGB(70,  70,  180),
+    Purple  = Color3.fromRGB(150, 80, 240),
+    Violet  = Color3.fromRGB(120, 40, 220),
 }
 
 local function updateNotificationPositions()
@@ -130,11 +131,11 @@ end
 
 local function showNotification(opts)
     opts = opts or {}
-    local message  = opts.message  or ""
-    local subtext  = opts.subtext  or nil
-    local color    = opts.color and NotifColors[opts.color] or NotifColors.Default
-    local textColor = opts.textColor and NotifColors[opts.textColor] or color  
-    local subColor = opts.subColor and NotifColors[opts.subColor] or color    
+    local message   = opts.message  or ""
+    local subtext   = opts.subtext  or nil
+    local color     = opts.color and NotifColors[opts.color] or NotifColors.Default
+    local textColor = opts.textColor and NotifColors[opts.textColor] or color
+    local subColor  = opts.subColor and NotifColors[opts.subColor] or color
 
     if #activeNotifications >= MAX_NOTIFS then
         local oldest = activeNotifications[1]
@@ -147,10 +148,10 @@ local function showNotification(opts)
         task.delay(0.3, function() oldest.frame:Destroy() end)
     end
 
-    local notifGui = game:GetService("CoreGui"):FindFirstChild("ZynNotifGui")
+    local notifGui = game:GetService("CoreGui"):FindFirstChild("RenNotifGui")
     if not notifGui then
         notifGui = Instance.new("ScreenGui")
-        notifGui.Name = "ZynNotifGui"
+        notifGui.Name = "RenNotifGui"
         notifGui.ResetOnSpawn = false
         notifGui.Parent = game:GetService("CoreGui")
     end
@@ -161,7 +162,7 @@ local function showNotification(opts)
     local notif = Instance.new("Frame")
     notif.Size = UDim2.new(0, 250, 0, frameHeight)
     notif.Position = UDim2.new(0, -260, 0, startYPos)
-    notif.BackgroundColor3 = Color3.fromRGB(10, 10, 12)
+    notif.BackgroundColor3 = Color3.fromRGB(8, 5, 18)
     notif.BorderSizePixel = 0
     notif.Parent = notifGui
 
@@ -172,7 +173,7 @@ local function showNotification(opts)
     local nStroke = Instance.new("UIStroke")
     nStroke.Thickness = 1
     nStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    nStroke.Color = Color3.fromRGB(40, 40, 52)
+    nStroke.Color = Color3.fromRGB(80, 40, 120)
     nStroke.Parent = notif
 
     local closeButton = Instance.new("TextButton")
@@ -180,20 +181,20 @@ local function showNotification(opts)
     closeButton.Position = UDim2.new(0, 4, 0, 4)
     closeButton.BackgroundTransparency = 1
     closeButton.Text = "X"
-    closeButton.TextColor3 = Color3.fromRGB(100, 100, 115)
+    closeButton.TextColor3 = Color3.fromRGB(120, 80, 160)
     closeButton.TextSize = 11
     closeButton.Font = Enum.Font.GothamBold
     closeButton.Parent = notif
 
-    closeButton.MouseEnter:Connect(function() closeButton.TextColor3 = Color3.fromRGB(220, 220, 235) end)
-    closeButton.MouseLeave:Connect(function() closeButton.TextColor3 = Color3.fromRGB(100, 100, 115) end)
+    closeButton.MouseEnter:Connect(function() closeButton.TextColor3 = Color3.fromRGB(200, 150, 255) end)
+    closeButton.MouseLeave:Connect(function() closeButton.TextColor3 = Color3.fromRGB(120, 80, 160) end)
 
     local textLabel = Instance.new("TextLabel")
     textLabel.Size = UDim2.new(1, -36, 0, subtext and 26 or frameHeight - 6)
     textLabel.Position = UDim2.new(0, 30, 0, subtext and 8 or 0)
     textLabel.BackgroundTransparency = 1
     textLabel.Text = message
-    textLabel.TextColor3 = textColor  -- Custom text color
+    textLabel.TextColor3 = textColor
     textLabel.TextSize = 12
     textLabel.Font = Enum.Font.GothamBold
     textLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -207,7 +208,7 @@ local function showNotification(opts)
         subLabel.Position = UDim2.new(0, 30, 0, 28)
         subLabel.BackgroundTransparency = 1
         subLabel.Text = subtext
-        subLabel.TextColor3 = subColor  
+        subLabel.TextColor3 = subColor
         subLabel.TextSize = 10
         subLabel.Font = Enum.Font.Gotham
         subLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -261,30 +262,14 @@ local function showNotification(opts)
     task.delay(2, dismiss)
 end
 
+-- ==================== FAVORITES ====================
 local FAVORITES_LIST = {
-    "Strawberry Elephant",
-    "Meowl",
-    "Skibidi Toilet",
-    "Headless Horseman",
-    "Dragon Gingerini",
-    "Dragon Cannelloni",
-    "Ketupat Bros",
-    "Hydra Dragon Cannelloni",
-    "La Supreme Combinasion",
-    "Love Love Bear",
-    "Cerberus",
-    "Capitano Moby",
-    "Celestial Pegasus",
-    "Fortunu and Cashuru",
-    "Cloverat Clapat",
-    "Griffin",
-    "Cooki and Milki",
-    "Rosey and Teddy",
-    "Popcuru and Fizzuru",
-    "Reinito Sleighito",
-    "Fragrama and Chocrama",
-    "Signore Carapace",
-    "La Taco Combinasion"
+    "Strawberry Elephant", "Meowl", "Skibidi Toilet", "Headless Horseman",
+    "Dragon Gingerini", "Dragon Cannelloni", "Ketupat Bros", "Hydra Dragon Cannelloni",
+    "La Supreme Combinasion", "Love Love Bear", "Cerberus", "Capitano Moby",
+    "Celestial Pegasus", "Fortunu and Cashuru", "Cloverat Clapat", "Griffin",
+    "Cooki and Milki", "Rosey and Teddy", "Popcuru and Fizzuru", "Reinito Sleighito",
+    "Fragrama and Chocrama", "Signore Carapace", "La Taco Combinasion"
 }
 
 local FAVORITES = {}
@@ -292,8 +277,6 @@ local FAVORITES = {}
 if Config.Favorites.Animals and #Config.Favorites.Animals > 0 then
     FAVORITES = Config.Favorites.Animals
 else
-    
-    FAVORITES = {}
     for _, name in ipairs(FAVORITES_LIST) do
         table.insert(FAVORITES, name)
     end
@@ -308,22 +291,16 @@ end
 
 local function isFavorite(animalName)
     for _, name in ipairs(FAVORITES) do
-        if name:lower() == animalName:lower() then
-            return true
-        end
+        if name:lower() == animalName:lower() then return true end
     end
     return false
 end
 
 local function addFavorite(animalName)
-    if isFavorite(animalName) then
-        return false
-    end
+    if isFavorite(animalName) then return false end
     table.insert(FAVORITES, animalName)
     saveFavorites()
-    
     showNotification({message = "Favorited: " .. animalName, color = "Success", textColor = "White"})
-    
     return true
 end
 
@@ -332,9 +309,7 @@ local function removeFavorite(animalName)
         if name:lower() == animalName:lower() then
             table.remove(FAVORITES, i)
             saveFavorites()
-            
             showNotification({message = "Removed: " .. animalName, color = "Failed", textColor = "White"})
-            
             return true
         end
     end
@@ -359,22 +334,30 @@ local function moveFavoriteDown(index)
     return false
 end
 
-local function getFavoriteByPriority(allAnimalsCache)
+local function getFavoriteByPriority(cache)
     for _, favName in ipairs(FAVORITES) do
-        for _, animal in ipairs(allAnimalsCache) do
-            if animal.name:lower() == favName:lower() then
-                return animal
-            end
+        for _, animal in ipairs(cache) do
+            if animal.name:lower() == favName:lower() then return animal end
         end
     end
     return nil
 end
 
+-- ==================== SCANNER ====================
 local allAnimalsCache = {}
 local scannerConnections = {}
 local plotChannels = {}
 local lastAnimalData = {}
 local highestAnimal = nil
+
+local function isPlayerPlot(plot)
+    local plotSign = plot:FindFirstChild("PlotSign")
+    if plotSign then
+        local yourBase = plotSign:FindFirstChild("YourBase")
+        if yourBase and yourBase.Enabled then return true end
+    end
+    return false
+end
 
 local function getAnimalHash(animalList)
     if not animalList then return "" end
@@ -390,47 +373,33 @@ end
 local function scanSinglePlot(plot)
     pcall(function()
         if isPlayerPlot(plot) then return end
-
         local plotUID = plot.Name
         local channel = S.Synchronizer:Get(plotUID)
         if not channel then return end
-
         local animalList = channel:Get("AnimalList")
         local currentHash = getAnimalHash(animalList)
         if lastAnimalData[plotUID] == currentHash then return end
         lastAnimalData[plotUID] = currentHash
-
         for i = #allAnimalsCache, 1, -1 do
-            if allAnimalsCache[i].plot == plot.Name then
-                table.remove(allAnimalsCache, i)
-            end
+            if allAnimalsCache[i].plot == plot.Name then table.remove(allAnimalsCache, i) end
         end
-
         local owner = channel:Get("Owner")
         if not owner or not S.Players:FindFirstChild(owner.Name) then return end
-
         local ownerName = owner and owner.Name or "Unknown"
-
         local ownerPlayer = S.Players:FindFirstChild(ownerName)
         local isDuelBase = ownerPlayer and ownerPlayer:GetAttribute("__duels_block_steal") == true or false
-
         if not animalList then return end
-
         for slot, animalData in pairs(animalList) do
             if type(animalData) == "table" then
                 local animalName = animalData.Index
                 local animalInfo = S.AnimalsData[animalName]
                 if not animalInfo then continue end
-
                 local rarity = animalInfo.Rarity
                 local rarityColor = (S.RaritiesData[rarity] and S.RaritiesData[rarity].Color) or Color3.fromRGB(255, 255, 255)
-
                 local mutation = animalData.Mutation or "None"
                 local traits = (animalData.Traits and #animalData.Traits > 0) and table.concat(animalData.Traits, ", ") or "None"
-
                 local genValue = S.AnimalsShared:GetGeneration(animalName, animalData.Mutation, animalData.Traits, nil)
                 local genText = "$" .. S.NumberUtils:ToString(genValue) .. "/s"
-
                 table.insert(allAnimalsCache, {
                     name        = animalInfo.DisplayName or animalName,
                     genText     = genText,
@@ -448,17 +417,13 @@ local function scanSinglePlot(plot)
                 })
             end
         end
-
-        table.sort(allAnimalsCache, function(a, b)
-            return a.genValue > b.genValue
-        end)
+        table.sort(allAnimalsCache, function(a, b) return a.genValue > b.genValue end)
         highestAnimal = allAnimalsCache[1]
     end)
 end
 
 local function setupPlotListener(plot)
     if plotChannels[plot.Name] then return end
-
     local channel
     local retries = 0
     while not channel and retries < 10 do
@@ -466,16 +431,13 @@ local function setupPlotListener(plot)
         if ok and result then channel = result; break
         else retries += 1; if retries < 10 then task.wait(0.5) end end
     end
-
     if not channel then return end
     plotChannels[plot.Name] = true
     scanSinglePlot(plot)
-
     local c1 = plot.DescendantAdded:Connect(function() task.wait(0.1); scanSinglePlot(plot) end)
     local c2 = plot.DescendantRemoving:Connect(function() task.wait(0.1); scanSinglePlot(plot) end)
     table.insert(scannerConnections, c1)
     table.insert(scannerConnections, c2)
-
     task.spawn(function()
         while plot.Parent and plotChannels[plot.Name] do
             task.wait(5); scanSinglePlot(plot)
@@ -486,48 +448,27 @@ end
 local function initializePlotScanner()
     local plots = workspace:WaitForChild("Plots", 8)
     if not plots then warn("Plots folder not found!") return end
-
     for _, plot in ipairs(plots:GetChildren()) do
         task.spawn(function() setupPlotListener(plot) end)
     end
-
-    local newPlotConnection = plots.ChildAdded:Connect(function(plot)
-        task.wait(0.5)
-        setupPlotListener(plot)
+    local newPlotConn = plots.ChildAdded:Connect(function(plot)
+        task.wait(0.5); setupPlotListener(plot)
     end)
-    table.insert(scannerConnections, newPlotConnection)
-
-    local removedPlotConnection = plots.ChildRemoved:Connect(function(plot)
+    table.insert(scannerConnections, newPlotConn)
+    local removedPlotConn = plots.ChildRemoved:Connect(function(plot)
         plotChannels[plot.Name] = nil
         lastAnimalData[plot.Name] = nil
         for i = #allAnimalsCache, 1, -1 do
-            if allAnimalsCache[i].plot == plot.Name then
-                table.remove(allAnimalsCache, i)
-            end
+            if allAnimalsCache[i].plot == plot.Name then table.remove(allAnimalsCache, i) end
         end
         highestAnimal = allAnimalsCache[1]
     end)
-    table.insert(scannerConnections, removedPlotConnection)
-end
-
-local function cleanupScanner()
-    for _, connection in ipairs(scannerConnections) do
-        if typeof(connection) == "RBXScriptConnection" then
-            connection:Disconnect()
-        end
-    end
-    scannerConnections = {}
-    plotChannels = {}
-    lastAnimalData = {}
-    allAnimalsCache = {}
-    highestAnimal = nil
+    table.insert(scannerConnections, removedPlotConn)
 end
 
 S.Players.PlayerRemoving:Connect(function(leavingPlayer)
     for i = #allAnimalsCache, 1, -1 do
-        if allAnimalsCache[i].owner == leavingPlayer.Name then
-            table.remove(allAnimalsCache, i)
-        end
+        if allAnimalsCache[i].owner == leavingPlayer.Name then table.remove(allAnimalsCache, i) end
     end
     highestAnimal = allAnimalsCache[1]
 end)
@@ -538,38 +479,33 @@ local function setupDuelListener(p)
     p:GetAttributeChangedSignal("__duels_block_steal"):Connect(function()
         local isDuel = p:GetAttribute("__duels_block_steal") == true
         for _, animal in ipairs(allAnimalsCache) do
-            if animal.owner == p.Name then
-                animal.isDuelBase = isDuel
-            end
+            if animal.owner == p.Name then animal.isDuelBase = isDuel end
         end
     end)
 end
 
-for _, p in ipairs(S.Players:GetPlayers()) do
-    setupDuelListener(p)
-end
+for _, p in ipairs(S.Players:GetPlayers()) do setupDuelListener(p) end
+S.Players.PlayerAdded:Connect(function(p) setupDuelListener(p) end)
 
-S.Players.PlayerAdded:Connect(function(p)
-    setupDuelListener(p)
-end)
-
+-- ==================== COLOR TABLE ====================
 local C = {
     white        = Color3.fromRGB(255, 255, 255),
     black        = Color3.fromRGB(0, 0, 0),
-    bg           = Color3.fromRGB(8, 8, 15),        
-    primary      = Color3.fromRGB(120, 40, 220),    
-    accent       = Color3.fromRGB(180, 120, 255),   
+    bg           = Color3.fromRGB(8, 8, 15),
+    primary      = Color3.fromRGB(120, 40, 220),
+    accent       = Color3.fromRGB(180, 120, 255),
     buttonPurple = Color3.fromRGB(150, 80, 240),
-    darkPurple   = Color3.fromRGB(30, 15, 60),      
-    toggleOn     = Color3.fromRGB(120, 40, 220),    
-    subtitleGrey = Color3.fromRGB(150, 140, 180),   
-    dividerGrey  = Color3.fromRGB(50, 40, 70),      
-    decorPurple  = Color3.fromRGB(160, 100, 255),   
-    tabActive    = Color3.fromRGB(180, 120, 255),   
+    darkPurple   = Color3.fromRGB(30, 15, 60),
+    toggleOn     = Color3.fromRGB(120, 40, 220),
+    subtitleGrey = Color3.fromRGB(150, 140, 180),
+    dividerGrey  = Color3.fromRGB(50, 40, 70),
+    decorPurple  = Color3.fromRGB(160, 100, 255),
+    tabActive    = Color3.fromRGB(180, 120, 255),
     tabInactive  = Color3.fromRGB(100, 80, 130),
     green        = Color3.fromRGB(46, 204, 113),
     yellow       = Color3.fromRGB(241, 196, 15),
     red          = Color3.fromRGB(231, 76, 60),
+    coolPurple   = Color3.fromRGB(80, 20, 180),
 }
 
 local function addTextGradient(textElement, color1, color2, rotation)
@@ -593,8 +529,9 @@ local function addTextGradient(textElement, color1, color2, rotation)
     return gradient
 end
 
+-- ==================== SCREEN GUI ====================
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "ZYNPRIVATE"
+screenGui.Name = "RENHUB"
 screenGui.Parent = game.CoreGui
 screenGui.ResetOnSpawn = false
 
@@ -624,7 +561,7 @@ creditFrame.Name = "CreditFrame"
 creditFrame.Size = UDim2.new(0, 340, 0, 50)
 local creditPos = Config.Positions.CreditFrame
 creditFrame.Position = UDim2.new(creditPos.X, -170, creditPos.Y, -25)
-creditFrame.BackgroundColor3 = C.black
+creditFrame.BackgroundColor3 = C.bg
 creditFrame.BackgroundTransparency = 0.03
 creditFrame.BorderSizePixel = 0
 creditFrame.Active = true
@@ -636,11 +573,18 @@ local creditFrameCorner = Instance.new("UICorner")
 creditFrameCorner.CornerRadius = UDim.new(0, 9)
 creditFrameCorner.Parent = creditFrame
 
+local creditFrameStroke = Instance.new("UIStroke")
+creditFrameStroke.Thickness = 1
+creditFrameStroke.Color = C.coolPurple
+creditFrameStroke.Transparency = 0.5
+creditFrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+creditFrameStroke.Parent = creditFrame
+
 local logoFrame = Instance.new("Frame")
 logoFrame.Name = "LogoFrame"
 logoFrame.Size = UDim2.new(0, 40, 0, 40)
 logoFrame.Position = UDim2.new(0, 5, 0.5, -20)
-logoFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+logoFrame.BackgroundColor3 = C.darkPurple
 logoFrame.BorderSizePixel = 0
 logoFrame.Parent = creditFrame
 
@@ -663,14 +607,14 @@ creditTitle.Name = "CreditTitle"
 creditTitle.Size = UDim2.new(0, 120, 0, 20)
 creditTitle.Position = UDim2.new(0, 55, 0, 8)
 creditTitle.BackgroundTransparency = 1
-creditTitle.Text = "ZYNHUB PRIVATE"
+creditTitle.Text = "RENHUB PRIVATE"
 creditTitle.TextColor3 = C.white
 creditTitle.Font = Enum.Font.MontserratBlack
 creditTitle.TextSize = 14
 creditTitle.TextXAlignment = Enum.TextXAlignment.Left
 creditTitle.TextYAlignment = Enum.TextYAlignment.Center
 creditTitle.Parent = creditFrame
-addTextGradient(creditTitle, C.blue1, C.blue2, 45)
+addTextGradient(creditTitle, C.primary, C.accent, 45)
 
 local creditDivider = Instance.new("Frame")
 creditDivider.Name = "Divider1"
@@ -685,14 +629,14 @@ discordLabel.Name = "DiscordLabel"
 discordLabel.Size = UDim2.new(0, 100, 0, 20)
 discordLabel.Position = UDim2.new(0, 178, 0, 8)
 discordLabel.BackgroundTransparency = 1
-discordLabel.Text = ".GG/ZYNHUB"
+discordLabel.Text = ".GG/RENHUB"
 discordLabel.TextColor3 = C.white
 discordLabel.Font = Enum.Font.MontserratBlack
 discordLabel.TextSize = 14
 discordLabel.TextXAlignment = Enum.TextXAlignment.Left
 discordLabel.TextYAlignment = Enum.TextYAlignment.Center
 discordLabel.Parent = creditFrame
-addTextGradient(discordLabel, C.blue1, C.blue2, 45)
+addTextGradient(discordLabel, C.primary, C.accent, 45)
 
 local creditDivider2 = Instance.new("Frame")
 creditDivider2.Name = "Divider2"
@@ -734,9 +678,7 @@ S.RunService.RenderStepped:Connect(function()
     frames += 1
     local now = tick()
     if now - last >= 1 then
-        local fps = frames
-        frames = 0
-        last = now
+        local fps = frames; frames = 0; last = now
         local ok, rawPing = pcall(function()
             return S.Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
         end)
@@ -757,7 +699,7 @@ creditsLabel.Name = "CreditsLabel"
 creditsLabel.Size = UDim2.new(0, 340, 0, 15)
 creditsLabel.Position = UDim2.new(0, 55, 1, -22)
 creditsLabel.BackgroundTransparency = 1
-creditsLabel.Text = "Made By @Zyn, @Ren"
+creditsLabel.Text = "Made By @Ren"
 creditsLabel.TextColor3 = C.subtitleGrey
 creditsLabel.Font = Enum.Font.GothamMedium
 creditsLabel.TextSize = 9
@@ -769,7 +711,7 @@ local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 193, 0, 277)
 local mainPos = Config.Positions.MainFrame
 mainFrame.Position = UDim2.new(mainPos.X, -96.5, mainPos.Y, -142.5)
-mainFrame.BackgroundColor3 = C.black
+mainFrame.BackgroundColor3 = C.bg
 mainFrame.BackgroundTransparency = 0.03
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -781,19 +723,26 @@ local frameCorner = Instance.new("UICorner")
 frameCorner.CornerRadius = UDim.new(0, 9)
 frameCorner.Parent = mainFrame
 
+local mainFrameStroke = Instance.new("UIStroke")
+mainFrameStroke.Thickness = 1
+mainFrameStroke.Color = C.coolPurple
+mainFrameStroke.Transparency = 0.5
+mainFrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+mainFrameStroke.Parent = mainFrame
+
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Name = "TitleLabel"
 titleLabel.Size = UDim2.new(1, 0, 0, 25)
 titleLabel.Position = UDim2.new(0, 0, 0, 3)
 titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "ZYNHUB PRIVATE"
+titleLabel.Text = "RENHUB PRIVATE"
 titleLabel.TextColor3 = C.white
 titleLabel.Font = Enum.Font.MontserratBlack
 titleLabel.TextSize = 12
 titleLabel.TextXAlignment = Enum.TextXAlignment.Center
 titleLabel.TextYAlignment = Enum.TextYAlignment.Center
 titleLabel.Parent = mainFrame
-addTextGradient(titleLabel, C.blue1, C.blue2, 45)
+addTextGradient(titleLabel, C.primary, C.accent, 45)
 
 local subtitleLabel = Instance.new("TextLabel")
 subtitleLabel.Name = "SubtitleLabel"
@@ -812,7 +761,7 @@ local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
 menuFrame.Size = UDim2.new(0, 290, 0, 320)
 local menuPos = Config.Positions.MenuFrame
-menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160) 
+menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160)
 menuFrame.BackgroundColor3 = C.white
 menuFrame.BackgroundTransparency = 0.03
 menuFrame.BorderSizePixel = 0
@@ -830,7 +779,7 @@ local menuFrameGradient = Instance.new("UIGradient")
 menuFrameGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0,    C.black),
     ColorSequenceKeypoint.new(0.35, C.black),
-    ColorSequenceKeypoint.new(0.65, C.coolBlue),
+    ColorSequenceKeypoint.new(0.65, C.coolPurple),
     ColorSequenceKeypoint.new(1,    C.black),
 })
 menuFrameGradient.Rotation = 135
@@ -847,14 +796,14 @@ menuTitleLabel.Name = "MenuTitleLabel"
 menuTitleLabel.Size = UDim2.new(0, 180, 0, 25)
 menuTitleLabel.Position = UDim2.new(0, 10, 0, 3)
 menuTitleLabel.BackgroundTransparency = 1
-menuTitleLabel.Text = "ZYNHUB PRIVATE"
+menuTitleLabel.Text = "RENHUB PRIVATE"
 menuTitleLabel.TextColor3 = C.white
 menuTitleLabel.Font = Enum.Font.MontserratBlack
 menuTitleLabel.TextSize = 12
 menuTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 menuTitleLabel.TextYAlignment = Enum.TextYAlignment.Center
 menuTitleLabel.Parent = menuFrame
-addTextGradient(menuTitleLabel, C.blue1, C.blue2, 45)
+addTextGradient(menuTitleLabel, C.primary, C.accent, 45)
 
 local versionBadge = Instance.new("Frame")
 versionBadge.Size = UDim2.new(0, 45, 0, 18)
@@ -869,7 +818,7 @@ versionBadgeCorner.Parent = versionBadge
 
 local versionBadgeStroke = Instance.new("UIStroke")
 versionBadgeStroke.Thickness = 1.5
-versionBadgeStroke.Color = C.coolBlue
+versionBadgeStroke.Color = C.coolPurple
 versionBadgeStroke.Transparency = 0.3
 versionBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 versionBadgeStroke.Parent = versionBadge
@@ -880,7 +829,7 @@ versionLabel.BackgroundTransparency = 1
 versionLabel.Text = "v1.0"
 versionLabel.Font = Enum.Font.MontserratBold
 versionLabel.TextSize = 10
-versionLabel.TextColor3 = C.blue2
+versionLabel.TextColor3 = C.accent
 versionLabel.TextXAlignment = Enum.TextXAlignment.Center
 versionLabel.TextYAlignment = Enum.TextYAlignment.Center
 versionLabel.Parent = versionBadge
@@ -889,7 +838,7 @@ local decorCircle = Instance.new("Frame")
 decorCircle.Name = "DecorCircle"
 decorCircle.Size = UDim2.new(0, 8, 0, 8)
 decorCircle.Position = UDim2.new(1, -20, 0, 12)
-decorCircle.BackgroundColor3 = C.decorBlue
+decorCircle.BackgroundColor3 = C.decorPurple
 decorCircle.BorderSizePixel = 0
 decorCircle.Parent = menuFrame
 
@@ -926,7 +875,7 @@ local function createTabContent(name)
     contentFrame.BackgroundTransparency = 1
     contentFrame.BorderSizePixel = 0
     contentFrame.ScrollBarThickness = 4
-    contentFrame.ScrollBarImageColor3 = C.buttonBlue
+    contentFrame.ScrollBarImageColor3 = C.accent
     contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     contentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
     contentFrame.Visible = (name == currentTab)
@@ -938,7 +887,7 @@ local function createTabContent(name)
     return contentFrame
 end
 
-local function createTabButton(name, index)
+local function createTabBtn(name, index)
     local tabWidth = (257) / 5
     local tabButton = Instance.new("TextButton")
     tabButton.Name = name .. "Tab"
@@ -954,7 +903,7 @@ local function createTabButton(name, index)
 end
 
 for i, tabName in ipairs(tabs) do
-    local tabBtn = createTabButton(tabName, i)
+    local tabBtn = createTabBtn(tabName, i)
     tabButtons[tabName] = tabBtn
     local tabContent = createTabContent(tabName)
     tabContents[tabName] = tabContent
@@ -980,7 +929,7 @@ local function createSectionHeader(parent, sectionName)
     headerLabel.Position = UDim2.new(0, 5, 0, 0)
     headerLabel.BackgroundTransparency = 1
     headerLabel.Text = sectionName
-    headerLabel.TextColor3 = C.white
+    headerLabel.TextColor3 = C.accent
     headerLabel.Font = Enum.Font.GothamBold
     headerLabel.TextSize = 11
     headerLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -994,16 +943,22 @@ local function createButton(name, yPosition, callback)
     button.Name = name .. "Button"
     button.Size = UDim2.new(0, 167, 0, 28)
     button.Position = UDim2.new(0.5, -83.5, 0, yPosition)
-    button.BackgroundColor3 = C.darkGrey
+    button.BackgroundColor3 = C.darkPurple
     button.BorderSizePixel = 0
     button.Text = name
-    button.TextColor3 = C.buttonBlue
+    button.TextColor3 = C.accent
     button.Font = Enum.Font.GothamBold
     button.TextSize = 10
     button.Parent = mainFrame
     local buttonCorner = Instance.new("UICorner")
     buttonCorner.CornerRadius = UDim.new(0, 5)
     buttonCorner.Parent = button
+    local buttonStroke = Instance.new("UIStroke")
+    buttonStroke.Thickness = 1
+    buttonStroke.Color = C.primary
+    buttonStroke.Transparency = 0.5
+    buttonStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    buttonStroke.Parent = button
     button.MouseButton1Click:Connect(function()
         if callback then callback() end
     end)
@@ -1017,19 +972,25 @@ local function createToggle(name, yPosition, configKey, callback)
     button.Name = name .. "Toggle"
     button.Size = UDim2.new(0, 167, 0, 28)
     button.Position = UDim2.new(0.5, -83.5, 0, yPosition)
-    button.BackgroundColor3 = toggleEnabled and C.toggleOn or C.darkGrey
+    button.BackgroundColor3 = toggleEnabled and C.toggleOn or C.darkPurple
     button.BorderSizePixel = 0
     button.Text = name
-    button.TextColor3 = C.buttonBlue
+    button.TextColor3 = C.accent
     button.Font = Enum.Font.GothamBold
     button.TextSize = 10
     button.Parent = mainFrame
     local buttonCorner = Instance.new("UICorner")
     buttonCorner.CornerRadius = UDim.new(0, 5)
     buttonCorner.Parent = button
+    local buttonStroke = Instance.new("UIStroke")
+    buttonStroke.Thickness = 1
+    buttonStroke.Color = C.primary
+    buttonStroke.Transparency = 0.5
+    buttonStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    buttonStroke.Parent = button
     button.MouseButton1Click:Connect(function()
         toggleEnabled = not toggleEnabled
-        button.BackgroundColor3 = toggleEnabled and C.toggleOn or C.darkGrey
+        button.BackgroundColor3 = toggleEnabled and C.toggleOn or C.darkPurple
         if callback then callback(toggleEnabled, setToggle) end
     end)
     return button
@@ -1064,7 +1025,7 @@ local function createTabToggle(parent, name, configKey, callback)
     toggleSwitch.Name = "Switch"
     toggleSwitch.Size = UDim2.new(0, 28, 0, 16)
     toggleSwitch.Position = UDim2.new(1, -38, 0.5, -8)
-    toggleSwitch.BackgroundColor3 = toggleEnabled and C.buttonBlue or Color3.fromRGB(60, 60, 60)
+    toggleSwitch.BackgroundColor3 = toggleEnabled and C.accent or Color3.fromRGB(40, 30, 60)
     toggleSwitch.BorderSizePixel = 0
     toggleSwitch.Parent = toggleFrame
     local switchCorner = Instance.new("UICorner")
@@ -1083,7 +1044,6 @@ local function createTabToggle(parent, name, configKey, callback)
     local clickButton = Instance.new("TextButton")
     clickButton.Name = "ClickButton"
     clickButton.Size = UDim2.new(1, 0, 1, 0)
-    clickButton.Position = UDim2.new(0, 0, 0, 0)
     clickButton.BackgroundTransparency = 1
     clickButton.Text = ""
     clickButton.Parent = toggleFrame
@@ -1091,10 +1051,10 @@ local function createTabToggle(parent, name, configKey, callback)
         toggleEnabled = not toggleEnabled
         local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         if toggleEnabled then
-            S.TweenService:Create(toggleSwitch, tweenInfo, {BackgroundColor3 = C.buttonBlue}):Play()
+            S.TweenService:Create(toggleSwitch, tweenInfo, {BackgroundColor3 = C.accent}):Play()
             S.TweenService:Create(toggleCircle, tweenInfo, {Position = UDim2.new(0, 14, 0.5, -6)}):Play()
         else
-            S.TweenService:Create(toggleSwitch, tweenInfo, {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+            S.TweenService:Create(toggleSwitch, tweenInfo, {BackgroundColor3 = Color3.fromRGB(40, 30, 60)}):Play()
             S.TweenService:Create(toggleCircle, tweenInfo, {Position = UDim2.new(0, 2, 0.5, -6)}):Play()
         end
         if callback then callback(toggleEnabled, setToggle) end
@@ -1111,11 +1071,9 @@ local function createTabButton(parent, name, iconId, callback)
     buttonFrame.BackgroundTransparency = 0.20
     buttonFrame.BorderSizePixel = 0
     buttonFrame.Parent = parent
-    
     local buttonCorner = Instance.new("UICorner")
     buttonCorner.CornerRadius = UDim.new(0, 6)
     buttonCorner.Parent = buttonFrame
-    
     local buttonLabel = Instance.new("TextLabel")
     buttonLabel.Name = "Label"
     buttonLabel.Size = UDim2.new(0, 180, 1, 0)
@@ -1128,38 +1086,31 @@ local function createTabButton(parent, name, iconId, callback)
     buttonLabel.TextXAlignment = Enum.TextXAlignment.Left
     buttonLabel.TextYAlignment = Enum.TextYAlignment.Center
     buttonLabel.Parent = buttonFrame
-    
     local iconDecor = Instance.new("ImageLabel")
     iconDecor.Name = "Icon"
     iconDecor.Size = UDim2.new(0, 18, 0, 18)
     iconDecor.Position = UDim2.new(1, -28, 0.5, -9)
     iconDecor.BackgroundTransparency = 1
     iconDecor.Image = iconId or "rbxassetid://97462463002118"
-    iconDecor.ImageColor3 = C.blue1
+    iconDecor.ImageColor3 = C.primary
     iconDecor.Parent = buttonFrame
-    
     local clickButton = Instance.new("TextButton")
     clickButton.Name = "ClickButton"
     clickButton.Size = UDim2.new(1, 0, 1, 0)
-    clickButton.Position = UDim2.new(0, 0, 0, 0)
     clickButton.BackgroundTransparency = 1
     clickButton.Text = ""
     clickButton.Parent = buttonFrame
-    
     clickButton.MouseEnter:Connect(function()
         buttonFrame.BackgroundTransparency = 0.1
-        iconDecor.ImageColor3 = C.blue2
+        iconDecor.ImageColor3 = C.accent
     end)
-    
     clickButton.MouseLeave:Connect(function()
         buttonFrame.BackgroundTransparency = 0.20
-        iconDecor.ImageColor3 = C.blue1
+        iconDecor.ImageColor3 = C.primary
     end)
-    
     clickButton.MouseButton1Click:Connect(function()
         if callback then callback() end
     end)
-    
     return buttonFrame
 end
 
@@ -1168,7 +1119,6 @@ local function createTabKeybind(parent, name, configKey, default, onChanged)
         Config.Keybinds[configKey] = default
         SaveConfig()
     end
-
     local rowFrame = Instance.new("Frame")
     rowFrame.Name = name .. "KeybindRow"
     rowFrame.Size = UDim2.new(1, 0, 0, 30)
@@ -1176,11 +1126,9 @@ local function createTabKeybind(parent, name, configKey, default, onChanged)
     rowFrame.BackgroundTransparency = 0.20
     rowFrame.BorderSizePixel = 0
     rowFrame.Parent = parent
-
     local rowCorner = Instance.new("UICorner")
     rowCorner.CornerRadius = UDim.new(0, 6)
     rowCorner.Parent = rowFrame
-
     local rowLabel = Instance.new("TextLabel")
     rowLabel.Size = UDim2.new(0, 150, 1, 0)
     rowLabel.Position = UDim2.new(0, 10, 0, 0)
@@ -1192,41 +1140,37 @@ local function createTabKeybind(parent, name, configKey, default, onChanged)
     rowLabel.TextXAlignment = Enum.TextXAlignment.Left
     rowLabel.TextYAlignment = Enum.TextYAlignment.Center
     rowLabel.Parent = rowFrame
-
     local keyBtn = Instance.new("TextButton")
     keyBtn.Size = UDim2.new(0, 45, 0, 18)
     keyBtn.Position = UDim2.new(1, -53, 0.5, -9)
-    keyBtn.BackgroundColor3 = C.black
-    keyBtn.BackgroundTransparency = 0.20
+    keyBtn.BackgroundColor3 = C.darkPurple
+    keyBtn.BackgroundTransparency = 0
     keyBtn.BorderSizePixel = 0
     keyBtn.Text = Config.Keybinds[configKey]
-    keyBtn.TextColor3 = C.buttonBlue
+    keyBtn.TextColor3 = C.accent
     keyBtn.Font = Enum.Font.GothamBold
     keyBtn.TextSize = 9
     keyBtn.AutoButtonColor = false
     keyBtn.Parent = rowFrame
-
     local keyBtnCorner = Instance.new("UICorner")
     keyBtnCorner.CornerRadius = UDim.new(0, 5)
     keyBtnCorner.Parent = keyBtn
-
     local keyBtnStroke = Instance.new("UIStroke")
     keyBtnStroke.Thickness = 1
-    keyBtnStroke.Color = C.buttonBlue
+    keyBtnStroke.Color = C.accent
     keyBtnStroke.Transparency = 0.5
     keyBtnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     keyBtnStroke.Parent = keyBtn
-
     keyBtn.MouseButton1Click:Connect(function()
         keyBtn.Text = "..."
-        keyBtn.TextColor3 = C.blue1
+        keyBtn.TextColor3 = C.primary
         keyBtnStroke.Transparency = 0
         local con
         con = S.UserInputService.InputBegan:Connect(function(inp)
             if inp.UserInputType == Enum.UserInputType.Keyboard then
                 Config.Keybinds[configKey] = inp.KeyCode.Name
                 keyBtn.Text = inp.KeyCode.Name
-                keyBtn.TextColor3 = C.buttonBlue
+                keyBtn.TextColor3 = C.accent
                 keyBtnStroke.Transparency = 0.5
                 SaveConfig()
                 con:Disconnect()
@@ -1234,15 +1178,14 @@ local function createTabKeybind(parent, name, configKey, default, onChanged)
             end
         end)
     end)
-
     return rowFrame
 end
 
- local function createAnimalCard(parent, animalData, rank)
+local function createAnimalCard(parent, animalData, rank)
     local cardFrame = Instance.new("Frame")
     cardFrame.Name = "AnimalCard"
-    cardFrame.Size = UDim2.new(1, 0, 0, 100)  
-    cardFrame.BackgroundColor3 = C.black
+    cardFrame.Size = UDim2.new(1, 0, 0, 100)
+    cardFrame.BackgroundColor3 = C.bg
     cardFrame.BackgroundTransparency = 0.15
     cardFrame.BorderSizePixel = 0
     cardFrame.Parent = parent
@@ -1251,11 +1194,18 @@ end
     cardCorner.CornerRadius = UDim.new(0, 8)
     cardCorner.Parent = cardFrame
 
+    local cardStroke = Instance.new("UIStroke")
+    cardStroke.Thickness = 1
+    cardStroke.Color = C.coolPurple
+    cardStroke.Transparency = 0.7
+    cardStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    cardStroke.Parent = cardFrame
+
     local vpFrame = Instance.new("ViewportFrame")
     vpFrame.Name = "ModelViewport"
     vpFrame.Size = UDim2.new(0, 45, 0, 45)
     vpFrame.Position = UDim2.new(0, 8, 0, 8)
-    vpFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    vpFrame.BackgroundColor3 = C.darkPurple
     vpFrame.BorderSizePixel = 0
     vpFrame.Ambient = Color3.fromRGB(180, 180, 180)
     vpFrame.LightDirection = Vector3.new(-1, -2, -1)
@@ -1267,38 +1217,31 @@ end
 
     local vpStroke = Instance.new("UIStroke")
     vpStroke.Thickness = 1.2
-    vpStroke.Color = Color3.fromRGB(50, 50, 65)
+    vpStroke.Color = C.dividerGrey
     vpStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     vpStroke.Parent = vpFrame
 
     pcall(function()
-        local animalModels = S.ReplicatedStorage:FindFirstChild("Models")
-            and S.ReplicatedStorage.Models:FindFirstChild("Animals")
+        local modelsFolder = S.ReplicatedStorage:FindFirstChild("Models")
+        if not modelsFolder then return end
+        local animalModels = modelsFolder:FindFirstChild("Animals")
         if not animalModels then return end
-
         local animalModel = animalModels:FindFirstChild(animalData.modelName)
         if not animalModel then return end
-
         local cloned = animalModel:Clone()
         cloned.Parent = vpFrame
-
         for _, part in ipairs(cloned:GetDescendants()) do
             if part:IsA("BasePart") then
                 part.Anchored = false
                 part.CanCollide = false
             end
         end
-
         local rootPart = cloned.PrimaryPart or cloned:FindFirstChildWhichIsA("BasePart")
         if rootPart then rootPart.Anchored = true end
-
         local cf, size = cloned:GetBoundingBox()
-
         cloned:PivotTo(CFrame.new(cf.Position) * CFrame.Angles(0, math.rad(125), 0))
-
         local cf2, size2 = cloned:GetBoundingBox()
         local distance = math.max(size2.X, size2.Y, size2.Z) * 1.5
-
         local vpCamera = Instance.new("Camera")
         vpCamera.FieldOfView = 50
         vpCamera.CFrame = CFrame.new(
@@ -1309,109 +1252,109 @@ end
         vpFrame.CurrentCamera = vpCamera
     end)
 
-local badgeColor, strokeColor, iconId
-if rank == 1 then
-    badgeColor = Color3.fromRGB(219, 154, 2)
-    strokeColor = Color3.fromRGB(255, 215, 0)
-    iconId = "rbxassetid://75275446742454"
-elseif rank == 2 then
-    badgeColor = Color3.fromRGB(166, 162, 162)
-    strokeColor = Color3.fromRGB(192, 192, 192)
-    iconId = "rbxassetid://105421235220109"
-elseif rank == 3 then
-    badgeColor = Color3.fromRGB(143, 81, 20)
-    strokeColor = Color3.fromRGB(205, 127, 50)
-    iconId = "rbxassetid://104204204434785"
-else
-    badgeColor = Color3.fromRGB(60, 60, 75)
-    strokeColor = Color3.fromRGB(100, 100, 120)
-    iconId = nil
-end
+    local badgeColor, strokeColor, iconId
+    if rank == 1 then
+        badgeColor = Color3.fromRGB(219, 154, 2)
+        strokeColor = Color3.fromRGB(255, 215, 0)
+        iconId = "rbxassetid://75275446742454"
+    elseif rank == 2 then
+        badgeColor = Color3.fromRGB(166, 162, 162)
+        strokeColor = Color3.fromRGB(192, 192, 192)
+        iconId = "rbxassetid://105421235220109"
+    elseif rank == 3 then
+        badgeColor = Color3.fromRGB(143, 81, 20)
+        strokeColor = Color3.fromRGB(205, 127, 50)
+        iconId = "rbxassetid://104204204434785"
+    else
+        badgeColor = Color3.fromRGB(60, 60, 75)
+        strokeColor = Color3.fromRGB(100, 100, 120)
+        iconId = nil
+    end
 
-local rankBadge = Instance.new("Frame")
-rankBadge.Name = "RankBadge"
-rankBadge.Size = UDim2.new(0, 32, 0, 18)
-rankBadge.Position = UDim2.new(0, 8, 0, 67)  
-rankBadge.BackgroundTransparency = 1
-rankBadge.BorderSizePixel = 0
-rankBadge.Parent = cardFrame
+    local rankBadge = Instance.new("Frame")
+    rankBadge.Name = "RankBadge"
+    rankBadge.Size = UDim2.new(0, 32, 0, 18)
+    rankBadge.Position = UDim2.new(0, 8, 0, 67)
+    rankBadge.BackgroundTransparency = 1
+    rankBadge.BorderSizePixel = 0
+    rankBadge.Parent = cardFrame
 
-local badgeCorner = Instance.new("UICorner")
-badgeCorner.CornerRadius = UDim.new(0.11, 0)
-badgeCorner.Parent = rankBadge
+    local badgeCorner = Instance.new("UICorner")
+    badgeCorner.CornerRadius = UDim.new(0.11, 0)
+    badgeCorner.Parent = rankBadge
 
-local badgeStroke = Instance.new("UIStroke")
-badgeStroke.Thickness = 1.5
-badgeStroke.Color = strokeColor
-badgeStroke.Transparency = 0
-badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-badgeStroke.Parent = rankBadge
+    local badgeStroke = Instance.new("UIStroke")
+    badgeStroke.Thickness = 1.5
+    badgeStroke.Color = strokeColor
+    badgeStroke.Transparency = 0
+    badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    badgeStroke.Parent = rankBadge
 
-if iconId then
-    local iconImage = Instance.new("ImageLabel")
-    iconImage.Name = "RankIcon"
-    iconImage.Size = UDim2.new(0, 10, 0, 10)
-    iconImage.Position = UDim2.new(0, 2, 0.5, -5)
-    iconImage.BackgroundTransparency = 1
-    iconImage.Image = iconId
-    iconImage.Parent = rankBadge
-end
+    if iconId then
+        local iconImage = Instance.new("ImageLabel")
+        iconImage.Name = "RankIcon"
+        iconImage.Size = UDim2.new(0, 10, 0, 10)
+        iconImage.Position = UDim2.new(0, 2, 0.5, -5)
+        iconImage.BackgroundTransparency = 1
+        iconImage.Image = iconId
+        iconImage.Parent = rankBadge
+    end
 
-local rankLabel = Instance.new("TextLabel")
-rankLabel.Name = "RankLabel"
-rankLabel.Size = UDim2.new(1, iconId and -12 or 0, 1, 0)
-rankLabel.Position = UDim2.new(0, iconId and 12 or 0, 0, 0)
-rankLabel.BackgroundTransparency = 1
-rankLabel.Text = "#" .. tostring(rank)
-rankLabel.TextColor3 = strokeColor
-rankLabel.Font = Enum.Font.GothamBold
-rankLabel.TextSize = 10
-rankLabel.TextXAlignment = Enum.TextXAlignment.Center
-rankLabel.TextYAlignment = Enum.TextYAlignment.Center
-rankLabel.Parent = rankBadge
+    local rankLabel = Instance.new("TextLabel")
+    rankLabel.Name = "RankLabel"
+    rankLabel.Size = UDim2.new(1, iconId and -12 or 0, 1, 0)
+    rankLabel.Position = UDim2.new(0, iconId and 12 or 0, 0, 0)
+    rankLabel.BackgroundTransparency = 1
+    rankLabel.Text = "#" .. tostring(rank)
+    rankLabel.TextColor3 = strokeColor
+    rankLabel.Font = Enum.Font.GothamBold
+    rankLabel.TextSize = 10
+    rankLabel.TextXAlignment = Enum.TextXAlignment.Center
+    rankLabel.TextYAlignment = Enum.TextYAlignment.Center
+    rankLabel.Parent = rankBadge
 
-local isFav = isFavorite(animalData.name)
+    local isFav = isFavorite(animalData.name)
 
-local favBadge = Instance.new("Frame")
-favBadge.Name = "FavoriteBadge"
-favBadge.Size = UDim2.new(0, 58, 0, 18)  
-favBadge.Position = UDim2.new(0, 44, 0, 67)  
-favBadge.BackgroundTransparency = 1
-favBadge.BorderSizePixel = 0
-favBadge.Visible = isFav
-favBadge.Parent = cardFrame
+    local favBadge = Instance.new("Frame")
+    favBadge.Name = "FavoriteBadge"
+    favBadge.Size = UDim2.new(0, 58, 0, 18)
+    favBadge.Position = UDim2.new(0, 44, 0, 67)
+    favBadge.BackgroundTransparency = 1
+    favBadge.BorderSizePixel = 0
+    favBadge.Visible = isFav
+    favBadge.Parent = cardFrame
 
-local favBadgeCorner = Instance.new("UICorner")
-favBadgeCorner.CornerRadius = UDim.new(0.11, 0)
-favBadgeCorner.Parent = favBadge
+    local favBadgeCorner = Instance.new("UICorner")
+    favBadgeCorner.CornerRadius = UDim.new(0.11, 0)
+    favBadgeCorner.Parent = favBadge
 
-local favBadgeStroke = Instance.new("UIStroke")
-favBadgeStroke.Thickness = 1.5
-favBadgeStroke.Color = C.yellow
-favBadgeStroke.Transparency = 0
-favBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-favBadgeStroke.Parent = favBadge
+    local favBadgeStroke = Instance.new("UIStroke")
+    favBadgeStroke.Thickness = 1.5
+    favBadgeStroke.Color = C.yellow
+    favBadgeStroke.Transparency = 0
+    favBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    favBadgeStroke.Parent = favBadge
 
-local favBadgeIcon = Instance.new("ImageLabel")
-favBadgeIcon.Name = "FavIcon"
-favBadgeIcon.Size = UDim2.new(0, 10, 0, 10)
-favBadgeIcon.Position = UDim2.new(0, 3, 0.5, -5)
-favBadgeIcon.BackgroundTransparency = 1
-favBadgeIcon.Image = "rbxassetid://113366714224251"
-favBadgeIcon.Parent = favBadge
+    local favBadgeIcon = Instance.new("ImageLabel")
+    favBadgeIcon.Name = "FavIcon"
+    favBadgeIcon.Size = UDim2.new(0, 10, 0, 10)
+    favBadgeIcon.Position = UDim2.new(0, 3, 0.5, -5)
+    favBadgeIcon.BackgroundTransparency = 1
+    favBadgeIcon.Image = "rbxassetid://113366714224251"
+    favBadgeIcon.Parent = favBadge
 
-local favBadgeLabel = Instance.new("TextLabel")
-favBadgeLabel.Name = "FavLabel"
-favBadgeLabel.Size = UDim2.new(1, -14, 1, 0)  
-favBadgeLabel.Position = UDim2.new(0, 14, 0, 0)  
-favBadgeLabel.BackgroundTransparency = 1
-favBadgeLabel.Text = "Favorite"
-favBadgeLabel.TextColor3 = C.yellow
-favBadgeLabel.Font = Enum.Font.GothamBold
-favBadgeLabel.TextSize = 9
-favBadgeLabel.TextXAlignment = Enum.TextXAlignment.Center
-favBadgeLabel.TextYAlignment = Enum.TextYAlignment.Center
-favBadgeLabel.Parent = favBadge
+    local favBadgeLabel = Instance.new("TextLabel")
+    favBadgeLabel.Name = "FavLabel"
+    favBadgeLabel.Size = UDim2.new(1, -14, 1, 0)
+    favBadgeLabel.Position = UDim2.new(0, 14, 0, 0)
+    favBadgeLabel.BackgroundTransparency = 1
+    favBadgeLabel.Text = "Favorite"
+    favBadgeLabel.TextColor3 = C.yellow
+    favBadgeLabel.Font = Enum.Font.GothamBold
+    favBadgeLabel.TextSize = 9
+    favBadgeLabel.TextXAlignment = Enum.TextXAlignment.Center
+    favBadgeLabel.TextYAlignment = Enum.TextYAlignment.Center
+    favBadgeLabel.Parent = favBadge
 
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Name = "NameLabel"
@@ -1433,7 +1376,7 @@ favBadgeLabel.Parent = favBadge
     mutationLabel.Position = UDim2.new(0, 61, 0, 30)
     mutationLabel.BackgroundTransparency = 1
     mutationLabel.Text = animalData.mutation
-    mutationLabel.TextColor3 = C.blue1
+    mutationLabel.TextColor3 = C.accent
     mutationLabel.Font = Enum.Font.GothamBold
     mutationLabel.TextSize = 10
     mutationLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -1453,16 +1396,15 @@ favBadgeLabel.Parent = favBadge
     genLabel.TextYAlignment = Enum.TextYAlignment.Center
     genLabel.Parent = cardFrame
 
-    -- Teleport Button
     local tpButton = Instance.new("TextButton")
     tpButton.Name = "TpButton"
     tpButton.Size = UDim2.new(0, 60, 0, 26)
     tpButton.Position = UDim2.new(1, -95, 0.5, -13)
-    tpButton.BackgroundColor3 = C.black
+    tpButton.BackgroundColor3 = C.darkPurple
     tpButton.BackgroundTransparency = 0.15
     tpButton.BorderSizePixel = 0
     tpButton.Text = "Teleport"
-    tpButton.TextColor3 = C.buttonBlue
+    tpButton.TextColor3 = C.accent
     tpButton.Font = Enum.Font.GothamBold
     tpButton.TextSize = 9
     tpButton.AutoButtonColor = false
@@ -1474,34 +1416,34 @@ favBadgeLabel.Parent = favBadge
 
     local tpStroke = Instance.new("UIStroke")
     tpStroke.Thickness = 1
-    tpStroke.Color = C.buttonBlue
+    tpStroke.Color = C.accent
     tpStroke.Transparency = 0.5
     tpStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     tpStroke.Parent = tpButton
 
     tpButton.MouseEnter:Connect(function()
-        tpButton.BackgroundColor3 = C.buttonBlue
+        tpButton.BackgroundColor3 = C.buttonPurple
         tpButton.BackgroundTransparency = 0
         tpButton.TextColor3 = C.white
         tpStroke.Transparency = 0
     end)
 
     tpButton.MouseLeave:Connect(function()
-        tpButton.BackgroundColor3 = C.black
+        tpButton.BackgroundColor3 = C.darkPurple
         tpButton.BackgroundTransparency = 0.15
-        tpButton.TextColor3 = C.buttonBlue
+        tpButton.TextColor3 = C.accent
         tpStroke.Transparency = 0.5
     end)
 
     tpButton.MouseButton1Click:Connect(function()
-        
+        -- teleport function
     end)
 
     local favButton = Instance.new("TextButton")
     favButton.Name = "FavoriteButton"
     favButton.Size = UDim2.new(0, 26, 0, 26)
     favButton.Position = UDim2.new(1, -32, 0.5, -13)
-    favButton.BackgroundColor3 = isFav and C.yellow or C.black
+    favButton.BackgroundColor3 = isFav and C.yellow or C.darkPurple
     favButton.BackgroundTransparency = isFav and 0 or 0.15
     favButton.BorderSizePixel = 0
     favButton.Text = "★"
@@ -1517,13 +1459,13 @@ favBadgeLabel.Parent = favBadge
 
     local favStroke = Instance.new("UIStroke")
     favStroke.Thickness = 1
-    favStroke.Color = isFav and C.yellow or Color3.fromRGB(100, 100, 115)
+    favStroke.Color = isFav and C.yellow or Color3.fromRGB(100, 80, 130)
     favStroke.Transparency = isFav and 0 or 0.5
     favStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     favStroke.Parent = favButton
 
     local isFavorited = isFav
-    
+
     favButton.MouseEnter:Connect(function()
         if not isFavorited then
             favButton.TextColor3 = C.yellow
@@ -1535,35 +1477,28 @@ favBadgeLabel.Parent = favBadge
     favButton.MouseLeave:Connect(function()
         if not isFavorited then
             favButton.TextColor3 = Color3.fromRGB(150, 150, 150)
-            favStroke.Color = Color3.fromRGB(100, 100, 115)
+            favStroke.Color = Color3.fromRGB(100, 80, 130)
             favStroke.Transparency = 0.5
         end
     end)
 
     favButton.MouseButton1Click:Connect(function()
         isFavorited = not isFavorited
-        
         if isFavorited then
-            -- Add to favorites
             addFavorite(animalData.name)
-            
             favButton.BackgroundColor3 = C.yellow
             favButton.BackgroundTransparency = 0
             favButton.TextColor3 = C.white
             favStroke.Color = C.yellow
             favStroke.Transparency = 0
-            
             favBadge.Visible = true
         else
-            
             removeFavorite(animalData.name)
-            
-            favButton.BackgroundColor3 = C.black
+            favButton.BackgroundColor3 = C.darkPurple
             favButton.BackgroundTransparency = 0.15
             favButton.TextColor3 = Color3.fromRGB(150, 150, 150)
-            favStroke.Color = Color3.fromRGB(100, 100, 115)
+            favStroke.Color = Color3.fromRGB(100, 80, 130)
             favStroke.Transparency = 0.5
-            
             favBadge.Visible = false
         end
     end)
@@ -1571,14 +1506,9 @@ favBadgeLabel.Parent = favBadge
     return cardFrame
 end
 
-local instantCloneBtn = createButton("Instant Clone", 45, function()
-    task.spawn(instantClone)
-end)
-
+local instantCloneBtn = createButton("Instant Clone", 45, function() end)
 local tpToBestBtn = createButton("Tp to Best", 80, function() end)
-
 local ragdollSelfBtn = createButton("Ragdoll Self", 115, function() end)
-
 local rejoinBtn = createButton("Rejoin", 150, function()
     S.TeleportService:Teleport(game.PlaceId, player)
 end)
@@ -1626,34 +1556,24 @@ task.wait(0.1)
 local uiContent = tabContents["UI"]
 if uiContent then
     createSectionHeader(uiContent, "UI Panel")
-
     createTabToggle(uiContent, "Lock Gui", "LockGui", function(ns, set)
         set(ns)
         creditFrame.Draggable = not ns
         mainFrame.Draggable = not ns
         menuFrame.Draggable = not ns
     end)
-
     createTabButton(uiContent, "Reset Position", "rbxassetid://97462463002118", function()
         Config.Positions.CreditFrame = DefaultConfig.Positions.CreditFrame
         Config.Positions.MainFrame = DefaultConfig.Positions.MainFrame
         Config.Positions.MenuFrame = DefaultConfig.Positions.MenuFrame
         SaveConfig()
-
-        local creditPos = Config.Positions.CreditFrame
-        creditFrame.Position = UDim2.new(creditPos.X, -170, creditPos.Y, -25)
-
-        local mainPos = Config.Positions.MainFrame
-        mainFrame.Position = UDim2.new(mainPos.X, -96.5, mainPos.Y, -142.5)
-
-        local menuPos = Config.Positions.MenuFrame
-        menuFrame.Position = UDim2.new(menuPos.X, -145, menuPos.Y, -160)
-
-        showNotification({
-            message = "GUI positions reset!",
-            color = "Success",
-            textColor = "White"
-        })
+        local cp = Config.Positions.CreditFrame
+        creditFrame.Position = UDim2.new(cp.X, -170, cp.Y, -25)
+        local mp = Config.Positions.MainFrame
+        mainFrame.Position = UDim2.new(mp.X, -96.5, mp.Y, -142.5)
+        local mep = Config.Positions.MenuFrame
+        menuFrame.Position = UDim2.new(mep.X, -145, mep.Y, -160)
+        showNotification({message = "GUI positions reset!", color = "Success", textColor = "White"})
     end)
 end
 
@@ -1669,16 +1589,10 @@ local lastCacheCount = 0
 local lastTopUIDs = {}
 
 local function needsUpdate()
-    if #allAnimalsCache ~= lastCacheCount then
-        return true
-    end
-    
+    if #allAnimalsCache ~= lastCacheCount then return true end
     for i = 1, math.min(10, #allAnimalsCache) do
-        if allAnimalsCache[i].uid ~= lastTopUIDs[i] then
-            return true
-        end
+        if allAnimalsCache[i].uid ~= lastTopUIDs[i] then return true end
     end
-    
     return false
 end
 
@@ -1690,35 +1604,312 @@ local function updateLastCache()
     end
 end
 
+local manageActive = false
+local normalView
+local manageView
+local addRow
+
+local function createManageRow(index, animalName, onRefresh)
+    local row = Instance.new("Frame")
+    row.Name = "ManageRow_" .. index
+    row.Size = UDim2.new(1, 0, 0, 28)
+    row.BackgroundColor3 = C.black
+    row.BackgroundTransparency = 0.2
+    row.BorderSizePixel = 0
+    row.LayoutOrder = index
+    row.Parent = manageView
+
+    local rowCorner = Instance.new("UICorner")
+    rowCorner.CornerRadius = UDim.new(0, 6)
+    rowCorner.Parent = row
+
+    local rowStroke = Instance.new("UIStroke")
+    rowStroke.Thickness = 1
+    rowStroke.Color = C.coolPurple
+    rowStroke.Transparency = 0.7
+    rowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    rowStroke.Parent = row
+
+    local priorityLabel = Instance.new("TextLabel")
+    priorityLabel.Size = UDim2.new(0, 20, 1, 0)
+    priorityLabel.Position = UDim2.new(0, 5, 0, 0)
+    priorityLabel.BackgroundTransparency = 1
+    priorityLabel.Text = "#" .. index
+    priorityLabel.TextColor3 = C.subtitleGrey
+    priorityLabel.Font = Enum.Font.GothamBold
+    priorityLabel.TextSize = 9
+    priorityLabel.TextXAlignment = Enum.TextXAlignment.Center
+    priorityLabel.TextYAlignment = Enum.TextYAlignment.Center
+    priorityLabel.Parent = row
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, -115, 1, 0)
+    nameLabel.Position = UDim2.new(0, 28, 0, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = animalName
+    nameLabel.TextColor3 = C.white
+    nameLabel.Font = Enum.Font.Gotham
+    nameLabel.TextSize = 10
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.TextYAlignment = Enum.TextYAlignment.Center
+    nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    nameLabel.Parent = row
+
+    local function makeSmallBtn(text, xOffset, textColor)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, 22, 0, 20)
+        btn.Position = UDim2.new(1, xOffset, 0.5, -10)
+        btn.BackgroundColor3 = C.darkPurple
+        btn.BackgroundTransparency = 0.3
+        btn.BorderSizePixel = 0
+        btn.Text = text
+        btn.TextColor3 = textColor
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 12
+        btn.AutoButtonColor = false
+        btn.Parent = row
+        local bc = Instance.new("UICorner")
+        bc.CornerRadius = UDim.new(0, 4)
+        bc.Parent = btn
+        local bs = Instance.new("UIStroke")
+        bs.Thickness = 1
+        bs.Color = textColor
+        bs.Transparency = 0.5
+        bs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        bs.Parent = btn
+        return btn
+    end
+
+    local upBtn   = makeSmallBtn("↑", -88, C.accent)
+    local downBtn = makeSmallBtn("↓", -63, C.accent)
+    local removeBtn = makeSmallBtn("X", -35, C.red)
+    removeBtn.TextSize = 10
+
+    upBtn.MouseButton1Click:Connect(function() moveFavoriteUp(index); onRefresh() end)
+    downBtn.MouseButton1Click:Connect(function() moveFavoriteDown(index); onRefresh() end)
+    removeBtn.MouseButton1Click:Connect(function() removeFavorite(animalName); onRefresh() end)
+
+    return row
+end
+
+local function refreshManageView()
+    for _, child in ipairs(manageView:GetChildren()) do
+        if child:IsA("Frame") and child.Name ~= "AddRow" then
+            child:Destroy()
+        end
+    end
+    for i, name in ipairs(FAVORITES) do
+        createManageRow(i, name, refreshManageView)
+    end
+    addRow.LayoutOrder = #FAVORITES + 1
+    favoritesContent.CanvasPosition = Vector2.new(0, 0)
+end
+
 if favoritesContent then
-    createSectionHeader(favoritesContent, "Favorites Animal")
+    -- Header row
+    local favHeaderRow = Instance.new("Frame")
+    favHeaderRow.Name = "FavHeaderRow"
+    favHeaderRow.Size = UDim2.new(1, 0, 0, 25)
+    favHeaderRow.BackgroundTransparency = 1
+    favHeaderRow.Parent = favoritesContent
+
+    local favSectionLabel = Instance.new("TextLabel")
+    favSectionLabel.Size = UDim2.new(0.5, 0, 1, 0)
+    favSectionLabel.Position = UDim2.new(0, 5, 0, 0)
+    favSectionLabel.BackgroundTransparency = 1
+    favSectionLabel.Text = "Favorites Animal"
+    favSectionLabel.TextColor3 = C.accent
+    favSectionLabel.Font = Enum.Font.GothamBold
+    favSectionLabel.TextSize = 11
+    favSectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+    favSectionLabel.TextYAlignment = Enum.TextYAlignment.Center
+    favSectionLabel.Parent = favHeaderRow
+
+    local function makeHeaderBtn(text, xOffset, active)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, 55, 0, 18)
+        btn.Position = UDim2.new(1, xOffset, 0.5, -9)
+        btn.BackgroundColor3 = C.darkPurple
+        btn.BackgroundTransparency = 0.2
+        btn.BorderSizePixel = 0
+        btn.Text = text
+        btn.TextColor3 = active and C.accent or C.subtitleGrey
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 9
+        btn.AutoButtonColor = false
+        btn.Parent = favHeaderRow
+        local bc = Instance.new("UICorner")
+        bc.CornerRadius = UDim.new(0, 5)
+        bc.Parent = btn
+        local bs = Instance.new("UIStroke")
+        bs.Thickness = 1
+        bs.Color = active and C.accent or C.subtitleGrey
+        bs.Transparency = active and 0 or 0.5
+        bs.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        bs.Parent = btn
+        return btn, bs
+    end
+
+    local refreshBtn, refreshStroke = makeHeaderBtn("Refresh", -120, false)
+    local manageBtn, manageStroke   = makeHeaderBtn("Manage", -60, false)
+
+    normalView = Instance.new("Frame")
+    normalView.Name = "NormalView"
+    normalView.Size = UDim2.new(1, 0, 0, 0)
+    normalView.AutomaticSize = Enum.AutomaticSize.Y
+    normalView.BackgroundTransparency = 1
+    normalView.Visible = true
+    normalView.Parent = favoritesContent
+
+    local normalLayout = Instance.new("UIListLayout")
+    normalLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    normalLayout.Padding = UDim.new(0, 5)
+    normalLayout.Parent = normalView
+
+    manageView = Instance.new("Frame")
+    manageView.Name = "ManageView"
+    manageView.Size = UDim2.new(1, 0, 0, 0)
+    manageView.AutomaticSize = Enum.AutomaticSize.Y
+    manageView.BackgroundTransparency = 1
+    manageView.Visible = false
+    manageView.Parent = favoritesContent
+
+    local manageLayout = Instance.new("UIListLayout")
+    manageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    manageLayout.Padding = UDim.new(0, 4)
+    manageLayout.Parent = manageView
+
+    addRow = Instance.new("Frame")
+    addRow.Name = "AddRow"
+    addRow.Size = UDim2.new(1, 0, 0, 28)
+    addRow.BackgroundColor3 = C.darkPurple
+    addRow.BackgroundTransparency = 0.2
+    addRow.BorderSizePixel = 0
+    addRow.LayoutOrder = 9999
+    addRow.Parent = manageView
+
+    local addRowCorner = Instance.new("UICorner")
+    addRowCorner.CornerRadius = UDim.new(0, 6)
+    addRowCorner.Parent = addRow
+
+    local addStroke = Instance.new("UIStroke")
+    addStroke.Thickness = 1
+    addStroke.Color = C.accent
+    addStroke.Transparency = 0.6
+    addStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    addStroke.Parent = addRow
+
+    local addInput = Instance.new("TextBox")
+    addInput.Size = UDim2.new(1, -65, 1, -8)
+    addInput.Position = UDim2.new(0, 8, 0, 4)
+    addInput.BackgroundTransparency = 1
+    addInput.Text = ""
+    addInput.PlaceholderText = "Animal name..."
+    addInput.PlaceholderColor3 = C.subtitleGrey
+    addInput.TextColor3 = C.white
+    addInput.Font = Enum.Font.Gotham
+    addInput.TextSize = 10
+    addInput.TextXAlignment = Enum.TextXAlignment.Left
+    addInput.ClearTextOnFocus = false
+    addInput.Parent = addRow
+
+    local addBtn = Instance.new("TextButton")
+    addBtn.Size = UDim2.new(0, 45, 0, 20)
+    addBtn.Position = UDim2.new(1, -52, 0.5, -10)
+    addBtn.BackgroundColor3 = C.primary
+    addBtn.BackgroundTransparency = 0.3
+    addBtn.BorderSizePixel = 0
+    addBtn.Text = "Add"
+    addBtn.TextColor3 = C.white
+    addBtn.Font = Enum.Font.GothamBold
+    addBtn.TextSize = 10
+    addBtn.AutoButtonColor = false
+    addBtn.Parent = addRow
+
+    local addBtnCorner = Instance.new("UICorner")
+    addBtnCorner.CornerRadius = UDim.new(0, 5)
+    addBtnCorner.Parent = addBtn
+
+    addBtn.MouseButton1Click:Connect(function()
+        local inputName = addInput.Text
+        if inputName == "" then return end
+        if isFavorite(inputName) then
+            showNotification({
+                message = "Already in list!",
+                subtext = inputName .. " dah ada dalam favorites",
+                color = "Failed",
+                textColor = "White"
+            })
+            return
+        end
+        addFavorite(inputName)
+        addInput.Text = ""
+        refreshManageView()
+    end)
+
+    manageBtn.MouseButton1Click:Connect(function()
+        manageActive = not manageActive
+        if manageActive then
+            manageBtn.TextColor3 = C.accent
+            manageStroke.Color = C.accent
+            manageStroke.Transparency = 0
+            normalView.Visible = false
+            manageView.Visible = true
+            refreshManageView()
+            favoritesContent.CanvasPosition = Vector2.new(0, 0)
+        else
+            manageBtn.TextColor3 = C.subtitleGrey
+            manageStroke.Color = C.subtitleGrey
+            manageStroke.Transparency = 0.5
+            normalView.Visible = true
+            manageView.Visible = false
+            favoritesContent.CanvasPosition = Vector2.new(0, 0)
+        end
+    end)
+
+    refreshBtn.MouseButton1Click:Connect(function()
+        if manageActive then
+            refreshManageView()
+        else
+            for _, child in ipairs(normalView:GetChildren()) do
+                if child.Name == "AnimalCard" then child:Destroy() end
+            end
+            for rank, animalData in ipairs(allAnimalsCache) do
+                createAnimalCard(normalView, animalData, rank)
+            end
+        end
+        showNotification({message = "Refreshed!", color = "Success", textColor = "White"})
+    end)
 
     for rank, animalData in ipairs(allAnimalsCache) do
-        createAnimalCard(favoritesContent, animalData, rank)
+        createAnimalCard(normalView, animalData, rank)
     end
-    
+
     updateLastCache()
 
     task.spawn(function()
         while true do
             task.wait(3)
-            
-            if needsUpdate() then
-            
-                for _, child in ipairs(favoritesContent:GetChildren()) do
-                    if child.Name == "AnimalCard" then
-                        child:Destroy()
-                    end
+            if not manageActive and needsUpdate() then
+                for _, child in ipairs(normalView:GetChildren()) do
+                    if child.Name == "AnimalCard" then child:Destroy() end
                 end
-                
                 for rank, animalData in ipairs(allAnimalsCache) do
-                    createAnimalCard(favoritesContent, animalData, rank)
+                    createAnimalCard(normalView, animalData, rank)
                 end
-                
                 updateLastCache()
             end
         end
     end)
 end
 
-showNotification({message = "ZynHub Private", subtext = "Welcome back!", color = "Violet", textColor = "White", subColor = "Violet"})
+S.UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if S.UserInputService:GetFocusedTextBox() then return end
+    if Config.Keybinds.CloneKey and Config.Keybinds.CloneKey ~= "" then
+        if input.KeyCode == Enum.KeyCode[Config.Keybinds.CloneKey] then
+        end
+    end
+end)
+
+showNotification({message = "RenHub Private", subtext = "Welcome back!", color = "Violet", textColor = "White", subColor = "Violet"})
