@@ -746,7 +746,7 @@ subtitleLabel.Parent = mainFrame
 
 local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
-menuFrame.Size = UDim2.new(0, 320, 0, 340)
+menuFrame.Size = UDim2.new(0, 340, 0, 360)
 local menuPos = Config.Positions.MenuFrame
 menuFrame.Position = UDim2.new(menuPos.X, -160, menuPos.Y, -170)
 menuFrame.BackgroundColor3 = C.white
@@ -882,7 +882,7 @@ end
 for i, tabName in ipairs(tabs) do
     local indicator = Instance.new("Frame")
     indicator.Name = tabName .. "Indicator"
-    indicator.Size = UDim2.new(1, -8, 0, 32)
+    indicator.Size = UDim2.new(1, -8, 0, 26)
     indicator.Position = UDim2.new(0, 4, 0, (i-1) * 38 + 4)
     indicator.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
     indicator.BackgroundTransparency = currentTab == tabName and 0.6 or 1
