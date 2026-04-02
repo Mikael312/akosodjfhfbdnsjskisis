@@ -746,9 +746,9 @@ subtitleLabel.Parent = mainFrame
 
 local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
-menuFrame.Size = UDim2.new(0, 340, 0, 360)
+menuFrame.Size = UDim2.new(0, 360, 0, 360)
 local menuPos = Config.Positions.MenuFrame
-menuFrame.Position = UDim2.new(menuPos.X, -160, menuPos.Y, -170)
+menuFrame.Position = UDim2.new(menuPos.X, -180, menuPos.Y, -180)
 menuFrame.BackgroundColor3 = C.white
 menuFrame.BackgroundTransparency = 0.03
 menuFrame.BorderSizePixel = 0
