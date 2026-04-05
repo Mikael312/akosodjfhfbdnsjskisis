@@ -746,9 +746,9 @@ subtitleLabel.Parent = mainFrame
 
 local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
-menuFrame.Size = UDim2.new(0, 366, 0, 360)
+menuFrame.Size = UDim2.new(0, 375, 0, 360)
 local menuPos = Config.Positions.MenuFrame
-menuFrame.Position = UDim2.new(menuPos.X, -180, menuPos.Y, -180)
+menuFrame.Position = UDim2.new(menuPos.X, -187.5, menuPos.Y, -180)
 menuFrame.BackgroundColor3 = C.white
 menuFrame.BackgroundTransparency = 0.03
 menuFrame.BorderSizePixel = 0
@@ -884,7 +884,7 @@ for i, tabName in ipairs(tabs) do
     indicator.Name = tabName .. "Indicator"
     indicator.Size = UDim2.new(1, -8, 0, 26)
     indicator.Position = UDim2.new(0, 4, 0, (i-1) * 38 + 4)
-    indicator.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
+    indicator.BackgroundColor3 = Color3.fromRGB(100, 140, 255)
     indicator.BackgroundTransparency = currentTab == tabName and 0.6 or 1
     indicator.BorderSizePixel = 0
     indicator.Parent = sidebarContainer
