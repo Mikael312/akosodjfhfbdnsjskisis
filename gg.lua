@@ -1266,41 +1266,6 @@ local function createAnimalCard(parent, animalData, rank)
 
     local isFav = isFavorite(animalData.name)
 
-    local favBadge = Instance.new("Frame")
-    favBadge.Size = UDim2.new(0, 55, 0, 16)
-    favBadge.Position = UDim2.new(0, 42, 0, 68)
-    favBadge.BackgroundTransparency = 1
-    favBadge.BorderSizePixel = 0
-    favBadge.Visible = isFav
-    favBadge.Parent = cardFrame
-    Instance.new("UICorner", favBadge).CornerRadius = UDim.new(0.11, 0)
-
-    local favBadgeStroke = Instance.new("UIStroke")
-    favBadgeStroke.Thickness = 1.5
-    favBadgeStroke.Color = C.yellow
-    favBadgeStroke.Transparency = 0
-    favBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    favBadgeStroke.Parent = favBadge
-
-    local favBadgeIcon = Instance.new("ImageLabel")
-    favBadgeIcon.Size = UDim2.new(0, 9, 0, 9)
-    favBadgeIcon.Position = UDim2.new(0, 3, 0.5, -4)
-    favBadgeIcon.BackgroundTransparency = 1
-    favBadgeIcon.Image = "rbxassetid://113366714224251"
-    favBadgeIcon.Parent = favBadge
-
-    local favBadgeLabel = Instance.new("TextLabel")
-    favBadgeLabel.Size = UDim2.new(1, -13, 1, 0)
-    favBadgeLabel.Position = UDim2.new(0, 13, 0, 0)
-    favBadgeLabel.BackgroundTransparency = 1
-    favBadgeLabel.Text = "Favorite"
-    favBadgeLabel.TextColor3 = C.yellow
-    favBadgeLabel.Font = Enum.Font.GothamBold
-    favBadgeLabel.TextSize = 8
-    favBadgeLabel.TextXAlignment = Enum.TextXAlignment.Center
-    favBadgeLabel.TextYAlignment = Enum.TextYAlignment.Center
-    favBadgeLabel.Parent = favBadge
-
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Size = UDim2.new(1, -130, 0, 16)
     nameLabel.Position = UDim2.new(0, 54, 0, 8)
@@ -1419,7 +1384,6 @@ local function createAnimalCard(parent, animalData, rank)
             favButton.TextColor3 = C.white
             favStroke.Color = C.yellow
             favStroke.Transparency = 0
-            favBadge.Visible = true
         else
             removeFavorite(animalData.name)
             favButton.BackgroundColor3 = C.darkPurple
@@ -1427,7 +1391,6 @@ local function createAnimalCard(parent, animalData, rank)
             favButton.TextColor3 = Color3.fromRGB(150, 150, 150)
             favStroke.Color = Color3.fromRGB(100, 80, 130)
             favStroke.Transparency = 0.5
-            favBadge.Visible = false
         end
     end)
 
