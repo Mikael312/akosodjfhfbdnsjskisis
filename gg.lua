@@ -960,12 +960,6 @@ local function createButton(name, yPosition, callback)
     local buttonCorner = Instance.new("UICorner")
     buttonCorner.CornerRadius = UDim.new(0, 5)
     buttonCorner.Parent = button
-    local buttonStroke = Instance.new("UIStroke")
-    buttonStroke.Thickness = 1
-    buttonStroke.Color = C.primary
-    buttonStroke.Transparency = 0.5
-    buttonStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    buttonStroke.Parent = button
     button.MouseButton1Click:Connect(function()
         if callback then callback() end
     end)
@@ -989,15 +983,10 @@ local function createToggle(name, yPosition, configKey, callback)
     local buttonCorner = Instance.new("UICorner")
     buttonCorner.CornerRadius = UDim.new(0, 5)
     buttonCorner.Parent = button
-    local buttonStroke = Instance.new("UIStroke")
-    buttonStroke.Thickness = 1
-    buttonStroke.Color = C.primary
-    buttonStroke.Transparency = 0.5
-    buttonStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    buttonStroke.Parent = button
     button.MouseButton1Click:Connect(function()
-        toggleEnabled = not toggleEnabled
+    toggleEnabled = not toggleEnabled
         button.BackgroundColor3 = toggleEnabled and C.toggleOn or C.darkPurple
+        button.TextColor3 = toggleEnabled and C.bg or C.accent
         if callback then callback(toggleEnabled, setToggle) end
     end)
     return button
