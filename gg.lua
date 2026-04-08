@@ -1,3 +1,6 @@
+if not game:IsLoaded() then game.Loaded:Wait() end
+pcall(function() game:GetService("Players").RespawnTime = 0 end)
+
 local ALLOWED_PLACE_IDS = {
     [109983668079237] = true,
     [96342491571673] = true,
@@ -746,9 +749,9 @@ subtitleLabel.Parent = mainFrame
 
 local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
-menuFrame.Size = UDim2.new(0, 375, 0, 360)
+menuFrame.Size = UDim2.new(0, 395, 0, 360)
 local menuPos = Config.Positions.MenuFrame
-menuFrame.Position = UDim2.new(menuPos.X, -187.5, menuPos.Y, -180)
+menuFrame.Position = UDim2.new(menuPos.X, -197.5, menuPos.Y, -180)
 menuFrame.BackgroundColor3 = C.white
 menuFrame.BackgroundTransparency = 0.03
 menuFrame.BorderSizePixel = 0
