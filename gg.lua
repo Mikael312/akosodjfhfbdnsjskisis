@@ -59,8 +59,11 @@ local DefaultConfig = {
         Animals = {},
     },
     Keybinds = {
-        CloneKey = "V",
+        CloneKey      = "V",
         CarpetSpeedKey = "Q",
+        HopKey        = "H",
+        RejoinKey     = "R",
+        SettingsKey   = "M",
     },
     Settings = false,
     LockGui = false,
@@ -912,13 +915,13 @@ for i, tabName in ipairs(tabs) do
     tabContents[tabName] = tabContent
 
     tabBtn.MouseButton1Click:Connect(function()
-        -- Hide all
+        
         for _, content in pairs(tabContents) do content.Visible = false end
         for name, ind in pairs(tabIndicators) do
             ind.BackgroundTransparency = 1
             tabButtons[name].TextColor3 = C.subtitleGrey
         end
-        -- Show selected
+        
         tabContent.Visible = true
         indicator.BackgroundTransparency = 0.6
         tabBtn.TextColor3 = C.accent
@@ -945,7 +948,7 @@ local function createSectionHeader(parent, sectionName)
     return headerFrame
 end
 
-local function createButton(name, yPosition, callback)
+local function createButton(name, yPosition, callback, keyLabel)
     local button = Instance.new("TextButton")
     button.Name = name .. "Button"
     button.Size = UDim2.new(0, 167, 0, 28)
@@ -957,16 +960,29 @@ local function createButton(name, yPosition, callback)
     button.Font = Enum.Font.GothamBold
     button.TextSize = 10
     button.Parent = mainFrame
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 5)
-    buttonCorner.Parent = button
+    Instance.new("UICorner", button).CornerRadius = UDim.new(0, 5)
+
+    if keyLabel and keyLabel ~= "" then
+        local kLabel = Instance.new("TextLabel")
+        kLabel.Size = UDim2.new(0, 30, 0, 12)
+        kLabel.Position = UDim2.new(1, -33, 1, -13)
+        kLabel.BackgroundTransparency = 1
+        kLabel.Text = keyLabel
+        kLabel.TextColor3 = C.white
+        kLabel.Font = Enum.Font.GothamBold
+        kLabel.TextSize = 8
+        kLabel.TextXAlignment = Enum.TextXAlignment.Right
+        kLabel.TextTransparency = 0.4
+        kLabel.Parent = button
+    end
+
     button.MouseButton1Click:Connect(function()
         if callback then callback() end
     end)
     return button
 end
 
-local function createToggle(name, yPosition, configKey, callback)
+local function createToggle(name, yPosition, configKey, callback, keyLabel)
     local function setToggle(state) Config[configKey] = state; SaveConfig() end
     local toggleEnabled = Config[configKey] or false
     local button = Instance.new("TextButton")
@@ -976,15 +992,28 @@ local function createToggle(name, yPosition, configKey, callback)
     button.BackgroundColor3 = toggleEnabled and C.toggleOn or C.darkPurple
     button.BorderSizePixel = 0
     button.Text = name
-    button.TextColor3 = C.accent
+    button.TextColor3 = toggleEnabled and C.bg or C.accent
     button.Font = Enum.Font.GothamBold
     button.TextSize = 10
     button.Parent = mainFrame
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 5)
-    buttonCorner.Parent = button
+    Instance.new("UICorner", button).CornerRadius = UDim.new(0, 5)
+
+    if keyLabel and keyLabel ~= "" then
+        local kLabel = Instance.new("TextLabel")
+        kLabel.Size = UDim2.new(0, 30, 0, 12)
+        kLabel.Position = UDim2.new(1, -33, 1, -13)
+        kLabel.BackgroundTransparency = 1
+        kLabel.Text = keyLabel
+        kLabel.TextColor3 = C.white
+        kLabel.Font = Enum.Font.GothamBold
+        kLabel.TextSize = 8
+        kLabel.TextXAlignment = Enum.TextXAlignment.Right
+        kLabel.TextTransparency = 0.4
+        kLabel.Parent = button
+    end
+
     button.MouseButton1Click:Connect(function()
-    toggleEnabled = not toggleEnabled
+        toggleEnabled = not toggleEnabled
         button.BackgroundColor3 = toggleEnabled and C.toggleOn or C.darkPurple
         button.TextColor3 = toggleEnabled and C.bg or C.accent
         if callback then callback(toggleEnabled, setToggle) end
@@ -1389,12 +1418,12 @@ local function createAnimalCard(parent, animalData, rank)
     return cardFrame
 end
 
-local instantCloneBtn = createButton("Instant Clone", 45, function() end)
-local tpToBestBtn     = createButton("Tp to Best", 80, function() end)
-local ragdollSelfBtn  = createButton("Ragdoll Self", 115, function() end)
+local instantCloneBtn = createButton("Instant Clone", 45, function() end, "V")
+local tpToBestBtn     = createButton("Tp to Best", 80, function() end, nil)
+local ragdollSelfBtn  = createButton("Ragdoll Self", 115, function() end, nil)
 local rejoinBtn       = createButton("Rejoin", 150, function()
     S.TeleportService:Teleport(game.PlaceId, player)
-end)
+end, nil)
 
 local hopActive = false
 local hopServerBtn = createToggle("Hop Server", 185, "HopServer", function(ns, set)
@@ -1419,19 +1448,45 @@ local hopServerBtn = createToggle("Hop Server", 185, "HopServer", function(ns, s
                             found = true; break
                         end
                     end
-                    if not found then task.wait(3) end
+                    if not found then task.wait(0.1) end
                 else
-                    task.wait(3)
+                    task.wait(0.1)
                 end
             end
         end)
     end
-end)
+end, nil)
 
 local settingsBtn = createToggle("Settings", 220, "Settings", function(ns, set)
     set(ns)
     menuFrame.Visible = ns
-end)
+end, nil)
+
+local function getKeybindLabel(btn)
+    for _, child in ipairs(btn:GetChildren()) do
+        if child:IsA("TextLabel") and child.TextSize == 8 then
+            return child
+        end
+    end
+    return nil
+end
+
+local function updateKeybindLabels()
+    local labels = {
+        {btn = instantCloneBtn, key = "CloneKey"},
+        {btn = hopServerBtn,    key = "HopKey"},
+        {btn = rejoinBtn,       key = "RejoinKey"},
+        {btn = settingsBtn,     key = "SettingsKey"},
+    }
+    for _, data in ipairs(labels) do
+        local lbl = getKeybindLabel(data.btn)
+        if lbl then
+            lbl.Text = Config.Keybinds[data.key] ~= "" and Config.Keybinds[data.key] or ""
+        end
+    end
+end
+
+updateKeybindLabels()
 
 task.wait(0.1)
 
@@ -1462,8 +1517,11 @@ end
 local keybindsContent = tabContents["Keybinds"]
 if keybindsContent then
     createSectionHeader(keybindsContent, "Keybinds")
-    createTabKeybind(keybindsContent, "Instant Clone", "CloneKey", "V", nil)
-    createTabKeybind(keybindsContent, "Carpet Speed", "CarpetSpeedKey", "Q", nil)
+    createTabKeybind(keybindsContent, "Instant Clone", "CloneKey", "V", function() updateKeybindLabels() end)
+    createTabKeybind(keybindsContent, "Carpet Speed", "CarpetSpeedKey", "Q", function() updateKeybindLabels() end)
+    createTabKeybind(keybindsContent, "Hop Server", "HopKey", "H", function() updateKeybindLabels() end)
+    createTabKeybind(keybindsContent, "Rejoin", "RejoinKey", "R", function() updateKeybindLabels() end)
+    createTabKeybind(keybindsContent, "Settings", "SettingsKey", "M", function() updateKeybindLabels() end)
 end
 
 local priorityContent = tabContents["Priority"]
@@ -1578,9 +1636,21 @@ end
 S.UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
     if S.UserInputService:GetFocusedTextBox() then return end
-    if Config.Keybinds.CloneKey and Config.Keybinds.CloneKey ~= "" then
-        if input.KeyCode == Enum.KeyCode[Config.Keybinds.CloneKey] then
-        end
+
+    if Config.Keybinds.CloneKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.CloneKey] then
+        -- instant clone
+    end
+
+    if Config.Keybinds.HopKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.HopKey] then
+        hopServerBtn:Activate()
+    end
+
+    if Config.Keybinds.RejoinKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.RejoinKey] then
+        S.TeleportService:Teleport(game.PlaceId, player)
+    end
+
+    if Config.Keybinds.SettingsKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.SettingsKey] then
+        settingsBtn:Activate()
     end
 end)
 
