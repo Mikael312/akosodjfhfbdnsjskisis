@@ -1418,12 +1418,12 @@ local function createAnimalCard(parent, animalData, rank)
     return cardFrame
 end
 
-local instantCloneBtn = createButton("Instant Clone", 45, function() end, "V")
+local instantCloneBtn = createButton("Instant Clone", 45, function() end, Config.Keybinds.CloneKey)
 local tpToBestBtn     = createButton("Tp to Best", 80, function() end, nil)
 local ragdollSelfBtn  = createButton("Ragdoll Self", 115, function() end, nil)
 local rejoinBtn       = createButton("Rejoin", 150, function()
     S.TeleportService:Teleport(game.PlaceId, player)
-end, nil)
+end, Config.Keybinds.RejoinKey)
 
 local hopActive = false
 local hopServerBtn = createToggle("Hop Server", 185, "HopServer", function(ns, set)
@@ -1455,12 +1455,12 @@ local hopServerBtn = createToggle("Hop Server", 185, "HopServer", function(ns, s
             end
         end)
     end
-end, nil)
+end, Config.Keybinds.HopKey)
 
 local settingsBtn = createToggle("Settings", 220, "Settings", function(ns, set)
     set(ns)
     menuFrame.Visible = ns
-end, nil)
+end, Config.Keybinds.SettingsKey)
 
 local function getKeybindLabel(btn)
     for _, child in ipairs(btn:GetChildren()) do
