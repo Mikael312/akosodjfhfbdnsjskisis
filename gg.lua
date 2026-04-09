@@ -596,7 +596,7 @@ logoCorner.Parent = logoFrame
 local logoImage = Instance.new("ImageLabel")
 logoImage.Size = UDim2.new(1, 0, 1, 0)
 logoImage.BackgroundTransparency = 1
-logoImage.Image = "rbxassetid://83799989511542"
+logoImage.Image = "rbxassetid://132432948948628"
 logoImage.Parent = logoFrame
 
 local logoImageCorner = Instance.new("UICorner")
