@@ -1650,7 +1650,10 @@ S.UserInputService.InputBegan:Connect(function(input, processed)
     end
 
     if Config.Keybinds.SettingsKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.SettingsKey] then
-        settingsBtn:Activate()
+        local newState = not menuFrame.Visible
+        menuFrame.Visible = newState
+        Config.Settings = newState
+        SaveConfig()
     end
 end)
 
