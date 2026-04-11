@@ -67,6 +67,7 @@ local DefaultConfig = {
     },
     Settings = false,
     LockGui = false,
+    RemoveError = false,
 }
 
 local Config = DefaultConfig
@@ -842,7 +843,7 @@ headerDivider.BorderSizePixel = 0
 headerDivider.Parent = menuFrame
 
 local currentTab = "Brainrot"
-local tabs = {"Brainrot", "Features", "Utility", "Settings", "Keybinds", "Priority", "Admin"}
+local tabs = {"Brainrot", "Features", "Utility", "UI", "Keybinds", "Priority", "Admin", "Settings"}
 local tabButtons = {}
 local tabIndicators = {}
 local tabContents = {}
@@ -1512,9 +1513,24 @@ if settingsContent then
         menuFrame.Position = UDim2.new(mep.X, -197.5, mep.Y, -180)
         showNotification({message = "GUI positions reset!", color = "Success", textColor = "White"})
     end)
+    createTabToggle(settingsContent, "Remove Error Message", "RemoveError", function(ns, set)
+        set(ns)
+        if ns then
+            task.spawn(function()
+                while Config.RemoveError do
+                    for i = 1, 30 do
+                        pcall(function()
+                            local pg = game:GetService("CoreGui"):FindFirstChild("RobloxPromptGui")
+                            if pg then pg:Destroy() end
+                        end)
+                        task.wait(0.01)
+                    end
+                    task.wait(1)
+                end
+            end)
+        end
+    end)
 end
-
-local uiContent = tabContents["UI"]
 
 local keybindsContent = tabContents["Keybinds"]
 if keybindsContent then
