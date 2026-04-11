@@ -842,7 +842,7 @@ headerDivider.BorderSizePixel = 0
 headerDivider.Parent = menuFrame
 
 local currentTab = "Brainrot"
-local tabs = {"Brainrot", "Features", "Utility", "UI", "Keybinds", "Priority"}
+local tabs = {"Brainrot", "Features", "Utility", "Settings", "Keybinds", "Priority", "Admin"}
 local tabButtons = {}
 local tabIndicators = {}
 local tabContents = {}
@@ -869,8 +869,8 @@ local function createTabContent(name)
     contentFrame.Position = UDim2.new(0, 75, 0, 45)
     contentFrame.BackgroundTransparency = 1
     contentFrame.BorderSizePixel = 0
-    contentFrame.ScrollBarThickness = 3
-    contentFrame.ScrollBarImageColor3 = C.accent
+    contentFrame.ScrollBarThickness = 0        
+    contentFrame.ScrollBarImageTransparency = 1
     contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
     contentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
     contentFrame.Visible = (name == currentTab)
@@ -1629,8 +1629,7 @@ if brainrotContent then
                 end
                 updateLastCache()
             end
-        end
-    end)
+        end    end)
 end
 
 S.UserInputService.InputBegan:Connect(function(input, processed)
