@@ -54,6 +54,7 @@ local DefaultConfig = {
         CreditFrame = {X = 0.5, Y = 0.065},
         MainFrame = {X = 0.65, Y = 0.5},
         MenuFrame = {X = 0.35, Y = 0.5},
+        StealerFrame = {X = 0.5, Y = 0.5},
     },
     Favorites = {
         Animals = {},
@@ -750,6 +751,51 @@ subtitleLabel.TextSize = 9
 subtitleLabel.TextXAlignment = Enum.TextXAlignment.Center
 subtitleLabel.TextYAlignment = Enum.TextYAlignment.Center
 subtitleLabel.Parent = mainFrame
+
+local stealerFrame = Instance.new("Frame")
+stealerFrame.Size = UDim2.new(0, 193, 0, 277)
+local stealerPos = Config.Positions.StealerFrame  
+stealerFrame.Position = UDim2.new(stealerPos.X, -96.5, stealerPos.Y, -142.5)
+stealerFrame.BackgroundColor3 = C.bg
+stealerFrame.BackgroundTransparency = 0.03
+stealerFrame.BorderSizePixel = 0
+stealerFrame.Active = true
+stealerFrame.Draggable = true
+stealerFrame.Parent = screenGui
+
+Instance.new("UICorner", stealerFrame).CornerRadius = UDim.new(0, 9)
+
+local stealerFrameStroke = Instance.new("UIStroke")
+stealerFrameStroke.Thickness = 1
+stealerFrameStroke.Color = C.coolPurple
+stealerFrameStroke.Transparency = 0.5
+stealerFrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stealerFrameStroke.Parent = stealerFrame
+
+local stealerTitleLabel = Instance.new("TextLabel")
+stealerTitleLabel.Size = UDim2.new(1, 0, 0, 25)
+stealerTitleLabel.Position = UDim2.new(0, 0, 0, 3)
+stealerTitleLabel.BackgroundTransparency = 1
+stealerTitleLabel.Text = "RENHUB PRIVATE"
+stealerTitleLabel.TextColor3 = C.white
+stealerTitleLabel.Font = Enum.Font.MontserratBlack
+stealerTitleLabel.TextSize = 12
+stealerTitleLabel.TextXAlignment = Enum.TextXAlignment.Center
+stealerTitleLabel.TextYAlignment = Enum.TextYAlignment.Center
+stealerTitleLabel.Parent = stealerFrame
+addTextGradient(stealerTitleLabel, C.primary, C.accent, 45)
+
+local stealerSubtitleLabel = Instance.new("TextLabel")
+stealerSubtitleLabel.Size = UDim2.new(1, 0, 0, 20)
+stealerSubtitleLabel.Position = UDim2.new(0, 0, 0, 21)
+stealerSubtitleLabel.BackgroundTransparency = 1
+stealerSubtitleLabel.Text = "Stealer Panel"
+stealerSubtitleLabel.TextColor3 = C.subtitleGrey
+stealerSubtitleLabel.Font = Enum.Font.GothamBold
+stealerSubtitleLabel.TextSize = 9
+stealerSubtitleLabel.TextXAlignment = Enum.TextXAlignment.Center
+stealerSubtitleLabel.TextYAlignment = Enum.TextYAlignment.Center
+stealerSubtitleLabel.Parent = stealerFrame
 
 local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
@@ -1449,9 +1495,9 @@ local hopServerBtn = createToggle("Hop Server", 185, "HopServer", function(ns, s
                             found = true; break
                         end
                     end
-                    if not found then task.wait(0.1) end
+                    if not found then task.wait(1) end
                 else
-                    task.wait(0.1)
+                    task.wait(1)
                 end
             end
         end)
@@ -1499,11 +1545,13 @@ if settingsContent then
         creditFrame.Draggable = not ns
         mainFrame.Draggable = not ns
         menuFrame.Draggable = not ns
+        stealerFrame.Draggable = not ns
     end)
     createTabButton(settingsContent, "Reset Position", "rbxassetid://97462463002118", function()
-        Config.Positions.CreditFrame = DefaultConfig.Positions.CreditFrame
-        Config.Positions.MainFrame   = DefaultConfig.Positions.MainFrame
-        Config.Positions.MenuFrame   = DefaultConfig.Positions.MenuFrame
+        Config.Positions.CreditFrame  = DefaultConfig.Positions.CreditFrame
+        Config.Positions.MainFrame    = DefaultConfig.Positions.MainFrame
+        Config.Positions.MenuFrame    = DefaultConfig.Positions.MenuFrame
+        Config.Positions.StealerFrame = DefaultConfig.Positions.StealerFrame  
         SaveConfig()
         local cp = Config.Positions.CreditFrame
         creditFrame.Position = UDim2.new(cp.X, -170, cp.Y, -25)
@@ -1511,6 +1559,8 @@ if settingsContent then
         mainFrame.Position = UDim2.new(mp.X, -96.5, mp.Y, -142.5)
         local mep = Config.Positions.MenuFrame
         menuFrame.Position = UDim2.new(mep.X, -197.5, mep.Y, -180)
+        local sp = Config.Positions.StealerFrame  -- TAMBAH NI
+        stealerFrame.Position = UDim2.new(sp.X, -96.5, sp.Y, -142.5)
         showNotification({message = "GUI positions reset!", color = "Success", textColor = "White"})
     end)
     createTabToggle(settingsContent, "Remove Error Message", "RemoveError", function(ns, set)
