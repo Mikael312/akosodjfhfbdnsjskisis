@@ -365,6 +365,32 @@ local function isPlayerPlot(plot)
     return false
 end
 
+local function instantClone()
+    if _G.isCloning then return end
+    _G.isCloning = true
+    pcall(function()
+        local backpack = player:WaitForChild("Backpack")
+        local char = player.Character or player.CharacterAdded:Wait()
+        local humanoid = char:WaitForChild("Humanoid")
+        local tool = backpack:FindFirstChild("Quantum Cloner") or char:FindFirstChild("Quantum Cloner")
+        if not tool then _G.isCloning = false; return end
+        if tool.Parent == backpack then
+            humanoid:EquipTool(tool)
+            task.wait(0.1)
+        end
+        tool:Activate()
+        local clone = S.Workspace:WaitForChild(player.UserId .. "_Clone", 10)
+        if clone then
+            local teleportBtn = player.PlayerGui
+                :WaitForChild("ToolsFrames")
+                :WaitForChild("QuantumCloner")
+                :WaitForChild("TeleportToClone")
+            firesignal(teleportBtn.MouseButton1Up)
+        end
+    end)
+    _G.isCloning = false
+end
+
 local function getAnimalHash(animalList)
     if not animalList then return "" end
     local hash = ""
@@ -1254,8 +1280,8 @@ local function createPillToggle(parent, labelText, configKey, yPosition, callbac
     label.Parent = rowFrame
 
     local pillBg = Instance.new("Frame")
-    pillBg.Size = UDim2.new(0, 55, 0, 24)
-    pillBg.Position = UDim2.new(1, -58, 0.5, -12)
+    pillBg.Size = UDim2.new(0, 45, 0, 20)
+    pillBg.Position = UDim2.new(1, -48, 0.5, -10)
     pillBg.BackgroundColor3 = toggleEnabled and C.primary or Color3.fromRGB(30, 30, 50)
     pillBg.BorderSizePixel = 0
     pillBg.Parent = rowFrame
@@ -1537,7 +1563,10 @@ local function createAnimalCard(parent, animalData, rank)
     return cardFrame
 end
 
-local instantCloneBtn = createButton("Instant Clone", 45, function() end, Config.Keybinds.CloneKey)
+local instantCloneBtn = createButton("Instant Clone", 45, function()
+    task.spawn(instantClone)
+end, Config.Keybinds.CloneKey)
+
 local tpToBestBtn     = createButton("Tp to Best", 80, function() end, nil)
 local ragdollSelfBtn  = createButton("Ragdoll Self", 115, function() end, nil)
 local rejoinBtn       = createButton("Rejoin", 150, function()
@@ -1787,7 +1816,7 @@ S.UserInputService.InputBegan:Connect(function(input, processed)
     if S.UserInputService:GetFocusedTextBox() then return end
 
     if Config.Keybinds.CloneKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.CloneKey] then
-        -- instant clone
+        task.spawn(instantClone)
     end
 
     if Config.Keybinds.HopKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.HopKey] then
