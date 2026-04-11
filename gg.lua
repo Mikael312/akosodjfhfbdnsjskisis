@@ -1236,10 +1236,12 @@ local function createAnimalCard(parent, animalData, rank)
         local cf, _ = cloned:GetBoundingBox()
         cloned:PivotTo(CFrame.new(cf.Position) * CFrame.Angles(0, math.rad(125), 0))
         local cf2, size2 = cloned:GetBoundingBox()
-        local distance = math.max(size2.X, size2.Y, size2.Z) * 1.5
+        local fixedDistance = 6
+        local maxSize = math.max(size2.X, size2.Y, size2.Z)
+        local fov = math.clamp(2 * math.deg(math.atan(maxSize / (2 * fixedDistance))), 20, 70) * 1.8
         local vpCamera = Instance.new("Camera")
-        vpCamera.FieldOfView = 50
-        vpCamera.CFrame = CFrame.new(cf2.Position + Vector3.new(0, size2.Y * 0.1, distance), cf2.Position)
+        vpCamera.FieldOfView = fov
+        vpCamera.CFrame = CFrame.new(cf2.Position + Vector3.new(0, size2.Y * 0.1, fixedDistance), cf2.Position)
         vpCamera.Parent = vpFrame
         vpFrame.CurrentCamera = vpCamera
     end)
