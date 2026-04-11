@@ -1254,8 +1254,8 @@ local function createPillToggle(parent, labelText, configKey, yPosition, callbac
     label.Parent = rowFrame
 
     local pillBg = Instance.new("Frame")
-    pillBg.Size = UDim2.new(0, 70, 0, 30)
-    pillBg.Position = UDim2.new(1, -70, 0.5, -15)
+    pillBg.Size = UDim2.new(0, 55, 0, 24)
+    pillBg.Position = UDim2.new(1, -58, 0.5, -12)
     pillBg.BackgroundColor3 = toggleEnabled and C.primary or Color3.fromRGB(30, 30, 50)
     pillBg.BorderSizePixel = 0
     pillBg.Parent = rowFrame
@@ -1274,7 +1274,7 @@ local function createPillToggle(parent, labelText, configKey, yPosition, callbac
     pillLabel.Text = toggleEnabled and "ON" or "OFF"
     pillLabel.TextColor3 = C.white
     pillLabel.Font = Enum.Font.GothamBold
-    pillLabel.TextSize = 13
+    pillLabel.TextSize = 10
     pillLabel.TextXAlignment = Enum.TextXAlignment.Center
     pillLabel.TextYAlignment = Enum.TextYAlignment.Center
     pillLabel.Parent = pillBg
