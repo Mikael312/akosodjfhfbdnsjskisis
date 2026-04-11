@@ -54,7 +54,7 @@ local DefaultConfig = {
         CreditFrame = {X = 0.5, Y = 0.065},
         MainFrame = {X = 0.65, Y = 0.5},
         MenuFrame = {X = 0.35, Y = 0.5},
-        StealerFrame = {X = 0.5, Y = 0.5},
+        StealerFrame = {X = 0.82, Y = 0.25},
     },
     Favorites = {
         Animals = {},
@@ -755,13 +755,14 @@ subtitleLabel.Parent = mainFrame
 local stealerFrame = Instance.new("Frame")
 stealerFrame.Size = UDim2.new(0, 193, 0, 277)
 local stealerPos = Config.Positions.StealerFrame  
-stealerFrame.Position = UDim2.new(stealerPos.X, -96.5, stealerPos.Y, -142.5)
+stealerFrame.Position = UDim2.new(stealerPos.X, -96.5, stealerPos.Y, -138.5)
 stealerFrame.BackgroundColor3 = C.bg
 stealerFrame.BackgroundTransparency = 0.03
 stealerFrame.BorderSizePixel = 0
 stealerFrame.Active = true
 stealerFrame.Draggable = true
 stealerFrame.Parent = screenGui
+trackPosition(stealerFrame, "StealerFrame")
 
 Instance.new("UICorner", stealerFrame).CornerRadius = UDim.new(0, 9)
 
