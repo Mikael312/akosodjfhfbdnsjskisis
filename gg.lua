@@ -1259,7 +1259,7 @@ local function createAnimalCard(parent, animalData, rank)
     Instance.new("UICorner", rankBadge).CornerRadius = UDim.new(0.11, 0)
 
     local badgeStroke = Instance.new("UIStroke")
-    badgeStroke.Thickness = 1.5
+    badgeStroke.Thickness = 1.3
     badgeStroke.Color = strokeColor
     badgeStroke.Transparency = 0
     badgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -1292,8 +1292,8 @@ local function createAnimalCard(parent, animalData, rank)
     nameLabel.Size = UDim2.new(1, -130, 0, 16)
     nameLabel.Position = UDim2.new(0, 54, 0, 8)
     nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = animalData.name
-    nameLabel.TextColor3 = C.white
+    nameLabel.Text = animalData.isDuelBase and "[DUEL] " .. animalData.name or animalData.name
+    nameLabel.TextColor3 = animalData.isDuelBase and C.yellow or C.white
     nameLabel.Font = Enum.Font.MontserratBold
     nameLabel.TextSize = 10
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
