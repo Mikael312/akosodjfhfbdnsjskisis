@@ -1490,16 +1490,16 @@ updateKeybindLabels()
 
 task.wait(0.1)
 
-local uiContent = tabContents["UI"]
-if uiContent then
-    createSectionHeader(uiContent, "UI Panel")
-    createTabToggle(uiContent, "Lock Gui", "LockGui", function(ns, set)
+local settingsContent = tabContents["Settings"]
+if settingsContent then
+    createSectionHeader(settingsContent, "Manage")
+    createTabToggle(settingsContent, "Lock Gui", "LockGui", function(ns, set)
         set(ns)
         creditFrame.Draggable = not ns
         mainFrame.Draggable = not ns
         menuFrame.Draggable = not ns
     end)
-    createTabButton(uiContent, "Reset Position", "rbxassetid://97462463002118", function()
+    createTabButton(settingsContent, "Reset Position", "rbxassetid://97462463002118", function()
         Config.Positions.CreditFrame = DefaultConfig.Positions.CreditFrame
         Config.Positions.MainFrame   = DefaultConfig.Positions.MainFrame
         Config.Positions.MenuFrame   = DefaultConfig.Positions.MenuFrame
@@ -1509,10 +1509,12 @@ if uiContent then
         local mp = Config.Positions.MainFrame
         mainFrame.Position = UDim2.new(mp.X, -96.5, mp.Y, -142.5)
         local mep = Config.Positions.MenuFrame
-        menuFrame.Position = UDim2.new(mep.X, -160, mep.Y, -170)
+        menuFrame.Position = UDim2.new(mep.X, -197.5, mep.Y, -180)
         showNotification({message = "GUI positions reset!", color = "Success", textColor = "White"})
     end)
 end
+
+local uiContent = tabContents["UI"]
 
 local keybindsContent = tabContents["Keybinds"]
 if keybindsContent then
@@ -1527,6 +1529,11 @@ end
 local priorityContent = tabContents["Priority"]
 if priorityContent then
     createSectionHeader(priorityContent, "Priority List")
+end
+
+local adminContent = tabContents["Admin"]
+if adminContent then
+    createSectionHeader(adminContent, "Admin")
 end
 
 local brainrotContent = tabContents["Brainrot"]
@@ -1629,7 +1636,8 @@ if brainrotContent then
                 end
                 updateLastCache()
             end
-        end    end)
+        end
+    end)
 end
 
 S.UserInputService.InputBegan:Connect(function(input, processed)
