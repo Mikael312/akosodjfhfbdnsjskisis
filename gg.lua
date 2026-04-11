@@ -723,7 +723,7 @@ local creditsLabel = Instance.new("TextLabel")
 creditsLabel.Size = UDim2.new(0, 340, 0, 15)
 creditsLabel.Position = UDim2.new(0, 55, 1, -22)
 creditsLabel.BackgroundTransparency = 1
-creditsLabel.Text = "Made By @Ren"
+creditsLabel.Text = "Made By @Ryan, @Xtention"
 creditsLabel.TextColor3 = C.subtitleGrey
 creditsLabel.Font = Enum.Font.GothamMedium
 creditsLabel.TextSize = 9
@@ -1300,7 +1300,7 @@ local function createPillToggle(parent, labelText, configKey, yPosition, callbac
     pillLabel.Text = toggleEnabled and "ON" or "OFF"
     pillLabel.TextColor3 = C.white
     pillLabel.Font = Enum.Font.GothamBold
-    pillLabel.TextSize = 8
+    pillLabel.TextSize = 7
     pillLabel.TextXAlignment = Enum.TextXAlignment.Center
     pillLabel.TextYAlignment = Enum.TextYAlignment.Center
     pillLabel.Parent = pillBg
