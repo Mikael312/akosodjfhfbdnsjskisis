@@ -69,6 +69,7 @@ local DefaultConfig = {
     Settings = false,
     LockGui = false,
     RemoveError = false,
+    Nearest = false,
 }
 
 local Config = DefaultConfig
@@ -704,6 +705,52 @@ creditsLabel.TextXAlignment = Enum.TextXAlignment.Left
 creditsLabel.TextYAlignment = Enum.TextYAlignment.Center
 creditsLabel.Parent = creditFrame
 
+local stealerFrame = Instance.new("Frame")
+stealerFrame.Size = UDim2.new(0, 193, 0, 277)
+local stealerPos = Config.Positions.StealerFrame  
+stealerFrame.Position = UDim2.new(stealerPos.X, -96.5, stealerPos.Y, -138.5)
+stealerFrame.BackgroundColor3 = C.bg
+stealerFrame.BackgroundTransparency = 0.03
+stealerFrame.BorderSizePixel = 0
+stealerFrame.Active = true
+stealerFrame.Draggable = true
+stealerFrame.Parent = screenGui
+trackPosition(stealerFrame, "StealerFrame")
+
+Instance.new("UICorner", stealerFrame).CornerRadius = UDim.new(0, 9)
+
+local stealerFrameStroke = Instance.new("UIStroke")
+stealerFrameStroke.Thickness = 1
+stealerFrameStroke.Color = C.coolPurple
+stealerFrameStroke.Transparency = 0.5
+stealerFrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stealerFrameStroke.Parent = stealerFrame
+
+local stealerTitleLabel = Instance.new("TextLabel")
+stealerTitleLabel.Size = UDim2.new(1, 0, 0, 25)
+stealerTitleLabel.Position = UDim2.new(0, 0, 0, 3)
+stealerTitleLabel.BackgroundTransparency = 1
+stealerTitleLabel.Text = "RENHUB PRIVATE"
+stealerTitleLabel.TextColor3 = C.white
+stealerTitleLabel.Font = Enum.Font.MontserratBlack
+stealerTitleLabel.TextSize = 12
+stealerTitleLabel.TextXAlignment = Enum.TextXAlignment.Center
+stealerTitleLabel.TextYAlignment = Enum.TextYAlignment.Center
+stealerTitleLabel.Parent = stealerFrame
+addTextGradient(stealerTitleLabel, C.primary, C.accent, 45)
+
+local stealerSubtitleLabel = Instance.new("TextLabel")
+stealerSubtitleLabel.Size = UDim2.new(1, 0, 0, 20)
+stealerSubtitleLabel.Position = UDim2.new(0, 0, 0, 21)
+stealerSubtitleLabel.BackgroundTransparency = 1
+stealerSubtitleLabel.Text = "Stealer Panel"
+stealerSubtitleLabel.TextColor3 = C.subtitleGrey
+stealerSubtitleLabel.Font = Enum.Font.GothamBold
+stealerSubtitleLabel.TextSize = 9
+stealerSubtitleLabel.TextXAlignment = Enum.TextXAlignment.Center
+stealerSubtitleLabel.TextYAlignment = Enum.TextYAlignment.Center
+stealerSubtitleLabel.Parent = stealerFrame
+
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 193, 0, 277)
 local mainPos = Config.Positions.MainFrame
@@ -751,52 +798,6 @@ subtitleLabel.TextSize = 9
 subtitleLabel.TextXAlignment = Enum.TextXAlignment.Center
 subtitleLabel.TextYAlignment = Enum.TextYAlignment.Center
 subtitleLabel.Parent = mainFrame
-
-local stealerFrame = Instance.new("Frame")
-stealerFrame.Size = UDim2.new(0, 193, 0, 277)
-local stealerPos = Config.Positions.StealerFrame  
-stealerFrame.Position = UDim2.new(stealerPos.X, -96.5, stealerPos.Y, -138.5)
-stealerFrame.BackgroundColor3 = C.bg
-stealerFrame.BackgroundTransparency = 0.03
-stealerFrame.BorderSizePixel = 0
-stealerFrame.Active = true
-stealerFrame.Draggable = true
-stealerFrame.Parent = screenGui
-trackPosition(stealerFrame, "StealerFrame")
-
-Instance.new("UICorner", stealerFrame).CornerRadius = UDim.new(0, 9)
-
-local stealerFrameStroke = Instance.new("UIStroke")
-stealerFrameStroke.Thickness = 1
-stealerFrameStroke.Color = C.coolPurple
-stealerFrameStroke.Transparency = 0.5
-stealerFrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-stealerFrameStroke.Parent = stealerFrame
-
-local stealerTitleLabel = Instance.new("TextLabel")
-stealerTitleLabel.Size = UDim2.new(1, 0, 0, 25)
-stealerTitleLabel.Position = UDim2.new(0, 0, 0, 3)
-stealerTitleLabel.BackgroundTransparency = 1
-stealerTitleLabel.Text = "RENHUB PRIVATE"
-stealerTitleLabel.TextColor3 = C.white
-stealerTitleLabel.Font = Enum.Font.MontserratBlack
-stealerTitleLabel.TextSize = 12
-stealerTitleLabel.TextXAlignment = Enum.TextXAlignment.Center
-stealerTitleLabel.TextYAlignment = Enum.TextYAlignment.Center
-stealerTitleLabel.Parent = stealerFrame
-addTextGradient(stealerTitleLabel, C.primary, C.accent, 45)
-
-local stealerSubtitleLabel = Instance.new("TextLabel")
-stealerSubtitleLabel.Size = UDim2.new(1, 0, 0, 20)
-stealerSubtitleLabel.Position = UDim2.new(0, 0, 0, 21)
-stealerSubtitleLabel.BackgroundTransparency = 1
-stealerSubtitleLabel.Text = "Stealer Panel"
-stealerSubtitleLabel.TextColor3 = C.subtitleGrey
-stealerSubtitleLabel.Font = Enum.Font.GothamBold
-stealerSubtitleLabel.TextSize = 9
-stealerSubtitleLabel.TextXAlignment = Enum.TextXAlignment.Center
-stealerSubtitleLabel.TextYAlignment = Enum.TextYAlignment.Center
-stealerSubtitleLabel.Parent = stealerFrame
 
 local menuFrame = Instance.new("Frame")
 menuFrame.Name = "MenuFrame"
@@ -1232,6 +1233,76 @@ local function createTabKeybind(parent, name, configKey, default, onChanged)
     return rowFrame
 end
 
+local function createPillToggle(parent, labelText, configKey, yPosition, callback)
+    local function setToggle(state) Config[configKey] = state; SaveConfig() end
+    local toggleEnabled = Config[configKey] or false
+
+    local rowFrame = Instance.new("Frame")
+    rowFrame.Size = UDim2.new(0, 167, 0, 32)
+    rowFrame.Position = UDim2.new(0.5, -83.5, 0, yPosition)
+    rowFrame.BackgroundTransparency = 1
+    rowFrame.Parent = stealerFrame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.55, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.TextColor3 = C.white
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = rowFrame
+
+    local pillBg = Instance.new("Frame")
+    pillBg.Size = UDim2.new(0, 70, 0, 30)
+    pillBg.Position = UDim2.new(1, -70, 0.5, -15)
+    pillBg.BackgroundColor3 = toggleEnabled and C.primary or Color3.fromRGB(30, 30, 50)
+    pillBg.BorderSizePixel = 0
+    pillBg.Parent = rowFrame
+    Instance.new("UICorner", pillBg).CornerRadius = UDim.new(1, 0)
+
+    local pillStroke = Instance.new("UIStroke")
+    pillStroke.Thickness = 1.5
+    pillStroke.Color = toggleEnabled and C.primary or Color3.fromRGB(80, 80, 120)
+    pillStroke.Transparency = 0.3
+    pillStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    pillStroke.Parent = pillBg
+
+    local pillLabel = Instance.new("TextLabel")
+    pillLabel.Size = UDim2.new(1, 0, 1, 0)
+    pillLabel.BackgroundTransparency = 1
+    pillLabel.Text = toggleEnabled and "ON" or "OFF"
+    pillLabel.TextColor3 = C.white
+    pillLabel.Font = Enum.Font.GothamBold
+    pillLabel.TextSize = 13
+    pillLabel.TextXAlignment = Enum.TextXAlignment.Center
+    pillLabel.TextYAlignment = Enum.TextYAlignment.Center
+    pillLabel.Parent = pillBg
+
+    local clickBtn = Instance.new("TextButton")
+    clickBtn.Size = UDim2.new(1, 0, 1, 0)
+    clickBtn.BackgroundTransparency = 1
+    clickBtn.Text = ""
+    clickBtn.Parent = rowFrame
+
+    clickBtn.MouseButton1Click:Connect(function()
+        toggleEnabled = not toggleEnabled
+        local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        if toggleEnabled then
+            S.TweenService:Create(pillBg, ti, {BackgroundColor3 = C.primary}):Play()
+            pillStroke.Color = C.primary
+            pillLabel.Text = "ON"
+        else
+            S.TweenService:Create(pillBg, ti, {BackgroundColor3 = Color3.fromRGB(30, 30, 50)}):Play()
+            pillStroke.Color = Color3.fromRGB(80, 80, 120)
+            pillLabel.Text = "OFF"
+        end
+        if callback then callback(toggleEnabled, setToggle) end
+    end)
+
+    return rowFrame
+end
+
 local function createAnimalCard(parent, animalData, rank)
     local cardFrame = Instance.new("Frame")
     cardFrame.Name = "AnimalCard"
@@ -1509,6 +1580,10 @@ local settingsBtn = createToggle("Settings", 220, "Settings", function(ns, set)
     set(ns)
     menuFrame.Visible = ns
 end, Config.Keybinds.SettingsKey)
+
+createPillToggle(stealerFrame, "Steal Nearest:", "Nearest", 50, function(ns, set)
+    set(ns)
+end)
 
 local function getKeybindLabel(btn)
     for _, child in ipairs(btn:GetChildren()) do
