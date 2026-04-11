@@ -1275,7 +1275,7 @@ local function createPillToggle(parent, labelText, configKey, yPosition, callbac
     label.Text = labelText
     label.TextColor3 = C.white
     label.Font = Enum.Font.GothamBold
-    label.TextSize = 13
+    label.TextSize = 11
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = rowFrame
 
@@ -1300,7 +1300,7 @@ local function createPillToggle(parent, labelText, configKey, yPosition, callbac
     pillLabel.Text = toggleEnabled and "ON" or "OFF"
     pillLabel.TextColor3 = C.white
     pillLabel.Font = Enum.Font.GothamBold
-    pillLabel.TextSize = 7
+    pillLabel.TextSize = 9
     pillLabel.TextXAlignment = Enum.TextXAlignment.Center
     pillLabel.TextYAlignment = Enum.TextYAlignment.Center
     pillLabel.Parent = pillBg
