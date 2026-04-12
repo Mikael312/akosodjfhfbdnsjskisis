@@ -70,6 +70,7 @@ local DefaultConfig = {
     LockGui = false,
     RemoveError = false,
     Nearest = false,
+    HideStealerPanel = false,
 }
 
 local Config = DefaultConfig
@@ -742,6 +743,7 @@ stealerFrame.Active = true
 stealerFrame.Draggable = true
 stealerFrame.Parent = screenGui
 trackPosition(stealerFrame, "StealerFrame")
+stealerFrame.Visible = not Config.HideStealerPanel
 
 Instance.new("UICorner", stealerFrame).CornerRadius = UDim.new(0, 9)
 
@@ -1687,6 +1689,15 @@ if settingsContent then
     end)
 end
 
+local uiContent = tabContents["UI"]
+if uiContent then
+    createSectionHeader(uiContent, "UI Panel")
+    createTabToggle(uiContent, "Hide Stealer Panel", "HideStealerPanel", function(ns, set)
+        set(ns)
+        stealerFrame.Visible = not ns
+    end)
+end
+
 local keybindsContent = tabContents["Keybinds"]
 if keybindsContent then
     createSectionHeader(keybindsContent, "Keybinds")
@@ -1704,7 +1715,7 @@ end
 
 local adminContent = tabContents["Admin"]
 if adminContent then
-    createSectionHeader(adminContent, "Admin")
+    createSectionHeader(adminContent, "Admin Panel")
 end
 
 local brainrotContent = tabContents["Brainrot"]
