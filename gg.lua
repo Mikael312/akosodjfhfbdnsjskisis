@@ -919,7 +919,7 @@ headerDivider.BorderSizePixel = 0
 headerDivider.Parent = menuFrame
 
 local currentTab = "Brainrot"
-local tabs = {"Brainrot", "Features", "Utility", "UI", "Keybinds", "Priority", "Admin", "Settings"}
+local tabs = {"Brainrot", "Teleport", "Steal", "Utility", "UI", "Keybinds", "Priority", "Admin", "Settings"}
 local tabButtons = {}
 local tabIndicators = {}
 local tabContents = {}
@@ -1758,15 +1758,12 @@ if brainrotContent then
     brainrotSectionLabel.Parent = brainrotHeaderRow
 
     local refreshBtn = Instance.new("TextButton")
-    refreshBtn.Size = UDim2.new(0, 52, 0, 17)
-    refreshBtn.Position = UDim2.new(1, -55, 0.5, -8)
+    refreshBtn.Size = UDim2.new(0, 22, 0, 17)  
+    refreshBtn.Position = UDim2.new(1, -25, 0.5, -8)
     refreshBtn.BackgroundColor3 = C.darkPurple
     refreshBtn.BackgroundTransparency = 0.2
     refreshBtn.BorderSizePixel = 0
-    refreshBtn.Text = "Refresh"
-    refreshBtn.TextColor3 = C.accent
-    refreshBtn.Font = Enum.Font.GothamBold
-    refreshBtn.TextSize = 8
+    refreshBtn.Text = ""
     refreshBtn.AutoButtonColor = false
     refreshBtn.Parent = brainrotHeaderRow
     Instance.new("UICorner", refreshBtn).CornerRadius = UDim.new(0, 4)
@@ -1777,6 +1774,14 @@ if brainrotContent then
     refreshStroke.Transparency = 0.5
     refreshStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     refreshStroke.Parent = refreshBtn
+ 
+    local refreshIcon = Instance.new("ImageLabel")
+    refreshIcon.Size = UDim2.new(0, 13, 0, 13)
+    refreshIcon.Position = UDim2.new(0.5, -6, 0.5, -6)
+    refreshIcon.BackgroundTransparency = 1
+    refreshIcon.Image = "rbxassetid://128440971869856"
+    refreshIcon.ImageColor3 = C.accent
+    refreshIcon.Parent = refreshBtn
 
     local normalView = Instance.new("Frame")
     normalView.Name = "NormalView"
