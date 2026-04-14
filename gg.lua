@@ -1577,12 +1577,12 @@ local kickSelfBtn = createButton("Kick Self", 150, function()
     game:shutdown()
 end, Config.Keybinds.KickSelfKey)
 
-local rejoinBtn       = createButton("Rejoin", 150, function()
+local rejoinBtn       = createButton("Rejoin", 185, function()
     S.TeleportService:Teleport(game.PlaceId, player)
 end, Config.Keybinds.RejoinKey)
 
 local hopActive = false
-local hopServerBtn = createToggle("Hop Server", 185, "HopServer", function(ns, set)
+local hopServerBtn = createToggle("Hop Server", 220, "HopServer", function(ns, set)
     set(ns)
     hopActive = ns
     if ns then
@@ -1613,7 +1613,7 @@ local hopServerBtn = createToggle("Hop Server", 185, "HopServer", function(ns, s
     end
 end, Config.Keybinds.HopKey)
 
-local settingsBtn = createToggle("Settings", 220, "Settings", function(ns, set)
+local settingsBtn = createToggle("Settings", 255, "Settings", function(ns, set)
     set(ns)
     menuFrame.Visible = ns
 end, Config.Keybinds.SettingsKey)
