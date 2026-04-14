@@ -538,7 +538,8 @@ local C = {
     green        = Color3.fromRGB(46, 204, 113),      
     yellow       = Color3.fromRGB(241, 196, 15),      
     red          = Color3.fromRGB(231, 76, 60),       
-    coolPurple   = Color3.fromRGB(60, 100, 200),      
+    coolPurple   = Color3.fromRGB(60, 100, 200), 
+    purple       = Color3.fromRGB(144, 31, 237),
 }
 
 local function addTextGradient(textElement, color1, color2, rotation)
@@ -834,7 +835,7 @@ menuFrame.Size = UDim2.new(0, 395, 0, 360)
 local menuPos = Config.Positions.MenuFrame
 menuFrame.Position = UDim2.new(menuPos.X, -197.5, menuPos.Y, -180)
 menuFrame.BackgroundColor3 = C.white
-menuFrame.BackgroundTransparency = 0.03
+menuFrame.BackgroundTransparency = 0
 menuFrame.BorderSizePixel = 0
 menuFrame.Active = true
 menuFrame.Draggable = true
@@ -920,7 +921,17 @@ headerDivider.BorderSizePixel = 0
 headerDivider.Parent = menuFrame
 
 local currentTab = "Brainrot"
-local tabs = {"Brainrot", "Teleport", "Steal", "Utility", "UI", "Keybinds", "Priority", "Admin", "Settings"}
+local tabs = {
+    {name = "Brainrot",  icon = "rbxassetid://120036484987239"},
+    {name = "Teleport",  icon = "rbxassetid://114569252673964"},
+    {name = "Steal",     icon = "rbxassetid://117536397894842"},
+    {name = "Utility",   icon = "rbxassetid://121961252978849"},
+    {name = "UI",        icon = "rbxassetid://135379850932565"},
+    {name = "Keybinds",  icon = "rbxassetid://134211611566659"},
+    {name = "Priority",  icon = "rbxassetid://121059871633441"},
+    {name = "Admin",     icon = "rbxassetid://74771972711708"},
+    {name = "Settings",  icon = "rbxassetid://80884726236529"},
+}
 local tabButtons = {}
 local tabIndicators = {}
 local tabContents = {}
@@ -963,7 +974,10 @@ local function createTabContent(name)
     return contentFrame
 end
 
-for i, tabName in ipairs(tabs) do
+for i, tabData in ipairs(tabs) do
+    local tabName = tabData.name
+    local tabIcon = tabData.icon
+
     local indicator = Instance.new("Frame")
     indicator.Name = tabName .. "Indicator"
     indicator.Size = UDim2.new(1, -8, 0, 26)
@@ -975,6 +989,14 @@ for i, tabName in ipairs(tabs) do
     Instance.new("UICorner", indicator).CornerRadius = UDim.new(0, 5)
     tabIndicators[tabName] = indicator
 
+    local iconLabel = Instance.new("ImageLabel")
+    iconLabel.Size = UDim2.new(0, 18, 0, 18)
+    iconLabel.Position = UDim2.new(0.5, -9, 0, 4)
+    iconLabel.BackgroundTransparency = 1
+    iconLabel.Image = tabIcon
+    iconLabel.ImageColor3 = currentTab == tabName and C.accent or C.subtitleGrey
+    iconLabel.Parent = indicator
+
     local tabBtn = Instance.new("TextButton")
     tabBtn.Name = tabName .. "Tab"
     tabBtn.Size = UDim2.new(1, 0, 0, 38)
@@ -983,8 +1005,9 @@ for i, tabName in ipairs(tabs) do
     tabBtn.Text = tabName
     tabBtn.TextColor3 = currentTab == tabName and C.accent or C.subtitleGrey
     tabBtn.Font = Enum.Font.GothamBold
-    tabBtn.TextSize = 8
+    tabBtn.TextSize = 7
     tabBtn.TextWrapped = true
+    tabBtn.TextYAlignment = Enum.TextYAlignment.Bottom
     tabBtn.ZIndex = 2
     tabBtn.Parent = sidebarContainer
     tabButtons[tabName] = tabBtn
@@ -993,16 +1016,17 @@ for i, tabName in ipairs(tabs) do
     tabContents[tabName] = tabContent
 
     tabBtn.MouseButton1Click:Connect(function()
-        
         for _, content in pairs(tabContents) do content.Visible = false end
         for name, ind in pairs(tabIndicators) do
             ind.BackgroundTransparency = 1
             tabButtons[name].TextColor3 = C.subtitleGrey
+            local ic = ind:FindFirstChildOfClass("ImageLabel")
+            if ic then ic.ImageColor3 = C.subtitleGrey end
         end
-        
         tabContent.Visible = true
         indicator.BackgroundTransparency = 0.6
         tabBtn.TextColor3 = C.accent
+        iconLabel.ImageColor3 = C.accent
         currentTab = tabName
     end)
 end
