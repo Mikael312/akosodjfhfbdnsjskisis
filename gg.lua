@@ -780,9 +780,9 @@ stealerSubtitleLabel.TextYAlignment = Enum.TextYAlignment.Center
 stealerSubtitleLabel.Parent = stealerFrame
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 193, 0, 277)
+mainFrame.Size = UDim2.new(0, 193, 0, 305)
 local mainPos = Config.Positions.MainFrame
-mainFrame.Position = UDim2.new(mainPos.X, -96.5, mainPos.Y, -142.5)
+mainFrame.Position = UDim2.new(mainPos.X, -96.5, mainPos.Y, -152.5)
 mainFrame.BackgroundColor3 = C.bg
 mainFrame.BackgroundTransparency = 0.03
 mainFrame.BorderSizePixel = 0
@@ -1571,6 +1571,9 @@ end, Config.Keybinds.CloneKey)
 
 local tpToBestBtn     = createButton("Tp to Best", 80, function() end, nil)
 local ragdollSelfBtn  = createButton("Ragdoll Self", 115, function() end, nil)
+local kickSelfBtn = createButton("Kick Self", 150, function()
+    game:shutdown()
+end, nil)
 local rejoinBtn       = createButton("Rejoin", 150, function()
     S.TeleportService:Teleport(game.PlaceId, player)
 end, Config.Keybinds.RejoinKey)
@@ -1758,12 +1761,15 @@ if brainrotContent then
     brainrotSectionLabel.Parent = brainrotHeaderRow
 
     local refreshBtn = Instance.new("TextButton")
-    refreshBtn.Size = UDim2.new(0, 22, 0, 17)  
-    refreshBtn.Position = UDim2.new(1, -25, 0.5, -8)
+    refreshBtn.Size = UDim2.new(0, 65, 0, 17)
+    refreshBtn.Position = UDim2.new(1, -68, 0.5, -8)
     refreshBtn.BackgroundColor3 = C.darkPurple
     refreshBtn.BackgroundTransparency = 0.2
     refreshBtn.BorderSizePixel = 0
-    refreshBtn.Text = ""
+    refreshBtn.Text = "Refresh"
+    refreshBtn.TextColor3 = C.accent
+    refreshBtn.Font = Enum.Font.GothamBold
+    refreshBtn.TextSize = 8
     refreshBtn.AutoButtonColor = false
     refreshBtn.Parent = brainrotHeaderRow
     Instance.new("UICorner", refreshBtn).CornerRadius = UDim.new(0, 4)
@@ -1774,14 +1780,28 @@ if brainrotContent then
     refreshStroke.Transparency = 0.5
     refreshStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     refreshStroke.Parent = refreshBtn
- 
+
     local refreshIcon = Instance.new("ImageLabel")
-    refreshIcon.Size = UDim2.new(0, 13, 0, 13)
-    refreshIcon.Position = UDim2.new(0.5, -6, 0.5, -6)
+    refreshIcon.Size = UDim2.new(0, 11, 0, 11)
+    refreshIcon.Position = UDim2.new(0, 4, 0.5, -5)
     refreshIcon.BackgroundTransparency = 1
     refreshIcon.Image = "rbxassetid://128440971869856"
     refreshIcon.ImageColor3 = C.accent
     refreshIcon.Parent = refreshBtn
+
+    local refreshTextLabel = Instance.new("TextLabel")
+    refreshTextLabel.Size = UDim2.new(1, -18, 1, 0)
+    refreshTextLabel.Position = UDim2.new(0, 18, 0, 0)
+    refreshTextLabel.BackgroundTransparency = 1
+    refreshTextLabel.Text = "Refresh"
+    refreshTextLabel.TextColor3 = C.accent
+    refreshTextLabel.Font = Enum.Font.GothamBold
+    refreshTextLabel.TextSize = 8
+    refreshTextLabel.TextXAlignment = Enum.TextXAlignment.Center
+    refreshTextLabel.TextYAlignment = Enum.TextYAlignment.Center
+    refreshTextLabel.Parent = refreshBtn
+
+    refreshBtn.Text = ""
 
     local normalView = Instance.new("Frame")
     normalView.Name = "NormalView"
