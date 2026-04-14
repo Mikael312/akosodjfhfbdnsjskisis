@@ -990,11 +990,12 @@ for i, tabData in ipairs(tabs) do
     tabIndicators[tabName] = indicator
 
     local iconLabel = Instance.new("ImageLabel")
-    iconLabel.Size = UDim2.new(0, 18, 0, 18)
-    iconLabel.Position = UDim2.new(0.5, -9, 0, 4)
+    iconLabel.Size = UDim2.new(0, 16, 0, 16)
+    iconLabel.Position = UDim2.new(0, 6, 0.5, -8)
     iconLabel.BackgroundTransparency = 1
     iconLabel.Image = tabIcon
     iconLabel.ImageColor3 = currentTab == tabName and C.accent or C.subtitleGrey
+    iconLabel.ZIndex = 2
     iconLabel.Parent = indicator
 
     local tabBtn = Instance.new("TextButton")
@@ -1005,12 +1006,13 @@ for i, tabData in ipairs(tabs) do
     tabBtn.Text = tabName
     tabBtn.TextColor3 = currentTab == tabName and C.accent or C.subtitleGrey
     tabBtn.Font = Enum.Font.GothamBold
-    tabBtn.TextSize = 7
-    tabBtn.TextWrapped = true
-    tabBtn.TextYAlignment = Enum.TextYAlignment.Bottom
-    tabBtn.ZIndex = 2
+    tabBtn.TextSize = 8
+    tabBtn.TextWrapped = false
+    tabBtn.TextXAlignment = Enum.TextXAlignment.Left
+    tabBtn.TextYAlignment = Enum.TextYAlignment.Center
+    tabBtn.PaddingLeft = UDim.new(0, 28) 
+    tabBtn.ZIndex = 3
     tabBtn.Parent = sidebarContainer
-    tabButtons[tabName] = tabBtn
 
     local tabContent = createTabContent(tabName)
     tabContents[tabName] = tabContent
