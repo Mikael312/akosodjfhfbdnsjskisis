@@ -65,6 +65,7 @@ local DefaultConfig = {
         HopKey        = "H",
         RejoinKey     = "R",
         SettingsKey   = "M",
+        KickSelfKey   = "X",
     },
     Settings = false,
     LockGui = false,
@@ -1571,9 +1572,11 @@ end, Config.Keybinds.CloneKey)
 
 local tpToBestBtn     = createButton("Tp to Best", 80, function() end, nil)
 local ragdollSelfBtn  = createButton("Ragdoll Self", 115, function() end, nil)
+
 local kickSelfBtn = createButton("Kick Self", 150, function()
     game:shutdown()
-end, nil)
+end, Config.Keybinds.KickSelfKey)
+
 local rejoinBtn       = createButton("Rejoin", 150, function()
     S.TeleportService:Teleport(game.PlaceId, player)
 end, Config.Keybinds.RejoinKey)
@@ -1634,6 +1637,7 @@ local function updateKeybindLabels()
         {btn = hopServerBtn,    key = "HopKey"},
         {btn = rejoinBtn,       key = "RejoinKey"},
         {btn = settingsBtn,     key = "SettingsKey"},
+        {btn = kickSelfBtn, key = "KickSelfKey"},
     }
     for _, data in ipairs(labels) do
         local lbl = getKeybindLabel(data.btn)
@@ -1709,6 +1713,7 @@ if keybindsContent then
     createTabKeybind(keybindsContent, "Hop Server", "HopKey", "H", function() updateKeybindLabels() end)
     createTabKeybind(keybindsContent, "Rejoin", "RejoinKey", "R", function() updateKeybindLabels() end)
     createTabKeybind(keybindsContent, "Settings", "SettingsKey", "M", function() updateKeybindLabels() end)
+    createTabKeybind(keybindsContent, "Kick Self", "KickSelfKey", "X", function() updateKeybindLabels() end)
 end
 
 local priorityContent = tabContents["Priority"]
@@ -1863,6 +1868,10 @@ S.UserInputService.InputBegan:Connect(function(input, processed)
         S.TeleportService:Teleport(game.PlaceId, player)
     end
 
+    if Config.Keybinds.KickSelfKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.KickSelfKey] then
+        game:shutdown()
+    end
+        
     if Config.Keybinds.SettingsKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.SettingsKey] then
         local newState = not menuFrame.Visible
         menuFrame.Visible = newState
