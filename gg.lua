@@ -1012,7 +1012,8 @@ for i, tabData in ipairs(tabs) do
     tabBtn.TextYAlignment = Enum.TextYAlignment.Center
     tabBtn.ZIndex = 3
     tabBtn.Parent = sidebarContainer
-
+    tabButtons[tabName] = tabBtn
+    
     local btnPadding = Instance.new("UIPadding")
     btnPadding.PaddingLeft = UDim.new(0, 28)
     btnPadding.Parent = tabBtn
