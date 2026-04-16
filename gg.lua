@@ -987,61 +987,79 @@ for i, tabData in ipairs(tabs) do
     local tabName = tabData.name
     local tabIcon = tabData.icon
 
+    local tabBtn = Instance.new("TextButton")
+    tabBtn.Name = tabName .. "Tab"
+    tabBtn.Size = UDim2.new(1, 0, 0, 38)
+    tabBtn.BackgroundTransparency = 1
+    tabBtn.Text = ""
+    tabBtn.LayoutOrder = i
+    tabBtn.ZIndex = 3
+    tabBtn.Parent = sidebarContainer
+
+    tabButtons[tabName] = tabBtn
+
     local indicator = Instance.new("Frame")
-    indicator.Name = tabName .. "Indicator"
     indicator.Size = UDim2.new(1, -8, 0, 30)
-    indicator.LayoutOrder = i
+    indicator.Position = UDim2.new(0, 4, 0, 4)
     indicator.BackgroundColor3 = Color3.fromRGB(100, 140, 255)
     indicator.BackgroundTransparency = currentTab == tabName and 0.6 or 1
     indicator.BorderSizePixel = 0
-    indicator.Parent = sidebarContainer
+    indicator.ZIndex = 1
+    indicator.Parent = tabBtn
+
     Instance.new("UICorner", indicator).CornerRadius = UDim.new(0, 5)
+
     tabIndicators[tabName] = indicator
 
     local iconLabel = Instance.new("ImageLabel")
     iconLabel.Size = UDim2.new(0, 16, 0, 16)
-    iconLabel.Position = UDim2.new(0, 6, 0.5, -8)
+    iconLabel.Position = UDim2.new(0, 8, 0.5, -8)
     iconLabel.BackgroundTransparency = 1
     iconLabel.Image = tabIcon
     iconLabel.ImageColor3 = currentTab == tabName and C.accent or C.subtitleGrey
     iconLabel.ZIndex = 2
-    iconLabel.Parent = indicator
+    iconLabel.Parent = tabBtn
 
-    local tabBtn = Instance.new("TextButton")
-    tabBtn.Name = tabName .. "Tab"
-    tabBtn.Size = UDim2.new(1, 0, 0, 38)
-    tabBtn.LayoutOrder = i
-    tabBtn.BackgroundTransparency = 1
-    tabBtn.Text = tabName
-    tabBtn.TextColor3 = currentTab == tabName and C.accent or C.subtitleGrey
-    tabBtn.Font = Enum.Font.GothamBold
-    tabBtn.TextSize = 8
-    tabBtn.TextWrapped = false
-    tabBtn.TextXAlignment = Enum.TextXAlignment.Left
-    tabBtn.TextYAlignment = Enum.TextYAlignment.Center
-    tabBtn.ZIndex = 3
-    tabBtn.Parent = sidebarContainer
-    tabButtons[tabName] = tabBtn
-    
-    local btnPadding = Instance.new("UIPadding")
-    btnPadding.PaddingLeft = UDim.new(0, 28)
-    btnPadding.Parent = tabBtn
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -30, 1, 0)
+    label.Position = UDim2.new(0, 28, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = tabName
+    label.TextColor3 = currentTab == tabName and C.accent or C.subtitleGrey
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 8
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextYAlignment = Enum.TextYAlignment.Center
+    label.ZIndex = 2
+    label.Parent = tabBtn
 
     local tabContent = createTabContent(tabName)
     tabContents[tabName] = tabContent
 
     tabBtn.MouseButton1Click:Connect(function()
-        for _, content in pairs(tabContents) do content.Visible = false end
-        for name, ind in pairs(tabIndicators) do
-            ind.BackgroundTransparency = 1
-            tabButtons[name].TextColor3 = C.subtitleGrey
-            local ic = ind:FindFirstChildOfClass("ImageLabel")
-            if ic then ic.ImageColor3 = C.subtitleGrey end
+        for _, content in pairs(tabContents) do
+            content.Visible = false
         end
+
+        for name, btn in pairs(tabButtons) do
+            local ind = tabIndicators[name]
+            if ind then
+                ind.BackgroundTransparency = 1
+            end
+
+            local ic = btn:FindFirstChildOfClass("ImageLabel")
+            local lbl = btn:FindFirstChildOfClass("TextLabel")
+
+            if ic then ic.ImageColor3 = C.subtitleGrey end
+            if lbl then lbl.TextColor3 = C.subtitleGrey end
+        end
+
         tabContent.Visible = true
         indicator.BackgroundTransparency = 0.6
-        tabBtn.TextColor3 = C.accent
+
         iconLabel.ImageColor3 = C.accent
+        label.TextColor3 = C.accent
+
         currentTab = tabName
     end)
 end
