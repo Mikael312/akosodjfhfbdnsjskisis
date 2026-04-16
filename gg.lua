@@ -66,6 +66,7 @@ local DefaultConfig = {
         RejoinKey     = "R",
         SettingsKey   = "M",
         KickSelfKey   = "X",
+        ResetKey      = "T",
     },
     Settings = false,
     LockGui = false,
@@ -365,6 +366,13 @@ local function isPlayerPlot(plot)
         if yourBase and yourBase.Enabled then return true end
     end
     return false
+end
+
+_G.InstantReset = function()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    hrp.AssemblyLinearVelocity = Vector3.new(0, 999999, 0)
 end
 
 local function instantClone()
@@ -1628,7 +1636,10 @@ local instantCloneBtn = createButton("Instant Clone", 45, function()
 end, Config.Keybinds.CloneKey)
 
 local tpToBestBtn     = createButton("Tp to Best", 80, function() end, nil)
-local ragdollSelfBtn  = createButton("Ragdoll Self", 115, function() end, nil)
+
+local ragdollSelfBtn = createButton("Reset", 115, function()
+    _G.InstantReset()
+end, Config.Keybinds.ResetKey)
 
 local kickSelfBtn = createButton("Kick Self", 150, function()
     game:shutdown()
@@ -1695,6 +1706,7 @@ local function updateKeybindLabels()
         {btn = rejoinBtn,       key = "RejoinKey"},
         {btn = settingsBtn,     key = "SettingsKey"},
         {btn = kickSelfBtn, key = "KickSelfKey"},
+        {btn = ragdollSelfBtn, key = "ResetKey"},
     }
     for _, data in ipairs(labels) do
         local lbl = getKeybindLabel(data.btn)
@@ -1771,6 +1783,7 @@ if keybindsContent then
     createTabKeybind(keybindsContent, "Rejoin", "RejoinKey", "R", function() updateKeybindLabels() end)
     createTabKeybind(keybindsContent, "Settings", "SettingsKey", "M", function() updateKeybindLabels() end)
     createTabKeybind(keybindsContent, "Kick Self", "KickSelfKey", "X", function() updateKeybindLabels() end)
+    createTabKeybind(keybindsContent, "Reset", "ResetKey", "T", function() updateKeybindLabels() end)
 end
 
 local priorityContent = tabContents["Priority"]
@@ -1927,6 +1940,10 @@ S.UserInputService.InputBegan:Connect(function(input, processed)
 
     if Config.Keybinds.KickSelfKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.KickSelfKey] then
         game:shutdown()
+    end
+
+    if Config.Keybinds.ResetKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.ResetKey] then
+        _G.InstantReset()
     end
         
     if Config.Keybinds.SettingsKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.SettingsKey] then
