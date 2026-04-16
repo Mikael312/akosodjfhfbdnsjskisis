@@ -936,13 +936,22 @@ local tabButtons = {}
 local tabIndicators = {}
 local tabContents = {}
 
-local sidebarContainer = Instance.new("Frame")
+local sidebarContainer = Instance.new("ScrollingFrame")
 sidebarContainer.Name = "Sidebar"
 sidebarContainer.Size = UDim2.new(0, 70, 1, -42)
 sidebarContainer.Position = UDim2.new(0, 0, 0, 42)
 sidebarContainer.BackgroundTransparency = 1
 sidebarContainer.BorderSizePixel = 0
+sidebarContainer.ScrollBarThickness = 0
+sidebarContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+sidebarContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
 sidebarContainer.Parent = menuFrame
+
+
+local layout = Instance.new("UIListLayout")
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 2)
+layout.Parent = sidebarContainer
 
 local sidebarDivider = Instance.new("Frame")
 sidebarDivider.Size = UDim2.new(0, 1, 1, -50)
@@ -980,8 +989,8 @@ for i, tabData in ipairs(tabs) do
 
     local indicator = Instance.new("Frame")
     indicator.Name = tabName .. "Indicator"
-    indicator.Size = UDim2.new(1, -8, 0, 26)
-    indicator.Position = UDim2.new(0, 4, 0, (i-1) * 38 + 4)
+    indicator.Size = UDim2.new(1, -8, 0, 30)
+    indicator.LayoutOrder = i
     indicator.BackgroundColor3 = Color3.fromRGB(100, 140, 255)
     indicator.BackgroundTransparency = currentTab == tabName and 0.6 or 1
     indicator.BorderSizePixel = 0
@@ -1001,7 +1010,7 @@ for i, tabData in ipairs(tabs) do
     local tabBtn = Instance.new("TextButton")
     tabBtn.Name = tabName .. "Tab"
     tabBtn.Size = UDim2.new(1, 0, 0, 38)
-    tabBtn.Position = UDim2.new(0, 0, 0, (i-1) * 38)
+    tabBtn.LayoutOrder = i
     tabBtn.BackgroundTransparency = 1
     tabBtn.Text = tabName
     tabBtn.TextColor3 = currentTab == tabName and C.accent or C.subtitleGrey
