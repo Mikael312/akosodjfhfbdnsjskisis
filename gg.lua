@@ -83,6 +83,7 @@ local DefaultConfig = {
     Optimizer = false,
     AnimDisabler = false,
     InfJump = false,
+    XrayBase = false,
 }
 
 local Config = DefaultConfig
@@ -388,6 +389,11 @@ local animDisablerConnections = {}
 
 local infiniteJumpEnabled = false
 local jumpRequestConnection = nil
+
+local xrayBaseEnabled = false
+local invisibleWallsLoaded = false
+local originalTransparency = {}
+local xrayBaseConnection = nil
 
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
@@ -858,6 +864,64 @@ end
 if Config.InfJump then
     task.spawn(function()
         toggleInfJump(true)
+    end)
+end
+
+local function isBaseWall(obj)
+    if not obj:IsA("BasePart") then return false end
+    local n = obj.Name:lower()
+    local parent = obj.Parent and obj.Parent.Name:lower() or ""
+    return n:find("base") or parent:find("base")
+end
+
+local function tryApplyInvisibleWalls()
+    if not xrayBaseEnabled or invisibleWallsLoaded then return end
+    local plots = S.Workspace:FindFirstChild("Plots")
+    if not plots or #plots:GetChildren() == 0 then return end
+    for _, plot in pairs(plots:GetChildren()) do
+        for _, obj in pairs(plot:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Anchored and obj.CanCollide and isBaseWall(obj) then
+                if not originalTransparency[obj] then
+                    originalTransparency[obj] = obj.LocalTransparencyModifier
+                    obj.LocalTransparencyModifier = 0.85
+                end
+            end
+        end
+    end
+    invisibleWallsLoaded = true
+end
+
+local function enableXrayBase()
+    if xrayBaseEnabled then return end
+    xrayBaseEnabled = true
+    invisibleWallsLoaded = false
+    tryApplyInvisibleWalls()
+    xrayBaseConnection = S.Workspace.DescendantAdded:Connect(function(obj)
+        if not xrayBaseEnabled then return end
+        task.wait(0.1)
+        if isBaseWall(obj) and obj:IsA("BasePart") and obj.Anchored and obj.CanCollide then
+            if not originalTransparency[obj] then
+                originalTransparency[obj] = obj.LocalTransparencyModifier
+                obj.LocalTransparencyModifier = 0.85
+            end
+        end
+    end)
+end
+
+local function disableXrayBase()
+    if not xrayBaseEnabled then return end
+    xrayBaseEnabled = false
+    invisibleWallsLoaded = false
+    if xrayBaseConnection then xrayBaseConnection:Disconnect(); xrayBaseConnection = nil end
+    for obj, value in pairs(originalTransparency) do
+        if obj and obj.Parent then pcall(function() obj.LocalTransparencyModifier = value end) end
+    end
+    originalTransparency = {}
+end
+
+if Config.XrayBase then
+    task.spawn(function() 
+        enableXrayBase() 
     end)
 end
 
@@ -2219,6 +2283,9 @@ if utilityContent then
     createTabToggle(utilityContent, "Esp Players", "ESPPlayers", function(ns, set)
         set(ns); if ns then enableESPPlayers() else disableESPPlayers() end
     end)
+    createTabToggle(utilityContent, "Xray Base", "XrayBase", function(ns, set)
+        set(ns); if ns then enableXrayBase() else disableXrayBase() end
+    end)
     createTabToggle(utilityContent, "Plot Beam", "PlotBeam", function(ns, set)
         set(ns); if ns then enablePlotBeam() else disablePlotBeam() end
     end)
@@ -2228,9 +2295,6 @@ if utilityContent then
     end)
     createTabToggle(utilityContent, "Disable Object Animations", "AnimDisabler", function(ns, set)
         set(ns); if ns then enableAnimDisabler() else disableAnimDisabler() end
-    end)
-    createTabToggle(utilityContent, "Dark Mode", "DarkMode", function(ns, set)
-        set(ns); if ns then enableDarkMode() else disableDarkMode() end
     end)
 end
 
