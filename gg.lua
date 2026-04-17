@@ -879,7 +879,7 @@ end
 
 local function disableDarkMode()
     if darkModeConnection then darkModeConnection:Disconnect(); darkModeConnection = nil end
-    Lighting.Brightness = originalSettings.brightness or 2
+    Lighting.Brightness = 2
     Lighting.ClockTime = 14
     Lighting.FogEnd = 100000
     Lighting.Ambient = Color3.fromRGB(127, 127, 127)
