@@ -1943,6 +1943,108 @@ local function createPillToggle(parent, labelText, configKey, callback)
     return rowFrame
 end
 
+local function createTabSlider(parent, name, configKey, min, max, default, suffix, callback)
+    if Config[configKey] == nil then
+        Config[configKey] = default
+        SaveConfig()
+    end
+
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Size = UDim2.new(1, 0, 0, 44)
+    sliderFrame.BackgroundColor3 = C.black
+    sliderFrame.BackgroundTransparency = 0.20
+    sliderFrame.BorderSizePixel = 0
+    sliderFrame.Parent = parent
+    Instance.new("UICorner", sliderFrame).CornerRadius = UDim.new(0, 6)
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(0.6, 0, 0, 18)
+    nameLabel.Position = UDim2.new(0, 8, 0, 4)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = name
+    nameLabel.TextColor3 = C.white
+    nameLabel.Font = Enum.Font.Gotham
+    nameLabel.TextSize = 10
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.TextYAlignment = Enum.TextYAlignment.Center
+    nameLabel.Parent = sliderFrame
+
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Size = UDim2.new(0.35, 0, 0, 18)
+    valueLabel.Position = UDim2.new(0.65, 0, 0, 4)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(Config[configKey]) .. (suffix or "")
+    valueLabel.TextColor3 = C.accent
+    valueLabel.Font = Enum.Font.GothamBold
+    valueLabel.TextSize = 10
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    valueLabel.TextYAlignment = Enum.TextYAlignment.Center
+    valueLabel.Parent = sliderFrame
+
+    local sliderBg = Instance.new("Frame")
+    sliderBg.Size = UDim2.new(1, -16, 0, 10)
+    sliderBg.Position = UDim2.new(0, 8, 0, 28)
+    sliderBg.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+    sliderBg.BorderSizePixel = 0
+    sliderBg.ClipsDescendants = true
+    sliderBg.Parent = sliderFrame
+    Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
+
+    local sliderFill = Instance.new("Frame")
+    local initDelta = (Config[configKey] - min) / (max - min)
+    sliderFill.Size = UDim2.new(initDelta, 0, 1, 0)
+    sliderFill.BackgroundColor3 = C.primary
+    sliderFill.BorderSizePixel = 0
+    sliderFill.Parent = sliderBg
+    Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
+
+    -- Pill shape thumb macam dalam gambar
+    local thumb = Instance.new("Frame")
+    thumb.Size = UDim2.new(0, 28, 0, 14)
+    thumb.Position = UDim2.new(initDelta, -14, 0.5, -7)
+    thumb.BackgroundColor3 = C.white
+    thumb.BorderSizePixel = 0
+    thumb.ZIndex = 2
+    thumb.Parent = sliderBg
+    Instance.new("UICorner", thumb).CornerRadius = UDim.new(1, 0)
+
+    local dragging = false
+    local moveConn, releaseConn
+
+    sliderBg.InputBegan:Connect(function(input)
+        if dragging then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            local isTouch = input.UserInputType == Enum.UserInputType.Touch
+            dragging = true
+
+            local function update()
+                local inputX = isTouch and input.Position.X or S.UserInputService:GetMouseLocation().X
+                local delta = math.clamp((inputX - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+                local value = math.floor(min + delta * (max - min))
+                Config[configKey] = value
+                valueLabel.Text = tostring(value) .. (suffix or "")
+                S.TweenService:Create(sliderFill, TweenInfo.new(0.05), {Size = UDim2.new(delta, 0, 1, 0)}):Play()
+                S.TweenService:Create(thumb, TweenInfo.new(0.05), {Position = UDim2.new(delta, -14, 0.5, -7)}):Play()
+                if callback then callback(value) end
+            end
+
+            update()
+            moveConn = S.RunService.RenderStepped:Connect(update)
+            releaseConn = S.UserInputService.InputEnded:Connect(function(endInput)
+                if endInput == input then
+                    if moveConn then moveConn:Disconnect() end
+                    if releaseConn then releaseConn:Disconnect() end
+                    dragging = false
+                    SaveConfig()
+                end
+            end)
+        end
+    end)
+
+    return sliderFrame
+end
+
 local function createAnimalCard(parent, animalData, rank)
     local cardFrame = Instance.new("Frame")
     cardFrame.Name = "AnimalCard"
