@@ -81,6 +81,7 @@ local DefaultConfig = {
     ESPPlayers = false,
     PlotBeam = false,
     Optimizer = false,
+    AnimDisabler = false,
 }
 
 local Config = DefaultConfig
@@ -381,6 +382,8 @@ local fpsBoostEnabled = false
 local optimizerThreads = {}
 local optimizerConnections = {}
 local originalSettings = {}
+
+local animDisablerConnections = {}
 
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
@@ -745,6 +748,62 @@ end
 if Config.Optimizer then
     task.spawn(function()
         toggleOptimizer(true)
+    end)
+end
+
+local function disableAnimations()
+    pcall(function()
+        for _, obj in ipairs(S.Workspace:GetDescendants()) do
+            if obj:IsA("Animator") then
+                pcall(function()
+                    local model = obj:FindFirstAncestorOfClass("Model")
+                    local isPlayer = model and S.Players:GetPlayerFromCharacter(model) ~= nil
+                    if not isPlayer then
+                        for _, track in pairs(obj:GetPlayingAnimationTracks()) do
+                            track:Stop(0)
+                        end
+                        obj.AnimationPlayed:Connect(function(track)
+                            track:Stop(0)
+                        end)
+                    end
+                end)
+            end
+        end
+    end)
+end
+
+local function enableAnimDisabler()
+    disableAnimations()
+
+    table.insert(animDisablerConnections, S.Workspace.DescendantAdded:Connect(function(obj)
+        if not Config.AnimDisabler then return end
+        if obj:IsA("Animator") then
+            pcall(function()
+                local model = obj:FindFirstAncestorOfClass("Model")
+                local isPlayer = model and S.Players:GetPlayerFromCharacter(model) ~= nil
+                if not isPlayer then
+                    for _, track in pairs(obj:GetPlayingAnimationTracks()) do
+                        track:Stop(0)
+                    end
+                    obj.AnimationPlayed:Connect(function(track)
+                        track:Stop(0)
+                    end)
+                end
+            end)
+        end
+    end))
+end
+
+local function disableAnimDisabler()
+    for _, c in ipairs(animDisablerConnections) do
+        pcall(function() c:Disconnect() end)
+    end
+    animDisablerConnections = {}
+end
+
+if Config.AnimDisabler then
+    task.spawn(function()
+        enableAnimDisabler()
     end)
 end
 
@@ -2102,8 +2161,11 @@ if utilityContent then
         set(ns); if ns then enablePlotBeam() else disablePlotBeam() end
     end)
     createSectionHeader(utilityContent, "Performance")
-    createTabToggle(utilityContent, "Optimizer", "Optimizer", function(ns, set)
+    createTabToggle(utilityContent, "Fps Boost", "Optimizer", function(ns, set)
         set(ns); if ns then toggleOptimizer(true) else toggleOptimizer(false) end
+    end)
+    createTabToggle(utilityContent, "Disable Object Animations", "AnimDisabler", function(ns, set)
+        set(ns); if ns then enableAnimDisabler() else disableAnimDisabler() end
     end)
 end
 
