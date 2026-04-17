@@ -76,6 +76,8 @@ local DefaultConfig = {
     StealHighest = false,
     StealPriority = false,
     AutoKick = false,
+    AutoTurret = false,
+    AutoBuy = false,
 }
 
 local Config = DefaultConfig
@@ -197,7 +199,7 @@ local function showNotification(opts)
     closeButton.Text = "X"
     closeButton.TextColor3 = Color3.fromRGB(120, 80, 160)
     closeButton.TextSize = 11
-    closeButton.Font = Enum.Font.GothamBold
+    closeButton.Font = Enum.Font.Gotham
     closeButton.Parent = notif
 
     closeButton.MouseEnter:Connect(function() closeButton.TextColor3 = Color3.fromRGB(200, 150, 255) end)
@@ -255,7 +257,7 @@ local function showNotification(opts)
         Position = UDim2.new(0, 10, 0, startYPos)
     }):Play()
 
-    local barTween = S.TweenService:Create(progressBar, TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
+    local barTween = S.TweenService:Create(progressBar, TweenInfo.new(1.5, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
         Size = UDim2.new(0, 0, 1, 0)
     })
     notifData.barTween = barTween
@@ -273,7 +275,7 @@ local function showNotification(opts)
     end
 
     closeButton.MouseButton1Click:Connect(dismiss)
-    task.delay(2, dismiss)
+    task.delay(1.5, dismiss)
 end
 
 local FAVORITES_LIST = {
@@ -1699,7 +1701,7 @@ local hopServerBtn = createToggle("Hop Server", 220, "HopServer", function(ns, s
                     end
                     if not found then task.wait(1) end
                 else
-                    task.wait(1)
+                    task.wait(2)
                 end
             end
         end)
@@ -1715,6 +1717,8 @@ createPillToggle(stealerScroll, "Steal Nearest:", "Nearest", function(ns, set) s
 createPillToggle(stealerScroll, "Steal Highest:", "StealHighest", function(ns, set) set(ns) end)
 createPillToggle(stealerScroll, "Steal Priority:", "StealPriority", function(ns, set) set(ns) end)
 createPillToggle(stealerScroll, "Auto Kick:", "AutoKick", function(ns, set) set(ns) end)
+createPillToggle(stealerScroll, "Auto Turret:", "AutoTurret", function(ns, set) set(ns) end)
+createPillToggle(stealerScroll, "Auto Buy:", "AutoBuy", function(ns, set) set(ns) end)
 
 local function getKeybindLabel(btn)
     for _, child in ipairs(btn:GetChildren()) do
