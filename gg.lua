@@ -83,7 +83,6 @@ local DefaultConfig = {
     Optimizer = false,
     AnimDisabler = false,
     InfJump = false,
-    DarkMode = false,
 }
 
 local Config = DefaultConfig
@@ -389,8 +388,6 @@ local animDisablerConnections = {}
 
 local infiniteJumpEnabled = false
 local jumpRequestConnection = nil
-
-local darkModeConnection = nil
 
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
@@ -861,35 +858,6 @@ end
 if Config.InfJump then
     task.spawn(function()
         toggleInfJump(true)
-    end)
-end
-
-local function enableDarkMode()
-    Lighting.Brightness = 1
-    Lighting.ClockTime = 3
-    Lighting.FogEnd = 300
-    Lighting.Ambient = Color3.fromRGB(40, 40, 40)
-    Lighting.OutdoorAmbient = Color3.fromRGB(60, 60, 60)
-    Lighting.GlobalShadows = true
-    Lighting.ExposureCompensation = -0.5
-    darkModeConnection = Lighting:GetPropertyChangedSignal("ClockTime"):Connect(function()
-        Lighting.ClockTime = 3
-    end)
-end
-
-local function disableDarkMode()
-    if darkModeConnection then darkModeConnection:Disconnect(); darkModeConnection = nil end
-    Lighting.Brightness = 2
-    Lighting.ClockTime = 14
-    Lighting.FogEnd = 100000
-    Lighting.Ambient = Color3.fromRGB(127, 127, 127)
-    Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
-    Lighting.ExposureCompensation = 0
-end
-
-if Config.DarkMode then
-    task.spawn(function()
-        enableDarkMode()
     end)
 end
 
