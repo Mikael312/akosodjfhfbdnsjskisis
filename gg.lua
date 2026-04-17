@@ -78,6 +78,7 @@ local DefaultConfig = {
     AutoKick = false,
     AutoTurret = false,
     AutoBuy = false,
+    ESPPlayers = false,
 }
 
 local Config = DefaultConfig
@@ -364,6 +365,11 @@ local plotChannels = {}
 local lastAnimalData = {}
 local highestAnimal = nil
 
+local espPlayersEnabled = false
+local espObjects = {}
+local updateConnection = nil
+local eventConnections = {}
+
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
     if plotSign then
@@ -404,6 +410,144 @@ local function instantClone()
         end
     end)
     _G.isCloning = false
+end
+
+local function getEquippedItem(character)
+    for _, child in pairs(character:GetChildren()) do
+        if child:IsA("Tool") then return child.Name end
+    end
+    return "None"
+end
+
+local function removeESP(targetPlayer)
+    local rec = espObjects[targetPlayer]
+    if not rec then return end
+    if rec.highlight then rec.highlight:Destroy() end
+    if rec.billboard then rec.billboard:Destroy() end
+    espObjects[targetPlayer] = nil
+end
+
+local function createESP(targetPlayer)
+    if targetPlayer == player then return end
+    if not targetPlayer.Character then
+        targetPlayer.CharacterAdded:Connect(function()
+            if espPlayersEnabled then task.wait(1); createESP(targetPlayer) end
+        end)
+        return
+    end
+
+    local character = targetPlayer.Character
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+
+    removeESP(targetPlayer)
+
+    local rec = {}
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "PlayerESP"
+    highlight.Adornee = character
+    highlight.FillColor = Color3.fromRGB(59, 134, 255)
+    highlight.OutlineColor = Color3.fromRGB(70, 70, 180)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = character
+    rec.highlight = highlight
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESPInfo"
+    billboard.Adornee = rootPart
+    billboard.Size = UDim2.new(0, 200, 0, 40)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Parent = character
+    rec.billboard = billboard
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.new(1, 0, 0, 20)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = targetPlayer.Name
+    nameLabel.TextColor3 = Color3.fromRGB(103, 103, 245)
+    nameLabel.TextStrokeTransparency = 0.5
+    nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextSize = 14
+    nameLabel.Parent = billboard
+    rec.nameLabel = nameLabel
+
+    local itemLabel = Instance.new("TextLabel")
+    itemLabel.Size = UDim2.new(1, 0, 0, 18)
+    itemLabel.Position = UDim2.new(0, 0, 0, 22)
+    itemLabel.BackgroundTransparency = 1
+    itemLabel.Text = "Item: None"
+    itemLabel.TextColor3 = Color3.fromRGB(183, 50, 250)
+    itemLabel.TextStrokeTransparency = 0.5
+    itemLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    itemLabel.Font = Enum.Font.Gotham
+    itemLabel.TextSize = 12
+    itemLabel.Parent = billboard
+    rec.itemLabel = itemLabel
+
+    rec.character = character
+    espObjects[targetPlayer] = rec
+
+    local respawnConnection
+    respawnConnection = targetPlayer.CharacterAdded:Connect(function()
+        if espPlayersEnabled then
+            task.wait(1)
+            createESP(targetPlayer)
+        else
+            respawnConnection:Disconnect()
+        end
+    end)
+    table.insert(eventConnections, respawnConnection)
+end
+
+local function updateESP()
+    if not espPlayersEnabled then return end
+    for targetPlayer, rec in pairs(espObjects) do
+        if targetPlayer and targetPlayer.Parent and rec.character and rec.character.Parent then
+            local rootPart = rec.character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                local equippedItem = getEquippedItem(rec.character)
+                rec.itemLabel.Text = "Item: " .. equippedItem
+                rec.itemLabel.TextColor3 = Color3.fromRGB(183, 50, 250)
+            else
+                removeESP(targetPlayer)
+            end
+        else
+            removeESP(targetPlayer)
+        end
+    end
+end
+
+local function enableESPPlayers()
+    if espPlayersEnabled then return end
+    espPlayersEnabled = true
+    for _, targetPlayer in pairs(S.Players:GetPlayers()) do
+        if targetPlayer ~= player then
+            task.spawn(function() createESP(targetPlayer) end)
+        end
+    end
+    table.insert(eventConnections, S.Players.PlayerAdded:Connect(function(targetPlayer)
+        if espPlayersEnabled then
+            task.wait(1)
+            createESP(targetPlayer)
+        end
+    end))
+    table.insert(eventConnections, S.Players.PlayerRemoving:Connect(removeESP))
+    updateConnection = S.RunService.RenderStepped:Connect(updateESP)
+end
+
+local function disableESPPlayers()
+    if not espPlayersEnabled then return end
+    espPlayersEnabled = false
+    if updateConnection then updateConnection:Disconnect(); updateConnection = nil end
+    for _, conn in pairs(eventConnections) do if conn then conn:Disconnect() end end
+    eventConnections = {}
+    for targetPlayer in pairs(espObjects) do removeESP(targetPlayer) end
+    espObjects = {}
 end
 
 local function getAnimalHash(animalList)
@@ -1749,6 +1893,19 @@ end
 updateKeybindLabels()
 
 task.wait(0.1)
+
+local utilityContent = tabContents["Utility"]
+if utilityContent then
+    createSectionHeader(utilityContent, "Visual")
+    createTabToggle(utilityContent, "Esp Players", "ESPPlayers", function(ns, set)
+        set(ns)
+        if ns then
+            enableESPPlayers()
+        else
+            disableESPPlayers()
+        end
+    end)
+end
 
 local settingsContent = tabContents["Settings"]
 if settingsContent then
