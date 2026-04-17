@@ -73,6 +73,9 @@ local DefaultConfig = {
     RemoveError = false,
     Nearest = false,
     HideStealerPanel = false,
+    StealHighest = false,
+    StealPriority = false,
+    AutoKick = false,
 }
 
 local Config = DefaultConfig
@@ -755,6 +758,29 @@ stealerFrame.Parent = screenGui
 trackPosition(stealerFrame, "StealerFrame")
 stealerFrame.Visible = not Config.HideStealerPanel
 
+local stealerScroll = Instance.new("ScrollingFrame")
+stealerScroll.Name = "StealerScroll"
+stealerScroll.Size = UDim2.new(1, 0, 1, -45)
+stealerScroll.Position = UDim2.new(0, 0, 0, 45)
+stealerScroll.BackgroundTransparency = 1
+stealerScroll.BorderSizePixel = 0
+stealerScroll.ScrollBarThickness = 0
+stealerScroll.ScrollBarImageColor3 = C.accent
+stealerScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+stealerScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+stealerScroll.Parent = stealerFrame
+
+local stealerScrollLayout = Instance.new("UIListLayout")
+stealerScrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+stealerScrollLayout.Padding = UDim.new(0, 2)
+stealerScrollLayout.Parent = stealerScroll
+
+local stealerScrollPadding = Instance.new("UIPadding")
+stealerScrollPadding.PaddingTop = UDim.new(0, 5)
+stealerScrollPadding.PaddingLeft = UDim.new(0, 8)
+stealerScrollPadding.PaddingRight = UDim.new(0, 8)
+stealerScrollPadding.Parent = stealerScroll
+
 Instance.new("UICorner", stealerFrame).CornerRadius = UDim.new(0, 9)
 
 local stealerFrameStroke = Instance.new("UIStroke")
@@ -1327,15 +1353,14 @@ local function createTabKeybind(parent, name, configKey, default, onChanged)
     return rowFrame
 end
 
-local function createPillToggle(parent, labelText, configKey, yPosition, callback)
-    local function setToggle(state) Config[configKey] = state; SaveConfig() end
+local function createPillToggle(parent, labelText, configKey, callback)
     local toggleEnabled = Config[configKey] or false
+    local function setToggle(state) Config[configKey] = state; SaveConfig() end
 
     local rowFrame = Instance.new("Frame")
-    rowFrame.Size = UDim2.new(0, 167, 0, 32)
-    rowFrame.Position = UDim2.new(0.5, -83.5, 0, yPosition)
+    rowFrame.Size = UDim2.new(1, 0, 0, 32)
     rowFrame.BackgroundTransparency = 1
-    rowFrame.Parent = stealerFrame
+    rowFrame.Parent = parent
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.55, 0, 1, 0)
@@ -1686,9 +1711,10 @@ local settingsBtn = createToggle("Settings", 255, "Settings", function(ns, set)
     menuFrame.Visible = ns
 end, Config.Keybinds.SettingsKey)
 
-createPillToggle(stealerFrame, "Steal Nearest:", "Nearest", 50, function(ns, set)
-    set(ns)
-end)
+createPillToggle(stealerScroll, "Steal Nearest:", "Nearest", function(ns, set) set(ns) end)
+createPillToggle(stealerScroll, "Steal Highest:", "StealHighest", function(ns, set) set(ns) end)
+createPillToggle(stealerScroll, "Steal Priority:", "StealPriority", function(ns, set) set(ns) end)
+createPillToggle(stealerScroll, "Auto Kick:", "AutoKick", function(ns, set) set(ns) end)
 
 local function getKeybindLabel(btn)
     for _, child in ipairs(btn:GetChildren()) do
