@@ -2216,14 +2216,14 @@ end
 local utilityContent = tabContents["Utility"]
 if utilityContent then
     createSectionHeader(utilityContent, "Visual")
-    createTabToggle(utilityContent, "ESP Players", "ESPPlayers", function(ns, set)
+    createTabToggle(utilityContent, "Esp Players", "ESPPlayers", function(ns, set)
         set(ns); if ns then enableESPPlayers() else disableESPPlayers() end
     end)
     createTabToggle(utilityContent, "Plot Beam", "PlotBeam", function(ns, set)
         set(ns); if ns then enablePlotBeam() else disablePlotBeam() end
     end)
     createSectionHeader(utilityContent, "Performance")
-    createTabToggle(utilityContent, "Fps Boost", "Optimizer", function(ns, set)
+    createTabToggle(utilityContent, "Optimizer", "Optimizer", function(ns, set)
         set(ns); if ns then toggleOptimizer(true) else toggleOptimizer(false) end
     end)
     createTabToggle(utilityContent, "Disable Object Animations", "AnimDisabler", function(ns, set)
