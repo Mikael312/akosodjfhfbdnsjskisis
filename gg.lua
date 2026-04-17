@@ -82,6 +82,7 @@ local DefaultConfig = {
     PlotBeam = false,
     Optimizer = false,
     AnimDisabler = false,
+    InfJump = false,
 }
 
 local Config = DefaultConfig
@@ -384,6 +385,9 @@ local optimizerConnections = {}
 local originalSettings = {}
 
 local animDisablerConnections = {}
+
+local infiniteJumpEnabled = false
+local jumpRequestConnection = nil
 
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
@@ -804,6 +808,56 @@ end
 if Config.AnimDisabler then
     task.spawn(function()
         enableAnimDisabler()
+    end)
+end
+
+local function doJump()
+    local char = player.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local rootPart = char:FindFirstChild("HumanoidRootPart")
+    if hum and hum.Health > 0 and rootPart then
+        rootPart.Velocity = Vector3.new(rootPart.Velocity.X, 50, rootPart.Velocity.Z)
+    end
+end
+
+local function setupJumpRequest()
+    if jumpRequestConnection then
+        jumpRequestConnection:Disconnect()
+        jumpRequestConnection = nil
+    end
+    jumpRequestConnection = S.UserInputService.JumpRequest:Connect(function()
+        if infiniteJumpEnabled then doJump() end
+    end)
+end
+
+local function initializeJumpForCharacter(char)
+    char:WaitForChild("Humanoid")
+    setupJumpRequest()
+    char.ChildAdded:Connect(function(child)
+        if child:IsA("Humanoid") then setupJumpRequest() end
+    end)
+end
+
+local function toggleInfJump(enabled)
+    infiniteJumpEnabled = enabled
+    if enabled then
+        local char = player.Character
+        if char then initializeJumpForCharacter(char) end
+        player.CharacterAdded:Connect(function(char)
+            if infiniteJumpEnabled then initializeJumpForCharacter(char) end
+        end)
+    else
+        if jumpRequestConnection then
+            jumpRequestConnection:Disconnect()
+            jumpRequestConnection = nil
+        end
+    end
+end
+
+if Config.InfJump then
+    task.spawn(function()
+        toggleInfJump(true)
     end)
 end
 
@@ -2150,6 +2204,14 @@ end
 updateKeybindLabels()
 
 task.wait(0.1)
+
+local stealContent = tabContents["Steal"]
+if stealContent then
+    createSectionHeader(stealContent, "Enhancement")
+    createTabToggle(stealContent, "Inf Jump", "InfJump", function(ns, set)
+        set(ns); if ns then toggleInfJump(true) else toggleInfJump(false) end
+    end)
+end
 
 local utilityContent = tabContents["Utility"]
 if utilityContent then
