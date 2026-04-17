@@ -79,6 +79,7 @@ local DefaultConfig = {
     AutoTurret = false,
     AutoBuy = false,
     ESPPlayers = false,
+    PlotBeam = false,
 }
 
 local Config = DefaultConfig
@@ -370,6 +371,11 @@ local espObjects = {}
 local updateConnection = nil
 local eventConnections = {}
 
+local plotBeam = nil
+local plotBeamAtt0 = nil
+local plotBeamAtt1 = nil
+local plotBeamConn = nil
+
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
     if plotSign then
@@ -548,6 +554,95 @@ local function disableESPPlayers()
     eventConnections = {}
     for targetPlayer in pairs(espObjects) do removeESP(targetPlayer) end
     espObjects = {}
+end
+
+local function findMyPlot()
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return nil end
+    for _, plot in ipairs(plots:GetChildren()) do
+        if isPlayerPlot(plot) then
+            return plot
+        end
+    end
+    return nil
+end
+
+local function createPlotBeam()
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local myPlot = findMyPlot()
+    if not myPlot then return end
+
+    local plotPart = myPlot:FindFirstChildWhichIsA("BasePart")
+    if not plotPart then return end
+
+    if plotBeam then pcall(function() plotBeam:Destroy() end) end
+    if plotBeamAtt0 then pcall(function() plotBeamAtt0:Destroy() end) end
+    if plotBeamAtt1 then pcall(function() plotBeamAtt1:Destroy() end) end
+
+    plotBeamAtt0 = Instance.new("Attachment")
+    plotBeamAtt0.Name = "PlotBeamAtt0"
+    plotBeamAtt0.Position = Vector3.new(0, 0, 0)
+    plotBeamAtt0.Parent = hrp
+
+    plotBeamAtt1 = Instance.new("Attachment")
+    plotBeamAtt1.Name = "PlotBeamAtt1"
+    plotBeamAtt1.Position = Vector3.new(0, 5, 0)
+    plotBeamAtt1.Parent = plotPart
+
+    plotBeam = Instance.new("Beam")
+    plotBeam.Name = "PlotBeam"
+    plotBeam.Attachment0 = plotBeamAtt0
+    plotBeam.Attachment1 = plotBeamAtt1
+    plotBeam.FaceCamera = true
+    plotBeam.LightEmission = 0
+    plotBeam.LightInfluence = 1
+    plotBeam.Color = ColorSequence.new(Color3.fromRGB(80, 150, 255))
+    plotBeam.Transparency = NumberSequence.new(0)
+    plotBeam.Width0 = 0.5
+    plotBeam.Width1 = 0.5
+    plotBeam.TextureMode = Enum.TextureMode.Wrap
+    plotBeam.TextureSpeed = 0
+    plotBeam.Parent = hrp
+end
+
+local function enablePlotBeam()
+    createPlotBeam()
+
+    local counter = 0
+    plotBeamConn = S.RunService.Heartbeat:Connect(function()
+        if not Config.PlotBeam then return end
+        counter += 1
+        if counter >= 30 then
+            counter = 0
+            if not plotBeam or not plotBeam.Parent then
+                pcall(createPlotBeam)
+            end
+        end
+    end)
+
+    player.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        if Config.PlotBeam then
+            pcall(createPlotBeam)
+        end
+    end)
+end
+
+local function disablePlotBeam()
+    if plotBeamConn then plotBeamConn:Disconnect(); plotBeamConn = nil end
+    if plotBeam then pcall(function() plotBeam:Destroy() end); plotBeam = nil end
+    if plotBeamAtt0 then pcall(function() plotBeamAtt0:Destroy() end); plotBeamAtt0 = nil end
+    if plotBeamAtt1 then pcall(function() plotBeamAtt1:Destroy() end); plotBeamAtt1 = nil end
+end
+
+if Config.PlotBeam then
+    task.spawn(function()
+        enablePlotBeam()
+    end)
 end
 
 local function getAnimalHash(animalList)
@@ -1897,13 +1992,11 @@ task.wait(0.1)
 local utilityContent = tabContents["Utility"]
 if utilityContent then
     createSectionHeader(utilityContent, "Visual")
-    createTabToggle(utilityContent, "Esp Players", "ESPPlayers", function(ns, set)
-        set(ns)
-        if ns then
-            enableESPPlayers()
-        else
-            disableESPPlayers()
-        end
+    createTabToggle(utilityContent, "ESP Players", "ESPPlayers", function(ns, set)
+        set(ns); if ns then enableESPPlayers() else disableESPPlayers() end
+    end)
+    createTabToggle(utilityContent, "Plot Beam", "PlotBeam", function(ns, set)
+        set(ns); if ns then enablePlotBeam() else disablePlotBeam() end
     end)
 end
 
