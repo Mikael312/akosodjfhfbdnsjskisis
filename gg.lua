@@ -512,7 +512,7 @@ local function createESP(targetPlayer)
     itemLabel.Position = UDim2.new(0, 0, 0, 22)
     itemLabel.BackgroundTransparency = 1
     itemLabel.Text = "Item: None"
-    itemLabel.TextColor3 = Color3.fromRGB(90, 53, 240)
+    itemLabel.TextColor3 = Color3.fromRGB(242, 70, 214)
     itemLabel.TextStrokeTransparency = 0.5
     itemLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
     itemLabel.Font = Enum.Font.Gotham
