@@ -84,6 +84,9 @@ local DefaultConfig = {
     AnimDisabler = false,
     InfJump = false,
     XrayBase = false,
+    CarpetSpeed = false,
+    CarpetSpeedValue = 140,
+    CarpetTool = "Flying Carpet",
 }
 
 local Config = DefaultConfig
@@ -394,6 +397,9 @@ local xrayBaseEnabled = false
 local invisibleWallsLoaded = false
 local originalTransparency = {}
 local xrayBaseConnection = nil
+
+local carpetSpeedEnabled = false
+local carpetSpeedConn = nil
 
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
@@ -922,6 +928,49 @@ end
 if Config.XrayBase then
     task.spawn(function() 
         enableXrayBase() 
+    end)
+end
+
+local function enableCarpetSpeed()
+    if carpetSpeedConn then carpetSpeedConn:Disconnect(); carpetSpeedConn = nil end
+    carpetSpeedConn = S.RunService.Heartbeat:Connect(function()
+        local char = player.Character
+        if not char then return end
+        local hum = char:FindFirstChild("Humanoid")
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hum or not hrp then return end
+
+        local toolName = Config.CarpetTool or "Flying Carpet"
+        local hasTool = char:FindFirstChild(toolName)
+
+        if not hasTool then
+            local tb = player.Backpack:FindFirstChild(toolName)
+            if tb then hum:EquipTool(tb) end
+        end
+
+        if char:FindFirstChild(toolName) then
+            local md = hum.MoveDirection
+            if md.Magnitude > 0 then
+                hrp.AssemblyLinearVelocity = Vector3.new(md.X * Config.CarpetSpeedValue, hrp.AssemblyLinearVelocity.Y, md.Z * Config.CarpetSpeedValue)
+            else
+                hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y, 0)
+            end
+        end
+    end)
+end
+
+local function disableCarpetSpeed()
+    if carpetSpeedConn then carpetSpeedConn:Disconnect(); carpetSpeedConn = nil end
+end
+
+local function toggleCarpetSpeed()
+    carpetSpeedEnabled = not carpetSpeedEnabled
+    if carpetSpeedEnabled then enableCarpetSpeed() else disableCarpetSpeed() end
+end
+
+if Config.CarpetSpeed then
+    task.spawn(function()
+        enableCarpetSpeed()
     end)
 end
 
@@ -2340,6 +2389,9 @@ createPillToggle(stealerScroll, "Steal Priority:", "StealPriority", function(ns,
 createPillToggle(stealerScroll, "Auto Kick:", "AutoKick", function(ns, set) set(ns) end)
 createPillToggle(stealerScroll, "Auto Turret:", "AutoTurret", function(ns, set) set(ns) end)
 createPillToggle(stealerScroll, "Auto Buy:", "AutoBuy", function(ns, set) set(ns) end)
+createPillToggle(stealerScroll, "Carpet Speed:", "CarpetSpeed", function(ns, set)
+    set(ns); if ns then enableCarpetSpeed() else disableCarpetSpeed() end
+end)
 
 local function getKeybindLabel(btn)
     for _, child in ipairs(btn:GetChildren()) do
@@ -2376,6 +2428,9 @@ if stealContent then
     createSectionHeader(stealContent, "Enhancement")
     createTabToggle(stealContent, "Inf Jump", "InfJump", function(ns, set)
         set(ns); if ns then toggleInfJump(true) else toggleInfJump(false) end
+    end)
+    createTabSlider(stealContent, "Carpet Speed", "CarpetSpeedValue", 100, 300, 140, " spd", function(value)
+    if Config.CarpetSpeed then disableCarpetSpeed(); enableCarpetSpeed() end
     end)
 end
 
@@ -2624,6 +2679,10 @@ S.UserInputService.InputBegan:Connect(function(input, processed)
 
     if Config.Keybinds.ResetKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.ResetKey] then
         _G.InstantReset()
+    end
+
+    if Config.Keybinds.CarpetSpeedKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.CarpetSpeedKey] then
+        toggleCarpetSpeed()
     end
         
     if Config.Keybinds.SettingsKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.SettingsKey] then
