@@ -478,7 +478,7 @@ local function createESP(targetPlayer)
     local highlight = Instance.new("Highlight")
     highlight.Name = "PlayerESP"
     highlight.Adornee = character
-    highlight.FillColor = Color3.fromRGB(59, 134, 255)
+    highlight.FillColor = Color3.fromRGB(235, 116, 47)
     highlight.OutlineColor = Color3.fromRGB(29, 126, 245)
     highlight.FillTransparency = 0.5
     highlight.OutlineTransparency = 0
@@ -1455,7 +1455,7 @@ local menuFrameGradient = Instance.new("UIGradient")
 menuFrameGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0,    C.black),
     ColorSequenceKeypoint.new(0.35, C.black),
-    ColorSequenceKeypoint.new(0.65, C.coolPurple),
+    ColorSequenceKeypoint.new(0.65, C.purple),
     ColorSequenceKeypoint.new(1,    C.black),
 })
 menuFrameGradient.Rotation = 135
@@ -1493,7 +1493,7 @@ versionBadgeCorner.Parent = versionBadge
 
 local versionBadgeStroke = Instance.new("UIStroke")
 versionBadgeStroke.Thickness = 1.5
-versionBadgeStroke.Color = C.coolPurple
+versionBadgeStroke.Color = C.purple
 versionBadgeStroke.Transparency = 0.3
 versionBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 versionBadgeStroke.Parent = versionBadge
@@ -2047,7 +2047,6 @@ local function createTabSlider(parent, name, configKey, min, max, default, suffi
     sliderFill.Parent = sliderBg
     Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
 
-    -- Pill shape thumb macam dalam gambar
     local thumb = Instance.new("Frame")
     thumb.Size = UDim2.new(0, 28, 0, 14)
     thumb.Position = UDim2.new(initDelta, -14, 0.5, -7)
