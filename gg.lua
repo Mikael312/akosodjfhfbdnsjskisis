@@ -479,7 +479,7 @@ local function createESP(targetPlayer)
     highlight.Name = "PlayerESP"
     highlight.Adornee = character
     highlight.FillColor = Color3.fromRGB(59, 134, 255)
-    highlight.OutlineColor = Color3.fromRGB(70, 70, 180)
+    highlight.OutlineColor = Color3.fromRGB(29, 126, 245)
     highlight.FillTransparency = 0.5
     highlight.OutlineTransparency = 0
     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -499,7 +499,7 @@ local function createESP(targetPlayer)
     nameLabel.Size = UDim2.new(1, 0, 0, 20)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Text = targetPlayer.Name
-    nameLabel.TextColor3 = Color3.fromRGB(103, 103, 245)
+    nameLabel.TextColor3 = Color3.fromRGB(102, 4, 214)
     nameLabel.TextStrokeTransparency = 0.5
     nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
     nameLabel.Font = Enum.Font.GothamBold
@@ -512,7 +512,7 @@ local function createESP(targetPlayer)
     itemLabel.Position = UDim2.new(0, 0, 0, 22)
     itemLabel.BackgroundTransparency = 1
     itemLabel.Text = "Item: None"
-    itemLabel.TextColor3 = Color3.fromRGB(183, 50, 250)
+    itemLabel.TextColor3 = Color3.fromRGB(90, 53, 240)
     itemLabel.TextStrokeTransparency = 0.5
     itemLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
     itemLabel.Font = Enum.Font.Gotham
