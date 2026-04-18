@@ -2031,30 +2031,45 @@ local function createTabSlider(parent, name, configKey, min, max, default, suffi
     valueLabel.Parent = sliderFrame
 
     local sliderBg = Instance.new("Frame")
-    sliderBg.Size = UDim2.new(1, -16, 0, 10)
-    sliderBg.Position = UDim2.new(0, 8, 0, 28)
-    sliderBg.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+    sliderBg.Size = UDim2.new(1, -16, 0, 5)
+    sliderBg.Position = UDim2.new(0, 8, 0, 32)
+    sliderBg.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
     sliderBg.BorderSizePixel = 0
-    sliderBg.ClipsDescendants = true
+    sliderBg.ClipsDescendants = false
     sliderBg.Parent = sliderFrame
     Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
 
     local sliderFill = Instance.new("Frame")
-    local initDelta = (Config[configKey] - min) / (max - min)
+    local initDelta = math.clamp((Config[configKey] - min) / (max - min), 0, 1)
     sliderFill.Size = UDim2.new(initDelta, 0, 1, 0)
     sliderFill.BackgroundColor3 = C.primary
     sliderFill.BorderSizePixel = 0
     sliderFill.Parent = sliderBg
-    Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1, 0)
+    Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1, 0)
+
+    local fillGradient = Instance.new("UIGradient")
+    fillGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 100, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 80, 255)),
+    })
+    fillGradient.Rotation = 0
+    fillGradient.Parent = sliderFill
 
     local thumb = Instance.new("Frame")
-    thumb.Size = UDim2.new(0, 28, 0, 14)
-    thumb.Position = UDim2.new(initDelta, -14, 0.5, -7)
+    thumb.Size = UDim2.new(0, 18, 0, 11)
+    thumb.Position = UDim2.new(initDelta, -9, 0.5, -5.5)
     thumb.BackgroundColor3 = C.white
     thumb.BorderSizePixel = 0
-    thumb.ZIndex = 2
+    thumb.ZIndex = 3
     thumb.Parent = sliderBg
-    Instance.new("UICorner", thumb).CornerRadius = UDim.new(1, 0)
+    Instance.new("UICorner", thumb).CornerRadius = UDim.new(0, 4)
+
+    local thumbStroke = Instance.new("UIStroke")
+    thumbStroke.Thickness = 1
+    thumbStroke.Color = C.accent
+    thumbStroke.Transparency = 0.3
+    thumbStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    thumbStroke.Parent = thumb
 
     local dragging = false
     local moveConn, releaseConn
@@ -2073,7 +2088,7 @@ local function createTabSlider(parent, name, configKey, min, max, default, suffi
                 Config[configKey] = value
                 valueLabel.Text = tostring(value) .. (suffix or "")
                 S.TweenService:Create(sliderFill, TweenInfo.new(0.05), {Size = UDim2.new(delta, 0, 1, 0)}):Play()
-                S.TweenService:Create(thumb, TweenInfo.new(0.05), {Position = UDim2.new(delta, -14, 0.5, -7)}):Play()
+                S.TweenService:Create(thumb, TweenInfo.new(0.05), {Position = UDim2.new(delta, -9, 0.5, -5.5)}):Play()
                 if callback then callback(value) end
             end
 
@@ -2428,7 +2443,7 @@ if stealContent then
     createTabToggle(stealContent, "Inf Jump", "InfJump", function(ns, set)
         set(ns); if ns then toggleInfJump(true) else toggleInfJump(false) end
     end)
-    createTabSlider(stealContent, "Carpet Speed", "CarpetSpeedValue", 100, 300, 140, " spd", function(value)
+    createTabSlider(stealContent, "Carpet Speed", "CarpetSpeedValue", 100, 300, 140, " %", function(value)
     if Config.CarpetSpeed then disableCarpetSpeed(); enableCarpetSpeed() end
     end)
 end
