@@ -2054,13 +2054,6 @@ local function createTabSlider(parent, name, configKey, min, max, default, suffi
     })
     fillGradient.Rotation = 0
     fillGradient.Parent = sliderFill
-
-    local sliderStroke = Instance.new("UIStroke")
-    sliderStroke.Thickness = 1
-    sliderStroke.Color = C.accent
-    sliderStroke.Transparency = 0.3
-    sliderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    sliderStroke.Parent = sliderBg
     
     local thumb = Instance.new("Frame")
     thumb.Size = UDim2.new(0, 10, 0, 10)
