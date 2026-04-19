@@ -2055,21 +2055,21 @@ local function createTabSlider(parent, name, configKey, min, max, default, suffi
     fillGradient.Rotation = 0
     fillGradient.Parent = sliderFill
 
+    local sliderStroke = Instance.new("UIStroke")
+    sliderStroke.Thickness = 1
+    sliderStroke.Color = C.accent
+    sliderStroke.Transparency = 0.3
+    sliderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    sliderStroke.Parent = sliderBg
+    
     local thumb = Instance.new("Frame")
-    thumb.Size = UDim2.new(0, 18, 0, 11)
-    thumb.Position = UDim2.new(initDelta, -9, 0.5, -5.5)
+    thumb.Size = UDim2.new(0, 10, 0, 10)
+    thumb.Position = UDim2.new(initDelta, -5, 0.5, -5)
     thumb.BackgroundColor3 = C.white
     thumb.BorderSizePixel = 0
     thumb.ZIndex = 3
     thumb.Parent = sliderBg
     Instance.new("UICorner", thumb).CornerRadius = UDim.new(0, 4)
-
-    local thumbStroke = Instance.new("UIStroke")
-    thumbStroke.Thickness = 1
-    thumbStroke.Color = C.accent
-    thumbStroke.Transparency = 0.3
-    thumbStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    thumbStroke.Parent = thumb
 
     local dragging = false
     local moveConn, releaseConn
@@ -2088,7 +2088,7 @@ local function createTabSlider(parent, name, configKey, min, max, default, suffi
                 Config[configKey] = value
                 valueLabel.Text = tostring(value) .. (suffix or "")
                 S.TweenService:Create(sliderFill, TweenInfo.new(0.05), {Size = UDim2.new(delta, 0, 1, 0)}):Play()
-                S.TweenService:Create(thumb, TweenInfo.new(0.05), {Position = UDim2.new(delta, -9, 0.5, -5.5)}):Play()
+                S.TweenService:Create(thumb, TweenInfo.new(0.05), {Position = UDim2.new(delta, -5, 0.5, -5)}):Play()
                 if callback then callback(value) end
             end
 
