@@ -87,6 +87,7 @@ local DefaultConfig = {
     CarpetSpeed = false,
     CarpetSpeedValue = 140,
     CarpetTool = "Flying Carpet",
+    AntiLag = false,
 }
 
 local Config = DefaultConfig
@@ -400,6 +401,10 @@ local xrayBaseConnection = nil
 
 local carpetSpeedEnabled = false
 local carpetSpeedConn = nil
+
+local antiLagRunning = false
+local antiLagConnections = {}
+local cleanedCharacters = {}
 
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
@@ -971,6 +976,194 @@ end
 if Config.CarpetSpeed then
     task.spawn(function()
         enableCarpetSpeed()
+    end)
+end
+
+local function destroyAllEquippableItems(character)
+    if not character then return end
+    if not antiLagRunning then return end
+    pcall(function()
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("Accessory") or child:IsA("Hat") then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("Shirt") or child:IsA("Pants") or child:IsA("ShirtGraphic") then child:Destroy() end
+        end
+        local bodyColors = character:FindFirstChildOfClass("BodyColors")
+        if bodyColors then bodyColors:Destroy() end
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("CharacterMesh") then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetDescendants()) do
+            if child.ClassName == "LayeredClothing" or child.ClassName == "WrapLayer" then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetChildren()) do
+            if child:IsA("BasePart") then
+                local mesh = child:FindFirstChildOfClass("SpecialMesh")
+                if mesh then mesh:Destroy() end
+            end
+        end
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("ParticleEmitter") or child:IsA("Trail") or child:IsA("Beam") then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("PointLight") or child:IsA("SpotLight") or child:IsA("SurfaceLight") then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("Fire") or child:IsA("Smoke") or child:IsA("Sparkles") then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("Highlight") then child:Destroy() end
+        end
+        for _, child in ipairs(character:GetDescendants()) do
+            if child:IsA("Decal") or child:IsA("Texture") then
+                if not (child.Name == "face" and child.Parent and child.Parent.Name == "Head") then
+                    child:Destroy()
+                end
+            end
+        end
+    end)
+end
+
+local function destroyBackpackTools(plr)
+    if not antiLagRunning then return end
+    pcall(function()
+        local backpack = plr:FindFirstChild("Backpack")
+        if backpack then
+            for _, tool in ipairs(backpack:GetChildren()) do
+                if tool:IsA("Tool") then
+                    for _, desc in ipairs(tool:GetDescendants()) do
+                        if desc:IsA("ParticleEmitter") or desc:IsA("Trail") or desc:IsA("Beam") or
+                           desc:IsA("SpecialMesh") or desc:IsA("PointLight") or desc:IsA("SpotLight") or
+                           desc:IsA("Fire") or desc:IsA("Smoke") or desc:IsA("Sparkles") then
+                            desc:Destroy()
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function destroyEquippedTools(character)
+    if not character then return end
+    if not antiLagRunning then return end
+    pcall(function()
+        for _, tool in ipairs(character:GetChildren()) do
+            if tool:IsA("Tool") then
+                for _, desc in ipairs(tool:GetDescendants()) do
+                    if desc:IsA("ParticleEmitter") or desc:IsA("Trail") or desc:IsA("Beam") or
+                       desc:IsA("SpecialMesh") or desc:IsA("PointLight") or desc:IsA("SpotLight") or
+                       desc:IsA("Fire") or desc:IsA("Smoke") or desc:IsA("Sparkles") then
+                        desc:Destroy()
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function antiLagCleanCharacter(char)
+    if not char then return end
+    destroyAllEquippableItems(char)
+    destroyEquippedTools(char)
+    cleanedCharacters[char] = true
+end
+
+local function antiLagDisconnectAll()
+    for _, conn in ipairs(antiLagConnections) do
+        if typeof(conn) == "RBXScriptConnection" then conn:Disconnect() end
+    end
+    antiLagConnections = {}
+    cleanedCharacters = {}
+end
+
+local function enableAntiLag()
+    if antiLagRunning then return end
+    antiLagRunning = true
+
+    for _, plr in ipairs(S.Players:GetPlayers()) do
+        if plr.Character then
+            antiLagCleanCharacter(plr.Character)
+            destroyBackpackTools(plr)
+        end
+        if plr.Backpack then
+            table.insert(antiLagConnections, plr.Backpack.ChildAdded:Connect(function()
+                if antiLagRunning then task.wait(0.1); destroyBackpackTools(plr) end
+            end))
+        end
+    end
+
+    table.insert(antiLagConnections, S.Players.PlayerAdded:Connect(function(plr)
+        table.insert(antiLagConnections, plr.CharacterAdded:Connect(function(char)
+            if not antiLagRunning then return end
+            task.wait(0.5)
+            antiLagCleanCharacter(char)
+            destroyBackpackTools(plr)
+            table.insert(antiLagConnections, char.ChildAdded:Connect(function(child)
+                if not antiLagRunning then return end
+                task.wait(0.1)
+                if child:IsA("Accessory") or child:IsA("Hat") or child:IsA("Shirt") or
+                   child:IsA("Pants") or child:IsA("ShirtGraphic") then
+                    child:Destroy()
+                elseif child:IsA("Tool") then
+                    destroyEquippedTools(char)
+                end
+            end))
+        end))
+        if plr.Character then
+            antiLagCleanCharacter(plr.Character)
+            destroyBackpackTools(plr)
+        end
+        if plr.Backpack then
+            table.insert(antiLagConnections, plr.Backpack.ChildAdded:Connect(function()
+                if antiLagRunning then task.wait(0.1); destroyBackpackTools(plr) end
+            end))
+        end
+    end))
+
+    for _, plr in ipairs(S.Players:GetPlayers()) do
+        table.insert(antiLagConnections, plr.CharacterAdded:Connect(function(char)
+            if antiLagRunning then
+                task.wait(0.5)
+                antiLagCleanCharacter(char)
+                destroyBackpackTools(plr)
+                table.insert(antiLagConnections, char.ChildAdded:Connect(function(child)
+                    if not antiLagRunning then return end
+                    task.wait(0.1)
+                    if child:IsA("Accessory") or child:IsA("Hat") or child:IsA("Shirt") or
+                       child:IsA("Pants") or child:IsA("ShirtGraphic") then
+                        child:Destroy()
+                    elseif child:IsA("Tool") then
+                        destroyEquippedTools(char)
+                    end
+                end))
+            end
+        end))
+    end
+
+    task.spawn(function()
+        while antiLagRunning do
+            task.wait(3)
+            for _, plr in ipairs(S.Players:GetPlayers()) do
+                if plr.Character and not cleanedCharacters[plr.Character] then
+                    antiLagCleanCharacter(plr.Character)
+                    destroyBackpackTools(plr)
+                end
+            end
+        end
+    end)
+end
+
+local function disableAntiLag()
+    if not antiLagRunning then return end
+    antiLagRunning = false
+    antiLagDisconnectAll()
+end
+
+if Config.AntiLag then
+    task.spawn(function()
+        enableAntiLag()
     end)
 end
 
@@ -2459,6 +2652,9 @@ if utilityContent then
     end)
     createTabToggle(utilityContent, "Disable Object Animations", "AnimDisabler", function(ns, set)
         set(ns); if ns then enableAnimDisabler() else disableAnimDisabler() end
+    end)
+    createTabToggle(utilityContent, "Anti Lag", "AntiLag", function(ns, set)
+        set(ns); if ns then enableAntiLag() else disableAntiLag() end
     end)
 end
 
