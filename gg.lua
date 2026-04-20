@@ -2833,12 +2833,14 @@ if brainrotContent then
             if child.Name == "AnimalCard" then child:Destroy() end
         end
         for rank, animalData in ipairs(allAnimalsCache) do
+            if rank > 50 then break end
             createAnimalCard(normalView, animalData, rank)
         end
         showNotification({message = "Refreshed!", color = "Success", textColor = "White"})
     end)
 
     for rank, animalData in ipairs(allAnimalsCache) do
+        if rank > 50 then break end
         createAnimalCard(normalView, animalData, rank)
     end
 
@@ -2852,6 +2854,7 @@ if brainrotContent then
                     if child.Name == "AnimalCard" then child:Destroy() end
                 end
                 for rank, animalData in ipairs(allAnimalsCache) do
+                    if rank > 50 then break end
                     createAnimalCard(normalView, animalData, rank)
                 end
                 updateLastCache()
