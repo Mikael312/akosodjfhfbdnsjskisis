@@ -140,6 +140,7 @@ local NotifColors = {
     White   = Color3.fromRGB(255, 255, 255),
     Purple  = Color3.fromRGB(150, 80, 240),
     Violet  = Color3.fromRGB(120, 40, 220),
+    grey    = Color3.fromRGB(38, 38, 36),
 }
 
 local function updateNotificationPositions()
@@ -1744,7 +1745,7 @@ versionBadgeCorner.Parent = versionBadge
 
 local versionBadgeStroke = Instance.new("UIStroke")
 versionBadgeStroke.Thickness = 1.5
-versionBadgeStroke.Color = C.purple
+versionBadgeStroke.Color = C.primary
 versionBadgeStroke.Transparency = 0.3
 versionBadgeStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 versionBadgeStroke.Parent = versionBadge
@@ -2966,4 +2967,4 @@ S.UserInputService.InputBegan:Connect(function(input, processed)
     end
 end)
 
-showNotification({message = "RenHub Private", subtext = "Welcome back!", color = "Violet", textColor = "White", subColor = "Violet"})
+showNotification({message = "RenHub Private", subtext = "Welcome back!", color = "grey", textColor = "White", subColor = "White"})
