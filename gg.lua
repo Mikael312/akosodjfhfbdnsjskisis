@@ -90,6 +90,7 @@ local DefaultConfig = {
     AntiLag = false,
     StealSpeed = false,
     StealSpeedValue = 28,
+    AutoResetOnBalloon = false,
 }
 
 local Config = DefaultConfig
@@ -1207,6 +1208,21 @@ end)
 if Config.StealSpeed then
     task.spawn(function() startStealSpeed() end)
 end
+
+task.spawn(function()
+    local balloonPhrase = 'ran "balloon" on you'
+    while true do
+        task.wait(1)
+        if not Config.AutoResetOnBalloon then continue end
+        for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
+            local txt = (gui:IsA("TextLabel") or gui:IsA("TextButton")) and gui.Text
+            if txt and string.find(txt, balloonPhrase) then
+                _G.InstantReset()
+                break
+            end
+        end
+    end
+end)
 
 local function getAnimalHash(animalList)
     if not animalList then return "" end
@@ -2702,6 +2718,10 @@ if utilityContent then
     end)
     createTabToggle(utilityContent, "Anti Lag", "AntiLag", function(ns, set)
         set(ns); if ns then enableAntiLag() else disableAntiLag() end
+    end)
+    createSectionHeader(utilityContent, "Protection")
+    createTabToggle(utilityContent, "Auto Reset on Balloon", "AutoResetOnBalloon", function(ns, set)
+        set(ns)
     end)
 end
 
