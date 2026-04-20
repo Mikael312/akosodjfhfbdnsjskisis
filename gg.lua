@@ -1355,6 +1355,7 @@ local C = {
     red          = Color3.fromRGB(231, 76, 60),       
     coolPurple   = Color3.fromRGB(60, 100, 200), 
     purple       = Color3.fromRGB(144, 31, 237),
+    grey         = Color3.fromRGB(38, 38, 36),
 }
 
 local function addTextGradient(textElement, color1, color2, rotation)
@@ -1689,7 +1690,7 @@ local menuFrameGradient = Instance.new("UIGradient")
 menuFrameGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0,    C.black),
     ColorSequenceKeypoint.new(0.35, C.black),
-    ColorSequenceKeypoint.new(0.65, C.black),
+    ColorSequenceKeypoint.new(0.65, C.grey),
     ColorSequenceKeypoint.new(1,    C.black),
 })
 menuFrameGradient.Rotation = 135
