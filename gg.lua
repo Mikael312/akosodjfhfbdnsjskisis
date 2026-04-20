@@ -88,6 +88,8 @@ local DefaultConfig = {
     CarpetSpeedValue = 140,
     CarpetTool = "Flying Carpet",
     AntiLag = false,
+    StealSpeed = false,
+    StealSpeedValue = 28,
 }
 
 local Config = DefaultConfig
@@ -405,6 +407,8 @@ local carpetSpeedConn = nil
 local antiLagRunning = false
 local antiLagConnections = {}
 local cleanedCharacters = {}
+
+local stealSpeedConn = nil
 
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
@@ -1165,6 +1169,43 @@ if Config.AntiLag then
     task.spawn(function()
         enableAntiLag()
     end)
+end
+
+local function startStealSpeed()
+    if stealSpeedConn then return end
+    stealSpeedConn = S.RunService.Heartbeat:Connect(function()
+        if not Config.StealSpeed then return end
+        if not player:GetAttribute("Stealing") then return end
+        local char = player.Character
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hum or not hrp then return end
+        local move = hum.MoveDirection
+        if move.Magnitude > 0 then
+            hrp.AssemblyLinearVelocity = Vector3.new(
+                move.X * Config.StealSpeedValue,
+                hrp.AssemblyLinearVelocity.Y,
+                move.Z * Config.StealSpeedValue
+            )
+        end
+    end)
+end
+
+local function stopStealSpeed()
+    if stealSpeedConn then stealSpeedConn:Disconnect(); stealSpeedConn = nil end
+end
+
+player:GetAttributeChangedSignal("Stealing"):Connect(function()
+    if Config.StealSpeed and player:GetAttribute("Stealing") then
+        startStealSpeed()
+    else
+        stopStealSpeed()
+    end
+end)
+
+if Config.StealSpeed then
+    task.spawn(function() startStealSpeed() end)
 end
 
 local function getAnimalHash(animalList)
@@ -2631,6 +2672,11 @@ if stealContent then
     end)
     createTabSlider(stealContent, "Carpet Speed", "CarpetSpeedValue", 100, 300, 140, " %", function(value)
     if Config.CarpetSpeed then disableCarpetSpeed(); enableCarpetSpeed() end
+    end)
+    createTabToggle(stealContent, "Steal Speed", "StealSpeed", function(ns, set)
+         set(ns); if ns then startStealSpeed() else stopStealSpeed() end
+    end)
+    createTabSlider(stealContent, "Steal Speed", "StealSpeedValue", 1, 45, 28, " spd", function(value)
     end)
 end
 
