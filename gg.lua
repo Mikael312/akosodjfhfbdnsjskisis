@@ -1373,6 +1373,7 @@ local C = {
     coolPurple   = Color3.fromRGB(60, 100, 200), 
     purple       = Color3.fromRGB(144, 31, 237),
     grey         = Color3.fromRGB(38, 38, 36),
+    violet        = Color3.fromRGB(80, 80, 180),
 }
 
 local function addTextGradient(textElement, color1, color2, rotation)
@@ -2509,21 +2510,21 @@ local function createAnimalCard(parent, animalData, rank)
 
     local tpStroke = Instance.new("UIStroke")
     tpStroke.Thickness = 1
-    tpStroke.Color = C.accent
+    tpStroke.Color = C.grey
     tpStroke.Transparency = 0.5
     tpStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     tpStroke.Parent = tpButton
 
     tpButton.MouseEnter:Connect(function()
-        tpButton.BackgroundColor3 = C.buttonPurple
+        tpButton.BackgroundColor3 = C.violet
         tpButton.BackgroundTransparency = 0
         tpButton.TextColor3 = C.white
         tpStroke.Transparency = 0
     end)
     tpButton.MouseLeave:Connect(function()
-        tpButton.BackgroundColor3 = C.darkPurple
+        tpButton.BackgroundColor3 = C.grey
         tpButton.BackgroundTransparency = 0.15
-        tpButton.TextColor3 = C.accent
+        tpButton.TextColor3 = C.white
         tpStroke.Transparency = 0.5
     end)
     tpButton.MouseButton1Click:Connect(function() end)
