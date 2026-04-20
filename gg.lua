@@ -2497,7 +2497,7 @@ local function createAnimalCard(parent, animalData, rank)
     local tpButton = Instance.new("TextButton")
     tpButton.Size = UDim2.new(0, 55, 0, 24)
     tpButton.Position = UDim2.new(1, -88, 0.5, -12)
-    tpButton.BackgroundColor3 = C.darkPurple
+    tpButton.BackgroundColor3 = C.grey
     tpButton.BackgroundTransparency = 0.15
     tpButton.BorderSizePixel = 0
     tpButton.Text = "Teleport"
@@ -2510,7 +2510,7 @@ local function createAnimalCard(parent, animalData, rank)
 
     local tpStroke = Instance.new("UIStroke")
     tpStroke.Thickness = 1
-    tpStroke.Color = C.grey
+    tpStroke.Color = C.primary
     tpStroke.Transparency = 0.5
     tpStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     tpStroke.Parent = tpButton
