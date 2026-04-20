@@ -1648,7 +1648,7 @@ local menuFrameGradient = Instance.new("UIGradient")
 menuFrameGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0,    C.black),
     ColorSequenceKeypoint.new(0.35, C.black),
-    ColorSequenceKeypoint.new(0.65, C.purple),
+    ColorSequenceKeypoint.new(0.65, C.black),
     ColorSequenceKeypoint.new(1,    C.black),
 })
 menuFrameGradient.Rotation = 135
