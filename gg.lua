@@ -75,7 +75,7 @@ local DefaultConfig = {
     HideStealerPanel = false,
     StealHighest = false,
     StealPriority = false,
-    AutoKick = false,
+    AutoKickOnSteal = false,
     AutoTurret = false,
     AutoBuy = false,
     ESPPlayers = false,
@@ -1220,6 +1220,20 @@ task.spawn(function()
             if txt and string.find(txt, balloonPhrase) then
                 _G.InstantReset()
                 break
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if not Config.AutoKickOnSteal then continue end
+        for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
+            local txt = (gui:IsA("TextLabel") or gui:IsA("TextButton")) and gui.Text
+            if txt and string.find(txt, "You stole") then
+                game:shutdown()
+                return
             end
         end
     end
@@ -2646,7 +2660,11 @@ end, Config.Keybinds.SettingsKey)
 createPillToggle(stealerScroll, "Steal Nearest:", "Nearest", function(ns, set) set(ns) end)
 createPillToggle(stealerScroll, "Steal Highest:", "StealHighest", function(ns, set) set(ns) end)
 createPillToggle(stealerScroll, "Steal Priority:", "StealPriority", function(ns, set) set(ns) end)
-createPillToggle(stealerScroll, "Auto Kick:", "AutoKick", function(ns, set) set(ns) end)
+
+createPillToggle(stealerScroll, "Auto Kick:", "AutoKickOnSteal", function(ns, set)
+    set(ns)
+end)
+
 createPillToggle(stealerScroll, "Auto Turret:", "AutoTurret", function(ns, set) set(ns) end)
 createPillToggle(stealerScroll, "Auto Buy:", "AutoBuy", function(ns, set) set(ns) end)
 createPillToggle(stealerScroll, "Carpet Speed:", "CarpetSpeed", function(ns, set)
