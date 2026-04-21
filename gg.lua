@@ -1226,7 +1226,7 @@ task.spawn(function()
 end)
 
 local function kickPlayer()
-    LocalPlayer:Kick("\ndiscord.gg/lethalhub - xi loves you <3")
+    localPlayer:Kick("\ndiscord.gg/lethalhub - xi loves you <3")
 end
 
 task.spawn(function()
