@@ -1232,7 +1232,7 @@ task.spawn(function()
         for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
             local txt = (gui:IsA("TextLabel") or gui:IsA("TextButton")) and gui.Text
             if txt and string.find(txt, "You stole") then
-                game:shutdown()
+                player:Kick("Ren The Goat Kick You!")
                 return
             end
         end
