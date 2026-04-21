@@ -91,7 +91,6 @@ local DefaultConfig = {
     StealSpeed = false,
     StealSpeedValue = 28,
     AutoResetOnBalloon = false,
-    AutoDesyncOnClone = false,
 }
 
 local Config = DefaultConfig
@@ -450,9 +449,6 @@ local function instantClone()
                 :WaitForChild("QuantumCloner")
                 :WaitForChild("TeleportToClone")
             firesignal(teleportBtn.MouseButton1Up)
-
-        if Config.AutoDesyncOnClone then
-            pcall(function() raknet.desync(true) end)
         end
     end)
     _G.isCloning = false
@@ -2689,10 +2685,6 @@ task.wait(0.1)
 
 local stealContent = tabContents["Steal"]
 if stealContent then
-    createSectionHeader(stealContent, "Desync")
-    createTabToggle(stealContent, "Auto Desync on Clone", "AutoDesyncOnClone", function(ns, set)
-        set(ns)
-    end)
     createSectionHeader(stealContent, "Enhancement")
     createTabToggle(stealContent, "Inf Jump", "InfJump", function(ns, set)
         set(ns); if ns then toggleInfJump(true) else toggleInfJump(false) end
@@ -2703,7 +2695,7 @@ if stealContent then
     createTabToggle(stealContent, "Steal Speed", "StealSpeed", function(ns, set)
          set(ns); if ns then startStealSpeed() else stopStealSpeed() end
     end)
-    createTabSlider(stealContent, "Steal Speed", "StealSpeedValue", 1, 45, 28, " spd", function(value)
+    createTabSlider(stealContent, "Steal Speed", "StealSpeedValue", 1, 45, 28, " %", function(value)
     end)
 end
 
