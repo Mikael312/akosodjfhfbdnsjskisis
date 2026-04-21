@@ -422,9 +422,7 @@ local function isPlayerPlot(plot)
 end
 
 local function kickPlayer()
-    pcall(function()
-        LocalPlayer:Kick("\ndiscord.gg/ren - ren sigma boii")
-    end)
+    LocalPlayer:Kick("\ndiscord.gg/lethalhub - xi loves you <3")
 end
 
 _G.InstantReset = function()
