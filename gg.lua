@@ -1225,11 +1225,6 @@ task.spawn(function()
     end
 end)
 
-local function kickPlayer()
-    local localPlayer = game:GetService("Players").LocalPlayer
-    localPlayer:Kick("Ren The Goat Kick You!")
-end
-
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -1237,7 +1232,7 @@ task.spawn(function()
         for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
             local txt = (gui:IsA("TextLabel") or gui:IsA("TextButton")) and gui.Text
             if txt and string.find(txt, "You stole") then
-                kickPlayer()
+                 game:shutdown()
                 return
             end
         end
@@ -2618,7 +2613,7 @@ local ragdollSelfBtn = createButton("Reset", 115, function()
 end, Config.Keybinds.ResetKey)
 
 local kickSelfBtn = createButton("Kick Self", 150, function()
-    game:shutdown()
+    localPlayer:Kick("You have been kicked from the game.")
 end, Config.Keybinds.KickSelfKey)
 
 local rejoinBtn       = createButton("Rejoin", 185, function()
