@@ -1225,6 +1225,11 @@ task.spawn(function()
     end
 end)
 
+local function kickPlayer()
+    local localPlayer = game:GetService("Players").LocalPlayer
+    localPlayer:Kick("Ren The Goat Kick You!")
+end
+
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -1232,7 +1237,7 @@ task.spawn(function()
         for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
             local txt = (gui:IsA("TextLabel") or gui:IsA("TextButton")) and gui.Text
             if txt and string.find(txt, "You stole") then
-                S.Players.LocalPlayer:Kick("You have been kicked from the game.")
+                kickPlayer()
                 return
             end
         end
