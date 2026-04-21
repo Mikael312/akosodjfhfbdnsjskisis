@@ -2613,7 +2613,7 @@ local ragdollSelfBtn = createButton("Reset", 115, function()
 end, Config.Keybinds.ResetKey)
 
 local kickSelfBtn = createButton("Kick Self", 150, function()
-    localPlayer:Kick("You have been kicked from the game.")
+    game:shutdown()
 end, Config.Keybinds.KickSelfKey)
 
 local rejoinBtn       = createButton("Rejoin", 185, function()
