@@ -423,7 +423,7 @@ end
 
 local function kickPlayer()
     pcall(function()
-        player:Kick("Ren The Goat Kick You!")
+        LocalPlayer:Kick("\ndiscord.gg/ren - ren sigma boii")
     end)
 end
 
