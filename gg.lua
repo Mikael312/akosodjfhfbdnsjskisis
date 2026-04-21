@@ -1232,7 +1232,7 @@ task.spawn(function()
         for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
             local txt = (gui:IsA("TextLabel") or gui:IsA("TextButton")) and gui.Text
             if txt and string.find(txt, "You stole") then
-                localPlayer:Kick("You have been kicked from the game.")
+                S.Players.LocalPlayer:Kick("You have been kicked from the game.")
                 return
             end
         end
