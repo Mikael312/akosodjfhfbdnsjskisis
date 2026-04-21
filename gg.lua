@@ -1225,10 +1225,6 @@ task.spawn(function()
     end
 end)
 
-local function kickPlayer()
-    localPlayer:Kick("\ndiscord.gg/lethalhub - xi loves you <3")
-end
-
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -1236,7 +1232,7 @@ task.spawn(function()
         for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
             local txt = (gui:IsA("TextLabel") or gui:IsA("TextButton")) and gui.Text
             if txt and string.find(txt, "You stole") then
-                kickPlayer()
+                localPlayer:Kick("You have been kicked from the game.")
                 return
             end
         end
