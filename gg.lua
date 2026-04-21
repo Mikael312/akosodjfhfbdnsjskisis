@@ -421,6 +421,12 @@ local function isPlayerPlot(plot)
     return false
 end
 
+local function kickPlayer()
+    pcall(function()
+        player:Kick("Ren The Goat Kick You!")
+    end)
+end
+
 _G.InstantReset = function()
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -1232,7 +1238,7 @@ task.spawn(function()
         for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
             local txt = (gui:IsA("TextLabel") or gui:IsA("TextButton")) and gui.Text
             if txt and string.find(txt, "You stole") then
-                player:Kick("Ren The Goat Kick You!")
+                kickPlayer()
                 return
             end
         end
