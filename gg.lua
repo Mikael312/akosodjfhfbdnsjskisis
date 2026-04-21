@@ -421,10 +421,6 @@ local function isPlayerPlot(plot)
     return false
 end
 
-local function kickPlayer()
-    LocalPlayer:Kick("\ndiscord.gg/lethalhub - xi loves you <3")
-end
-
 _G.InstantReset = function()
     local char = player.Character or player.CharacterAdded:Wait()
     local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -1228,6 +1224,10 @@ task.spawn(function()
         end
     end
 end)
+
+local function kickPlayer()
+    LocalPlayer:Kick("\ndiscord.gg/lethalhub - xi loves you <3")
+end
 
 task.spawn(function()
     while true do
