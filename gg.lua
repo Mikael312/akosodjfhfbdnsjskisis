@@ -1867,13 +1867,69 @@ versionLabel.TextXAlignment = Enum.TextXAlignment.Center
 versionLabel.TextYAlignment = Enum.TextYAlignment.Center
 versionLabel.Parent = versionBadge
 
-local decorCircle = Instance.new("Frame")
-decorCircle.Size = UDim2.new(0, 8, 0, 8)
-decorCircle.Position = UDim2.new(1, -20, 0, 12)
-decorCircle.BackgroundColor3 = C.decorPurple
-decorCircle.BorderSizePixel = 0
-decorCircle.Parent = menuFrame
-Instance.new("UICorner", decorCircle).CornerRadius = UDim.new(1, 0)
+local scriptStartTime = os.clock()
+
+local playerInfoFrame = Instance.new("Frame")
+playerInfoFrame.Size = UDim2.new(0, 180, 0, 26)
+playerInfoFrame.Position = UDim2.new(1, -188, 0, 5)
+playerInfoFrame.BackgroundColor3 = C.black
+playerInfoFrame.BackgroundTransparency = 0.3
+playerInfoFrame.BorderSizePixel = 0
+playerInfoFrame.Parent = menuFrame
+Instance.new("UICorner", playerInfoFrame).CornerRadius = UDim.new(0, 6)
+
+local playerInfoStroke = Instance.new("UIStroke")
+playerInfoStroke.Thickness = 1
+playerInfoStroke.Color = C.accent
+playerInfoStroke.Transparency = 0.6
+playerInfoStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+playerInfoStroke.Parent = playerInfoFrame
+
+local avatarFrame = Instance.new("Frame")
+avatarFrame.Size = UDim2.new(0, 20, 0, 20)
+avatarFrame.Position = UDim2.new(0, 3, 0.5, -10)
+avatarFrame.BackgroundColor3 = C.darkPurple
+avatarFrame.BorderSizePixel = 0
+avatarFrame.Parent = playerInfoFrame
+Instance.new("UICorner", avatarFrame).CornerRadius = UDim.new(1, 0)
+
+local avatarImage = Instance.new("ImageLabel")
+avatarImage.Size = UDim2.new(1, 0, 1, 0)
+avatarImage.BackgroundTransparency = 1
+avatarImage.Parent = avatarFrame
+Instance.new("UICorner", avatarImage).CornerRadius = UDim.new(1, 0)
+
+task.spawn(function()
+    local ok, img = pcall(function()
+        return S.Players:GetUserThumbnailAsync(
+            player.UserId,
+            Enum.ThumbnailType.HeadShot,
+            Enum.ThumbnailSize.Size48x48
+        )
+    end)
+    if ok then avatarImage.Image = img end
+end)
+
+local playerInfoLabel = Instance.new("TextLabel")
+playerInfoLabel.Size = UDim2.new(1, -28, 1, 0)
+playerInfoLabel.Position = UDim2.new(0, 26, 0, 0)
+playerInfoLabel.BackgroundTransparency = 1
+playerInfoLabel.Text = player.Name .. " • ? • 0m 0s"
+playerInfoLabel.TextColor3 = C.white
+playerInfoLabel.Font = Enum.Font.GothamBold
+playerInfoLabel.TextSize = 8
+playerInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+playerInfoLabel.TextYAlignment = Enum.TextYAlignment.Center
+playerInfoLabel.TextTruncate = Enum.TextTruncate.AtEnd
+playerInfoLabel.Parent = playerInfoFrame
+
+S.RunService.RenderStepped:Connect(function()
+    local elapsed = os.clock() - scriptStartTime
+    local mins = math.floor(elapsed / 60)
+    local secs = math.floor(elapsed % 60)
+    local playerCount = #S.Players:GetPlayers()
+    playerInfoLabel.Text = player.Name .. " • " .. playerCount .. " players • " .. mins .. "m " .. secs .. "s"
+end)
 
 local headerDivider = Instance.new("Frame")
 headerDivider.Size = UDim2.new(1, -20, 0, 1)
