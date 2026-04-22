@@ -2683,7 +2683,7 @@ local function createAnimalCard(parent, animalData, rank)
         tpStroke.Transparency = 0
     end)
     tpButton.MouseLeave:Connect(function()
-        tpButton.BackgroundColor3 = C.grey
+        tpButton.BackgroundColor3 = C.darkPurple 
         tpButton.BackgroundTransparency = 0.15
         tpButton.TextColor3 = C.white
         tpStroke.Transparency = 0.5
