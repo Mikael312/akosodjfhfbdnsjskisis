@@ -1478,7 +1478,9 @@ local C = {
     coolPurple   = Color3.fromRGB(60, 100, 200), 
     purple       = Color3.fromRGB(144, 31, 237),
     grey         = Color3.fromRGB(38, 38, 36),
-    violet        = Color3.fromRGB(80, 80, 180),
+    violet       = Color3.fromRGB(80, 80, 180),
+    pink         = Color3.fromRGB(250, 67, 192),
+    gold         = Color3.fromRGB(245, 126, 22),
 }
 
 local function addTextGradient(textElement, color1, color2, rotation)
