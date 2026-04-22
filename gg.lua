@@ -1881,7 +1881,7 @@ Instance.new("UICorner", playerInfoFrame).CornerRadius = UDim.new(0, 6)
 local playerInfoStroke = Instance.new("UIStroke")
 playerInfoStroke.Thickness = 1
 playerInfoStroke.Color = C.primary
-playerInfoStroke.Transparency = 0.6
+playerInfoStroke.Transparency = 0
 playerInfoStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 playerInfoStroke.Parent = playerInfoFrame
 
@@ -1912,12 +1912,12 @@ end)
 
 local playerInfoLabel = Instance.new("TextLabel")
 playerInfoLabel.Size = UDim2.new(1, -28, 1, 0)
-playerInfoLabel.Position = UDim2.new(0, 22, 0, 0)
+playerInfoLabel.Position = UDim2.new(0, 24, 0, 0)
 playerInfoLabel.BackgroundTransparency = 1
 playerInfoLabel.Text = player.Name .. " • ? • 0m 0s"
 playerInfoLabel.TextColor3 = C.purple
 playerInfoLabel.Font = Enum.Font.GothamBold
-playerInfoLabel.TextSize = 7
+playerInfoLabel.TextSize = 9
 playerInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 playerInfoLabel.TextYAlignment = Enum.TextYAlignment.Center
 playerInfoLabel.TextTruncate = Enum.TextTruncate.AtEnd
