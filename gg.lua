@@ -35,7 +35,7 @@ local S = {
     Lighting = game:GetService("Lighting"),
 }
 
-local LocalPlayer = Players.LocalPlayer
+local player = S.Players.LocalPlayer
 
 local Packages = S.ReplicatedStorage:WaitForChild("Packages")
 local Datas = S.ReplicatedStorage:WaitForChild("Datas")
