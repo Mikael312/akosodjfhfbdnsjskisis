@@ -1870,7 +1870,7 @@ versionLabel.Parent = versionBadge
 local scriptStartTime = os.clock()
 
 local playerInfoFrame = Instance.new("Frame")
-playerInfoFrame.Size = UDim2.new(0, 180, 0, 26)
+playerInfoFrame.Size = UDim2.new(0, 160, 0, 22)
 playerInfoFrame.Position = UDim2.new(1, -188, 0, 5)
 playerInfoFrame.BackgroundColor3 = C.black
 playerInfoFrame.BackgroundTransparency = 0.3
@@ -1880,14 +1880,14 @@ Instance.new("UICorner", playerInfoFrame).CornerRadius = UDim.new(0, 6)
 
 local playerInfoStroke = Instance.new("UIStroke")
 playerInfoStroke.Thickness = 1
-playerInfoStroke.Color = C.accent
+playerInfoStroke.Color = C.primary
 playerInfoStroke.Transparency = 0.6
 playerInfoStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 playerInfoStroke.Parent = playerInfoFrame
 
 local avatarFrame = Instance.new("Frame")
-avatarFrame.Size = UDim2.new(0, 20, 0, 20)
-avatarFrame.Position = UDim2.new(0, 3, 0.5, -10)
+avatarFrame.Size = UDim2.new(0, 16, 0, 16)
+avatarFrame.Position = UDim2.new(0, 3, 0.5, -8)
 avatarFrame.BackgroundColor3 = C.darkPurple
 avatarFrame.BorderSizePixel = 0
 avatarFrame.Parent = playerInfoFrame
@@ -1912,12 +1912,12 @@ end)
 
 local playerInfoLabel = Instance.new("TextLabel")
 playerInfoLabel.Size = UDim2.new(1, -28, 1, 0)
-playerInfoLabel.Position = UDim2.new(0, 26, 0, 0)
+playerInfoLabel.Position = UDim2.new(0, 22, 0, 0)
 playerInfoLabel.BackgroundTransparency = 1
 playerInfoLabel.Text = player.Name .. " • ? • 0m 0s"
-playerInfoLabel.TextColor3 = C.white
+playerInfoLabel.TextColor3 = C.purple
 playerInfoLabel.Font = Enum.Font.GothamBold
-playerInfoLabel.TextSize = 8
+playerInfoLabel.TextSize = 7
 playerInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 playerInfoLabel.TextYAlignment = Enum.TextYAlignment.Center
 playerInfoLabel.TextTruncate = Enum.TextTruncate.AtEnd
