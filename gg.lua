@@ -1665,7 +1665,7 @@ local creditsLabel = Instance.new("TextLabel")
 creditsLabel.Size = UDim2.new(0, 340, 0, 15)
 creditsLabel.Position = UDim2.new(0, 55, 1, -22)
 creditsLabel.BackgroundTransparency = 1
-creditsLabel.Text = "Made By @Ryan, @Xtention"
+creditsLabel.Text = "Made By @Ryan, @Xtention, @Back2Back"
 creditsLabel.TextColor3 = C.subtitleGrey
 creditsLabel.Font = Enum.Font.GothamMedium
 creditsLabel.TextSize = 9
@@ -1880,8 +1880,8 @@ Instance.new("UICorner", playerInfoFrame).CornerRadius = UDim.new(0, 6)
 
 local playerInfoStroke = Instance.new("UIStroke")
 playerInfoStroke.Thickness = 1
-playerInfoStroke.Color = C.primary
-playerInfoStroke.Transparency = 0
+playerInfoStroke.Color = C.violet
+playerInfoStroke.Transparency = 0.3
 playerInfoStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 playerInfoStroke.Parent = playerInfoFrame
 
@@ -2658,7 +2658,7 @@ local function createAnimalCard(parent, animalData, rank)
     local tpButton = Instance.new("TextButton")
     tpButton.Size = UDim2.new(0, 55, 0, 24)
     tpButton.Position = UDim2.new(1, -88, 0.5, -12)
-    tpButton.BackgroundColor3 = C.grey
+    tpButton.BackgroundColor3 = C.darkPurple 
     tpButton.BackgroundTransparency = 0.15
     tpButton.BorderSizePixel = 0
     tpButton.Text = "Teleport"
