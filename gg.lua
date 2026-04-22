@@ -76,7 +76,7 @@ local DefaultConfig = {
     StealHighest = false,
     StealPriority = false,
     AutoKickOnSteal = false,
-    AutoTurret = false,
+    AutoDestroyTurrets = false,
     AutoBuy = false,
     ESPPlayers = false,
     PlotBeam = false,
@@ -1236,6 +1236,97 @@ task.spawn(function()
                 return
             end
         end
+    end
+end)
+
+task.spawn(function()
+    local function getChar()
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hrp = char:WaitForChild("HumanoidRootPart")
+        local hum = char:WaitForChild("Humanoid")
+        return char, hrp, hum
+    end
+
+    local function hasExclamation(target)
+        for _, d in ipairs(target:GetDescendants()) do
+            if d:IsA("BillboardGui") then
+                local label = d:FindFirstChildWhichIsA("TextLabel", true)
+                if label and label.Text:find("!") then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+    local function applyVisuals(target)
+        for _, d in ipairs(target:GetDescendants()) do
+            if d:IsA("BasePart") and d ~= target then
+                d.Transparency = 0.5
+                d.CanCollide = false
+                d.CanTouch = false
+                d.CanQuery = false
+            elseif d:IsA("BillboardGui") and d.Name ~= "SentryLabel" then
+                d:Destroy()
+            elseif d:IsA("Decal") or d:IsA("Texture") then
+                d.Transparency = 0.5
+            end
+        end
+        if target:IsA("BasePart") and target.Name ~= "ProxyVisual" then
+            target.Transparency = 1
+            target.CanCollide = false
+        end
+    end
+
+    local function getClosestSentry()
+        local _, hrp = getChar()
+        local closest, shortestDist = nil, math.huge
+        for _, inst in ipairs(S.Workspace:GetDescendants()) do
+            if inst.Name:match("^Sentry_") then
+                if hasExclamation(inst) then
+                    local root = inst:IsA("BasePart") and inst or inst:FindFirstChildWhichIsA("BasePart", true)
+                    if root then
+                        local dist = (hrp.Position - root.Position).Magnitude
+                        if dist < shortestDist then
+                            shortestDist = dist
+                            closest = inst
+                        end
+                    end
+                end
+            end
+        end
+        return closest
+    end
+
+    while true do
+        if Config.AutoDestroyTurrets then
+            if player:GetAttribute("Stealing") == true then
+                task.wait(0.5)
+            else
+                local targetSentry = getClosestSentry()
+                if targetSentry then
+                    while targetSentry and targetSentry.Parent and (player:GetAttribute("Stealing") ~= true) do
+                        local char, hrp, hum = getChar()
+                        local bat = player.Backpack:FindFirstChild("Bat") or char:FindFirstChild("Bat")
+                        applyVisuals(targetSentry)
+                        local offset = hrp.CFrame.LookVector * 4
+                        local targetCF = CFrame.new(hrp.Position + offset, hrp.Position)
+                        if targetSentry:IsA("Model") then
+                            targetSentry:PivotTo(targetCF)
+                        elseif targetSentry:IsA("BasePart") then
+                            targetSentry.CFrame = targetCF
+                        end
+                        if bat then
+                            if bat.Parent ~= char then hum:EquipTool(bat) end
+                            bat:Activate()
+                        end
+                        task.wait(0.1)
+                        if not hasExclamation(targetSentry) then break end
+                    end
+                end
+            end
+        end
+        task.wait(0.1)
     end
 end)
 
@@ -2665,8 +2756,12 @@ createPillToggle(stealerScroll, "Auto Kick:", "AutoKickOnSteal", function(ns, se
     set(ns)
 end)
 
-createPillToggle(stealerScroll, "Auto Turret:", "AutoTurret", function(ns, set) set(ns) end)
+createPillToggle(stealerScroll, "Auto Turret:", "AutoDestroyTurrets", function(ns, set)
+    set(ns)
+end)
+
 createPillToggle(stealerScroll, "Auto Buy:", "AutoBuy", function(ns, set) set(ns) end)
+
 createPillToggle(stealerScroll, "Carpet Speed:", "CarpetSpeed", function(ns, set)
     set(ns); if ns then enableCarpetSpeed() else disableCarpetSpeed() end
 end)
