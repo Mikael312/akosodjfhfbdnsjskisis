@@ -35,7 +35,7 @@ local S = {
     Lighting = game:GetService("Lighting"),
 }
 
-local player = S.Players.LocalPlayer
+S.LocalPlayer = S.Players.LocalPlayer
 
 local Packages = S.ReplicatedStorage:WaitForChild("Packages")
 local Datas = S.ReplicatedStorage:WaitForChild("Datas")
@@ -2613,7 +2613,7 @@ local ragdollSelfBtn = createButton("Reset", 115, function()
 end, Config.Keybinds.ResetKey)
 
 local kickSelfBtn = createButton("Kick Self", 150, function()
-    game:shutdown()
+    localPlayer:Kick("You have been kicked from the game.")
 end, Config.Keybinds.KickSelfKey)
 
 local rejoinBtn       = createButton("Rejoin", 185, function()
