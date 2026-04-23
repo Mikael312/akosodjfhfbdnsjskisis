@@ -2607,7 +2607,6 @@ local function createAnimalCard(parent, animalData, rank)
     end
 
     local rankLabel = Instance.new("TextLabel")
-    rankLabel.Name = "RankLabel"
     rankLabel.Size = UDim2.new(1, iconId and -11 or 0, 1, 0)
     rankLabel.Position = UDim2.new(0, iconId and 11 or 0, 0, 0)
     rankLabel.BackgroundTransparency = 1
@@ -2622,7 +2621,6 @@ local function createAnimalCard(parent, animalData, rank)
     local isFav = isFavorite(animalData.name)
 
     local nameLabel = Instance.new("TextLabel")
-    nameLabel.Name = "NameLabel"
     nameLabel.Size = UDim2.new(1, -130, 0, 16)
     nameLabel.Position = UDim2.new(0, 54, 0, 8)
     nameLabel.BackgroundTransparency = 1
@@ -2636,7 +2634,6 @@ local function createAnimalCard(parent, animalData, rank)
     nameLabel.Parent = cardFrame
 
     local mutationLabel = Instance.new("TextLabel")
-    mutationLabel.Name = "MutLabel"
     mutationLabel.Size = UDim2.new(1, -130, 0, 14)
     mutationLabel.Position = UDim2.new(0, 54, 0, 24)
     mutationLabel.BackgroundTransparency = 1
@@ -2649,7 +2646,6 @@ local function createAnimalCard(parent, animalData, rank)
     mutationLabel.Parent = cardFrame
 
     local genLabel = Instance.new("TextLabel")
-    genLabel.Name = "GenLabel"
     genLabel.Size = UDim2.new(1, -130, 0, 14)
     genLabel.Position = UDim2.new(0, 54, 0, 38)
     genLabel.BackgroundTransparency = 1
@@ -2981,7 +2977,6 @@ end
 local brainrotContent = tabContents["Brainrot"]
 local lastCacheCount = 0
 local lastTopUIDs = {}
-local cardElements = {}
 
 local function needsUpdate()
     if #allAnimalsCache ~= lastCacheCount then return true end
@@ -3074,75 +3069,39 @@ if brainrotContent then
     normalLayout.Parent = normalView
 
     refreshBtn.MouseButton1Click:Connect(function()
-    for uid, card in pairs(cardElements) do card:Destroy() end
-    cardElements = {}
-    lastTopUIDs = {}
-    smartUpdateBrainrot()
-    showNotification({message = "Refreshed!", color = "Success", textColor = "White"})
-end)
-
-    local function updateCardData(cardFrame, animalData, rank)
-    pcall(function()
-        local nameLabel = cardFrame:FindFirstChild("NameLabel")
-        local mutLabel = cardFrame:FindFirstChild("MutLabel")
-        local genLabel = cardFrame:FindFirstChild("GenLabel")
-        local rankLabel = cardFrame:FindFirstChild("RankLabel")
-        if nameLabel then nameLabel.Text = animalData.isDuelBase and "[DUEL] " .. animalData.name or animalData.name end
-        if mutLabel then mutLabel.Text = animalData.mutation end
-        if genLabel then genLabel.Text = animalData.genText end
-        if rankLabel then rankLabel.Text = "#" .. rank end
+        for _, child in ipairs(normalView:GetChildren()) do
+            if child.Name == "AnimalCard" then child:Destroy() end
+        end
+        for rank, animalData in ipairs(allAnimalsCache) do
+            if rank > 50 then break end
+            createAnimalCard(normalView, animalData, rank)
+        end
+        showNotification({message = "Refreshed!", color = "Success", textColor = "White"})
     end)
-end
-
-local function smartUpdateBrainrot()
-    local newUIDs = {}
-    for rank, animalData in ipairs(allAnimalsCache) do
-        if rank > 50 then break end
-        newUIDs[rank] = animalData.uid
-    end
-
-    local changed = false
-    for rank, uid in ipairs(newUIDs) do
-        if lastTopUIDs[rank] ~= uid then changed = true; break end
-    end
-    if #newUIDs ~= #lastTopUIDs then changed = true end
-    if not changed then return end
-
-    for uid, cardFrame in pairs(cardElements) do
-        local stillExists = false
-        for _, animalData in ipairs(allAnimalsCache) do
-            if animalData.uid == uid then stillExists = true; break end
-        end
-        if not stillExists then
-            cardFrame:Destroy()
-            cardElements[uid] = nil
-        end
-    end
 
     for rank, animalData in ipairs(allAnimalsCache) do
         if rank > 50 then break end
-        if cardElements[animalData.uid] then
-            updateCardData(cardElements[animalData.uid], animalData, rank)
-            cardElements[animalData.uid].LayoutOrder = rank
-        else
-            local card = createAnimalCard(normalView, animalData, rank)
-            card.Name = "AnimalCard"
-            card.LayoutOrder = rank
-            cardElements[animalData.uid] = card
-        end
+        createAnimalCard(normalView, animalData, rank)
     end
 
     updateLastCache()
+
+    task.spawn(function()
+        while true do
+            task.wait(3)
+            if needsUpdate() then
+                for _, child in ipairs(normalView:GetChildren()) do
+                    if child.Name == "AnimalCard" then child:Destroy() end
+                end
+                for rank, animalData in ipairs(allAnimalsCache) do
+                    if rank > 50 then break end
+                    createAnimalCard(normalView, animalData, rank)
+                end
+                updateLastCache()
+            end
+        end
+    end)
 end
-
-smartUpdateBrainrot()
-
-task.spawn(function()
-    while true do
-        task.wait(6)
-        smartUpdateBrainrot()
-    end
-end)
 
 S.UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
