@@ -91,7 +91,6 @@ local DefaultConfig = {
     StealSpeed = false,
     StealSpeedValue = 28,
     AutoResetOnBalloon = false,
-    BeamHighest = false,
 }
 
 local Config = DefaultConfig
@@ -412,11 +411,6 @@ local antiLagConnections = {}
 local cleanedCharacters = {}
 
 local stealSpeedConn = nil
-
-local beamHighestEnabled = false
-local tracerBeam = nil
-local tracerAtt0 = nil
-local tracerAtt1 = nil
 
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
@@ -1214,67 +1208,6 @@ end)
 
 if Config.StealSpeed then
     task.spawn(function() startStealSpeed() end)
-end
-
-local function updateTracer(highestAdornee)
-    if not beamHighestEnabled or not highestAdornee then
-        if tracerBeam then tracerBeam:Destroy(); tracerBeam = nil end
-        if tracerAtt0 then tracerAtt0:Destroy(); tracerAtt0 = nil end
-        if tracerAtt1 then tracerAtt1:Destroy(); tracerAtt1 = nil end
-        return
-    end
-
-    local char = player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    if not tracerAtt0 or tracerAtt0.Parent ~= hrp then
-        if tracerAtt0 then tracerAtt0:Destroy() end
-        tracerAtt0 = Instance.new("Attachment", hrp)
-    end
-
-    if not tracerAtt1 or tracerAtt1.Parent ~= highestAdornee then
-        if tracerAtt1 then tracerAtt1:Destroy() end
-        tracerAtt1 = Instance.new("Attachment", highestAdornee)
-    end
-
-    if not tracerBeam then
-        tracerBeam = Instance.new("Beam", S.Workspace)
-        tracerBeam.FaceCamera = true
-        tracerBeam.Width0 = 0.5
-        tracerBeam.Width1 = 0.5
-        tracerBeam.LightEmission = 0
-        tracerBeam.LightInfluence = 1
-        tracerBeam.Transparency = NumberSequence.new(0)
-        tracerBeam.TextureMode = Enum.TextureMode.Static
-        tracerBeam.Color = ColorSequence.new(Color3.fromRGB(54, 52, 207))
-    end
-
-    tracerBeam.Attachment0 = tracerAtt0
-    tracerBeam.Attachment1 = tracerAtt1
-    tracerBeam.Enabled = true
-end
-
-local function enableBeamHighest()
-    beamHighestEnabled = true
-    task.spawn(function()
-        while beamHighestEnabled do
-            pcall(function()
-                local highestAdornee = findAdornee(allAnimalsCache[1])
-                updateTracer(highestAdornee)
-            end)
-            task.wait(0.3)
-        end
-    end)
-end
-
-local function disableBeamHighest()
-    beamHighestEnabled = false
-    updateTracer(nil)
-end
-
-if Config.BeamHighest then
-    task.spawn(function() enableBeamHighest() end)
 end
 
 task.spawn(function()
@@ -2948,9 +2881,6 @@ if utilityContent then
     end)
     createTabToggle(utilityContent, "Plot Beam", "PlotBeam", function(ns, set)
         set(ns); if ns then enablePlotBeam() else disablePlotBeam() end
-    end)
-    createTabToggle(utilityContent, "Beam Highest Brainrot", "BeamHighest", function(ns, set)
-        set(ns); if ns then enableBeamHighest() else disableBeamHighest() end
     end)
     createSectionHeader(utilityContent, "Performance")
     createTabToggle(utilityContent, "Optimizer", "Optimizer", function(ns, set)
