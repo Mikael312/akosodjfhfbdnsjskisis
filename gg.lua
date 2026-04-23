@@ -1216,27 +1216,6 @@ if Config.StealSpeed then
     task.spawn(function() startStealSpeed() end)
 end
 
-local function updateGravity()
-    if lowGravityEnabled then
-        local character = player.Character
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            if bodyForce then bodyForce:Destroy() end
-            bodyForce = Instance.new("BodyForce")
-            bodyForce.Name = "LowGravityForce"
-            bodyForce.Parent = character.HumanoidRootPart
-            local force = (defaultGravity - lowGravityForce) * character.HumanoidRootPart:GetMass()
-            bodyForce.Force = Vector3.new(0, force, 0)
-        end
-    else
-        if bodyForce then bodyForce:Destroy(); bodyForce = nil end
-    end
-end
-
-local function toggleGravityJump(enabled)
-    lowGravityEnabled = enabled
-    updateGravity()
-end
-
 task.spawn(function()
     local balloonPhrase = 'ran "balloon" on you'
     while true do
@@ -1356,6 +1335,27 @@ task.spawn(function()
         task.wait(0.1)
     end
 end)
+
+local function updateGravity()
+    if lowGravityEnabled then
+        local character = player.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            if bodyForce then bodyForce:Destroy() end
+            bodyForce = Instance.new("BodyForce")
+            bodyForce.Name = "LowGravityForce"
+            bodyForce.Parent = character.HumanoidRootPart
+            local force = (defaultGravity - lowGravityForce) * character.HumanoidRootPart:GetMass()
+            bodyForce.Force = Vector3.new(0, force, 0)
+        end
+    else
+        if bodyForce then bodyForce:Destroy(); bodyForce = nil end
+    end
+end
+
+local function toggleGravityJump(enabled)
+    lowGravityEnabled = enabled
+    updateGravity()
+end
 
 local function getAnimalHash(animalList)
     if not animalList then return "" end
