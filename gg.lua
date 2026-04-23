@@ -91,6 +91,7 @@ local DefaultConfig = {
     StealSpeed = false,
     StealSpeedValue = 28,
     AutoResetOnBalloon = false,
+    HighJump = false,
 }
 
 local Config = DefaultConfig
@@ -411,6 +412,11 @@ local antiLagConnections = {}
 local cleanedCharacters = {}
 
 local stealSpeedConn = nil
+
+local lowGravityEnabled = false
+local bodyForce = nil
+local lowGravityForce = 50
+local defaultGravity = S.Workspace.Gravity
 
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
@@ -1208,6 +1214,27 @@ end)
 
 if Config.StealSpeed then
     task.spawn(function() startStealSpeed() end)
+end
+
+local function updateGravity()
+    if lowGravityEnabled then
+        local character = player.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            if bodyForce then bodyForce:Destroy() end
+            bodyForce = Instance.new("BodyForce")
+            bodyForce.Name = "LowGravityForce"
+            bodyForce.Parent = character.HumanoidRootPart
+            local force = (defaultGravity - lowGravityForce) * character.HumanoidRootPart:GetMass()
+            bodyForce.Force = Vector3.new(0, force, 0)
+        end
+    else
+        if bodyForce then bodyForce:Destroy(); bodyForce = nil end
+    end
+end
+
+local function toggleGravityJump(enabled)
+    lowGravityEnabled = enabled
+    updateGravity()
 end
 
 task.spawn(function()
@@ -2867,6 +2894,9 @@ if stealContent then
          set(ns); if ns then startStealSpeed() else stopStealSpeed() end
     end)
     createTabSlider(stealContent, "Steal Speed", "StealSpeedValue", 1, 45, 28, " %", function(value)
+    end)
+    createTabToggle(stealContent, "High Jump", "HighJump", function(ns, set)
+         set(ns); if ns then toggleGravityJump(true) else toggleGravityJump(false) end
     end)
 end
 
