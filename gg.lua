@@ -192,7 +192,7 @@ local function showNotification(opts)
     local notif = Instance.new("Frame")
     notif.Size = UDim2.new(0, 250, 0, frameHeight)
     notif.Position = UDim2.new(0, -260, 0, startYPos)
-    notif.BackgroundColor3 = Color3.fromRGB(8, 5, 18)
+    notif.BackgroundColor3 = Color3.fromRGB(22, 23, 23)
     notif.BorderSizePixel = 0
     notif.Parent = notifGui
 
