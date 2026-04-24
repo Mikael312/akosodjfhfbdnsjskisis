@@ -413,6 +413,14 @@ local cleanedCharacters = {}
 
 local stealSpeedConn = nil
 
+local function getControls()
+	local playerScripts = LocalPlayer:WaitForChild("PlayerScripts")
+	local playerModule = require(playerScripts:WaitForChild("PlayerModule"))
+	return playerModule:GetControls()
+end
+
+local Controls = getControls()
+
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
     if plotSign then
