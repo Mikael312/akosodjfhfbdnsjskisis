@@ -33,6 +33,7 @@ local S = {
     Workspace = game:GetService("Workspace"),
     UserInputService = game:GetService("UserInputService"),
     Lighting = game:GetService("Lighting"),
+    VirtualInputManager = game:GetService("VirtualInputManager"),
 }
 
 local player = S.Players.LocalPlayer
@@ -411,6 +412,14 @@ local antiLagConnections = {}
 local cleanedCharacters = {}
 
 local stealSpeedConn = nil
+
+local function getControls()
+	local playerScripts = LocalPlayer:WaitForChild("PlayerScripts")
+	local playerModule = require(playerScripts:WaitForChild("PlayerModule"))
+	return playerModule:GetControls()
+end
+
+local Controls = getControls()
 
 local function isPlayerPlot(plot)
     local plotSign = plot:FindFirstChild("PlotSign")
