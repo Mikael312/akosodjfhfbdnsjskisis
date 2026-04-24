@@ -197,7 +197,7 @@ local function showNotification(opts)
     notif.Parent = notifGui
 
     local nCorner = Instance.new("UICorner")
-    nCorner.CornerRadius = UDim.new(0, 8)
+    nCorner.CornerRadius = UDim.new(0, 14)
     nCorner.Parent = notif
 
     local nStroke = Instance.new("UIStroke")
