@@ -192,12 +192,12 @@ local function showNotification(opts)
     local notif = Instance.new("Frame")
     notif.Size = UDim2.new(0, 250, 0, frameHeight)
     notif.Position = UDim2.new(0, -260, 0, startYPos)
-    notif.BackgroundColor3 = Color3.fromRGB(22, 23, 23)
+    notif.BackgroundColor3 = Color3.fromRGB(8, 5, 18)
     notif.BorderSizePixel = 0
     notif.Parent = notifGui
 
     local nCorner = Instance.new("UICorner")
-    nCorner.CornerRadius = UDim.new(0, 14)
+    nCorner.CornerRadius = UDim.new(0, 8)
     nCorner.Parent = notif
 
     local nStroke = Instance.new("UIStroke")
@@ -1232,11 +1232,7 @@ task.spawn(function()
         for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
             local txt = (gui:IsA("TextLabel") or gui:IsA("TextButton")) and gui.Text
             if txt and string.find(txt, "You stole") then
-                local function kickPlayer()
-                 local success = pcall(function()
-                    LocalPlayer:Kick(".gg/renhub - Ren The Goat!")
-                end)
-                if not success then game:shutdown() end
+                 game:shutdown()
                 return
             end
         end
@@ -2539,6 +2535,47 @@ local function createAnimalCard(parent, animalData, rank)
     cardStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     cardStroke.Parent = cardFrame
 
+    local vpFrame = Instance.new("ViewportFrame")
+    vpFrame.Size = UDim2.new(0, 42, 0, 42)
+    vpFrame.Position = UDim2.new(0, 6, 0, 6)
+    vpFrame.BackgroundColor3 = C.darkPurple
+    vpFrame.BorderSizePixel = 0
+    vpFrame.Ambient = Color3.fromRGB(180, 180, 180)
+    vpFrame.LightDirection = Vector3.new(-1, -2, -1)
+    vpFrame.Parent = cardFrame
+    Instance.new("UICorner", vpFrame).CornerRadius = UDim.new(0, 6)
+
+    local vpStroke = Instance.new("UIStroke")
+    vpStroke.Thickness = 1
+    vpStroke.Color = C.dividerGrey
+    vpStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    vpStroke.Parent = vpFrame
+
+    pcall(function()
+        local modelsFolder = S.ReplicatedStorage:FindFirstChild("Models")
+        if not modelsFolder then return end
+        local animalModels = modelsFolder:FindFirstChild("Animals")
+        if not animalModels then return end
+        local animalModel = animalModels:FindFirstChild(animalData.modelName)
+        if not animalModel then return end
+        local cloned = animalModel:Clone()
+        cloned.Parent = vpFrame
+        for _, part in ipairs(cloned:GetDescendants()) do
+            if part:IsA("BasePart") then part.Anchored = false; part.CanCollide = false end
+        end
+        local rootPart = cloned.PrimaryPart or cloned:FindFirstChildWhichIsA("BasePart")
+        if rootPart then rootPart.Anchored = true end
+        local cf, _ = cloned:GetBoundingBox()
+        cloned:PivotTo(CFrame.new(cf.Position) * CFrame.Angles(0, math.rad(125), 0))
+        local cf2, size2 = cloned:GetBoundingBox()
+        local distance = math.max(size2.X, size2.Y, size2.Z) * 1.5
+        local vpCamera = Instance.new("Camera")
+        vpCamera.FieldOfView = 50
+        vpCamera.CFrame = CFrame.new(cf2.Position + Vector3.new(0, size2.Y * 0.1, distance), cf2.Position)
+        vpCamera.Parent = vpFrame
+        vpFrame.CurrentCamera = vpCamera
+    end)
+
     local strokeColor, iconId
     if rank == 1 then strokeColor = Color3.fromRGB(255, 215, 0); iconId = "rbxassetid://75275446742454"
     elseif rank == 2 then strokeColor = Color3.fromRGB(192, 192, 192); iconId = "rbxassetid://105421235220109"
@@ -2547,7 +2584,7 @@ local function createAnimalCard(parent, animalData, rank)
 
     local rankBadge = Instance.new("Frame")
     rankBadge.Size = UDim2.new(0, 32, 0, 16)
-    rankBadge.Position = UDim2.new(0, 8, 1, -22)
+    rankBadge.Position = UDim2.new(0, 6, 0, 68)
     rankBadge.BackgroundTransparency = 1
     rankBadge.BorderSizePixel = 0
     rankBadge.Parent = cardFrame
@@ -2584,8 +2621,8 @@ local function createAnimalCard(parent, animalData, rank)
     local isFav = isFavorite(animalData.name)
 
     local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, -90, 0, 16)
-    nameLabel.Position = UDim2.new(0, 8, 0, 6)
+    nameLabel.Size = UDim2.new(1, -130, 0, 16)
+    nameLabel.Position = UDim2.new(0, 54, 0, 8)
     nameLabel.BackgroundTransparency = 1
     nameLabel.Text = animalData.isDuelBase and "[DUEL] " .. animalData.name or animalData.name
     nameLabel.TextColor3 = animalData.isDuelBase and C.yellow or C.white
@@ -2597,8 +2634,8 @@ local function createAnimalCard(parent, animalData, rank)
     nameLabel.Parent = cardFrame
 
     local mutationLabel = Instance.new("TextLabel")
-    mutationLabel.Size = UDim2.new(1, -90, 0, 14)
-    mutationLabel.Position = UDim2.new(0, 8, 0, 24)
+    mutationLabel.Size = UDim2.new(1, -130, 0, 14)
+    mutationLabel.Position = UDim2.new(0, 54, 0, 24)
     mutationLabel.BackgroundTransparency = 1
     mutationLabel.Text = animalData.mutation
     mutationLabel.TextColor3 = C.accent
@@ -2609,8 +2646,8 @@ local function createAnimalCard(parent, animalData, rank)
     mutationLabel.Parent = cardFrame
 
     local genLabel = Instance.new("TextLabel")
-    genLabel.Size = UDim2.new(1, -90, 0, 14)
-    genLabel.Position = UDim2.new(0, 8, 0, 40)
+    genLabel.Size = UDim2.new(1, -130, 0, 14)
+    genLabel.Position = UDim2.new(0, 54, 0, 38)
     genLabel.BackgroundTransparency = 1
     genLabel.Text = animalData.genText
     genLabel.TextColor3 = C.green
