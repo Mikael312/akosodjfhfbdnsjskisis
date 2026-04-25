@@ -34,6 +34,7 @@ local Services = {
     VirtualInputManager = game:GetService("VirtualInputManager"),
     GuiService = game:GetService("GuiService"),
     TeleportService = game:GetService("TeleportService"),
+    Stats = game:GetService("Stats"),
 }
 local Players = Services.Players
 local RunService = Services.RunService
@@ -46,6 +47,7 @@ local Lighting = Services.Lighting
 local VirtualInputManager = Services.VirtualInputManager
 local GuiService = Services.GuiService
 local TeleportService = Services.TeleportService
+local Stats = Services.Stats
 local LocalPlayer = Players.LocalPlayer
 
 local Packages = ReplicatedStorage:WaitForChild("Packages")
@@ -55,6 +57,7 @@ local Utils    = ReplicatedStorage:WaitForChild("Utils")
 
 local Synchronizer  = require(Packages:WaitForChild("Synchronizer"))
 local AnimalsData   = require(Datas:WaitForChild("Animals"))
+local RaritiesData = require(Datas:WaitForChild("Rarities"))
 local AnimalsShared = require(Shared:WaitForChild("Animals"))
 local NumberUtils   = require(Utils:WaitForChild("NumberUtils"))
 
@@ -452,7 +455,7 @@ local function instantClone()
             task.wait(0.1)
         end
         tool:Activate()
-        local clone = S.Workspace:WaitForChild(player.UserId .. "_Clone", 10)
+        local clone = Workspace:WaitForChild(player.UserId .. "_Clone", 10)
         if clone then
             local teleportBtn = player.PlayerGui
                 :WaitForChild("ToolsFrames")
@@ -698,14 +701,14 @@ local function storeOriginalSettings()
             globalShadows = Lighting.GlobalShadows,
             brightness = Lighting.Brightness,
             fogEnd = Lighting.FogEnd,
-            decoration = S.Workspace.Terrain.Decoration,
+            decoration = Workspace.Terrain.Decoration,
         }
     end)
 end
 
 local function nukeVisualEffects()
     pcall(function()
-        for _, obj in ipairs(S.Workspace:GetDescendants()) do
+        for _, obj in ipairs(Workspace:GetDescendants()) do
             pcall(function()
                 if obj:IsA("ParticleEmitter") then obj.Enabled = false; obj:Destroy()
                 elseif obj:IsA("Trail") then obj.Enabled = false; obj:Destroy()
@@ -1098,7 +1101,7 @@ local function enableAntiLag()
     if antiLagRunning then return end
     antiLagRunning = true
 
-    for _, plr in ipairs(S.Players:GetPlayers()) do
+    for _, plr in ipairs(Players:GetPlayers()) do
         if plr.Character then
             antiLagCleanCharacter(plr.Character)
             destroyBackpackTools(plr)
@@ -1465,7 +1468,7 @@ local function setupDuelListener(p)
     end)
 end
 
-for _, p in ipairs(S.Players:GetPlayers()) do setupDuelListener(p) end
+for _, p in ipairs(Players:GetPlayers()) do setupDuelListener(p) end
 Players.PlayerAdded:Connect(function(p) setupDuelListener(p) end)
 
 local C = {
@@ -1913,7 +1916,7 @@ Instance.new("UICorner", avatarImage).CornerRadius = UDim.new(1, 0)
 
 task.spawn(function()
     local ok, img = pcall(function()
-        return S.Players:GetUserThumbnailAsync(
+        return Players:GetUserThumbnailAsync(
             player.UserId,
             Enum.ThumbnailType.HeadShot,
             Enum.ThumbnailSize.Size48x48
@@ -2747,7 +2750,7 @@ local hopServerBtn = createToggle("Hop Server", 220, "HopServer", function(ns, s
             while hopActive do
                 local placeId = game.PlaceId
                 local ok, result = pcall(function()
-                    return S.HttpService:JSONDecode(
+                    return HttpService:JSONDecode(
                         game:HttpGet("https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100")
                     )
                 end)
