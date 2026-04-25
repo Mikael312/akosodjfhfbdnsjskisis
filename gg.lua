@@ -48,16 +48,15 @@ local GuiService = Services.GuiService
 local TeleportService = Services.TeleportService
 local LocalPlayer = Players.LocalPlayer
 
-local Packages = S.ReplicatedStorage:WaitForChild("Packages")
-local Datas = S.ReplicatedStorage:WaitForChild("Datas")
-local Shared = S.ReplicatedStorage:WaitForChild("Shared")
-local Utils = S.ReplicatedStorage:WaitForChild("Utils")
+local Packages = ReplicatedStorage:WaitForChild("Packages")
+local Datas    = ReplicatedStorage:WaitForChild("Datas")
+local Shared   = ReplicatedStorage:WaitForChild("Shared")
+local Utils    = ReplicatedStorage:WaitForChild("Utils")
 
-S.Synchronizer = require(Packages:WaitForChild("Synchronizer"))
-S.AnimalsData = require(Datas:WaitForChild("Animals"))
-S.AnimalsShared = require(Shared:WaitForChild("Animals"))
-S.NumberUtils = require(Utils:WaitForChild("NumberUtils"))
-S.RaritiesData = require(Datas:WaitForChild("Rarities"))
+local Synchronizer  = require(Packages:WaitForChild("Synchronizer"))
+local AnimalsData   = require(Datas:WaitForChild("Animals"))
+local AnimalsShared = require(Shared:WaitForChild("Animals"))
+local NumberUtils   = require(Utils:WaitForChild("NumberUtils"))
 
 local FileName = "RenHubPrivate_v1.json"
 local DefaultConfig = {
@@ -109,7 +108,7 @@ local Config = DefaultConfig
 if isfile and isfile(FileName) then
     pcall(function()
         local ok, decoded = pcall(function()
-            return S.HttpService:JSONDecode(readfile(FileName))
+            return HttpService:JSONDecode(readfile(FileName))
         end)
         if not ok then return end
         for k, v in pairs(DefaultConfig) do
@@ -134,7 +133,7 @@ local function SaveConfig()
             for k, v in pairs(Config) do
                 toSave[k] = v
             end
-            writefile(FileName, S.HttpService:JSONEncode(toSave))
+            writefile(FileName, HttpService:JSONEncode(toSave))
         end)
     end
 end
@@ -157,7 +156,7 @@ local NotifColors = {
 local function updateNotificationPositions()
     for i, notifData in ipairs(activeNotifications) do
         local newYPos = 20 + ((i - 1) * (NOTIF_HEIGHT + NOTIF_SPACING))
-        S.TweenService:Create(notifData.frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        TweenService:Create(notifData.frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = UDim2.new(0, 10, 0, newYPos)
         }):Play()
     end
@@ -183,7 +182,7 @@ local function showNotification(opts)
         if oldest.barTween then oldest.barTween:Cancel() end
         table.remove(activeNotifications, 1)
         updateNotificationPositions()
-        S.TweenService:Create(oldest.frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        TweenService:Create(oldest.frame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
             Position = UDim2.new(0, -260, 0, oldest.frame.Position.Y.Offset)
         }):Play()
         task.delay(0.3, function() oldest.frame:Destroy() end)
@@ -278,11 +277,11 @@ local function showNotification(opts)
     local notifData = { frame = notif, progressBar = progressBar, barTween = nil }
     table.insert(activeNotifications, notifData)
 
-    S.TweenService:Create(notif, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+    TweenService:Create(notif, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 10, 0, startYPos)
     }):Play()
 
-    local barTween = S.TweenService:Create(progressBar, TweenInfo.new(1.5, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
+    local barTween = TweenService:Create(progressBar, TweenInfo.new(1.5, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
         Size = UDim2.new(0, 0, 1, 0)
     })
     notifData.barTween = barTween
@@ -291,7 +290,7 @@ local function showNotification(opts)
     local function dismiss()
         if notifData.barTween then notifData.barTween:Cancel() end
         if notif.Parent then
-            S.TweenService:Create(notif, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+            TweenService:Create(notif, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
                 Position = UDim2.new(0, -260, 0, notif.Position.Y.Offset)
             }):Play()
             task.delay(0.3, function() if notif.Parent then notif:Destroy() end end)
@@ -578,19 +577,19 @@ end
 local function enableESPPlayers()
     if espPlayersEnabled then return end
     espPlayersEnabled = true
-    for _, targetPlayer in pairs(S.Players:GetPlayers()) do
+    for _, targetPlayer in pairs(Players:GetPlayers()) do
         if targetPlayer ~= player then
             task.spawn(function() createESP(targetPlayer) end)
         end
     end
-    table.insert(eventConnections, S.Players.PlayerAdded:Connect(function(targetPlayer)
+    table.insert(eventConnections, Players.PlayerAdded:Connect(function(targetPlayer)
         if espPlayersEnabled then
             task.wait(1)
             createESP(targetPlayer)
         end
     end))
-    table.insert(eventConnections, S.Players.PlayerRemoving:Connect(removeESP))
-    updateConnection = S.RunService.RenderStepped:Connect(updateESP)
+    table.insert(eventConnections, Players.PlayerRemoving:Connect(removeESP))
+    updateConnection = RunService.RenderStepped:Connect(updateESP)
 end
 
 local function disableESPPlayers()
@@ -660,7 +659,7 @@ local function enablePlotBeam()
     createPlotBeam()
 
     local counter = 0
-    plotBeamConn = S.RunService.Heartbeat:Connect(function()
+    plotBeamConn = RunService.Heartbeat:Connect(function()
         if not Config.PlotBeam then return end
         counter += 1
         if counter >= 30 then
@@ -745,14 +744,14 @@ local function toggleOptimizer(state)
             Lighting.GlobalShadows = false
             Lighting.FogEnd = 9e9
             Lighting.Technology = Enum.Technology.Legacy
-            S.Workspace.Terrain.Decoration = false
+            Workspace.Terrain.Decoration = false
         end)
 
         table.insert(optimizerThreads, task.spawn(function()
             task.wait(1); nukeVisualEffects()
         end))
 
-        table.insert(optimizerConnections, S.Workspace.DescendantAdded:Connect(function(obj)
+        table.insert(optimizerConnections, Workspace.DescendantAdded:Connect(function(obj)
             if not getgenv().OPTIMIZER_ACTIVE then return end
             pcall(function()
                 if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Fire") then obj:Destroy()
@@ -778,7 +777,7 @@ local function toggleOptimizer(state)
         pcall(function()
             settings().Rendering.QualityLevel = originalSettings.qualityLevel or Enum.QualityLevel.Automatic
             Lighting.GlobalShadows = originalSettings.globalShadows ~= false
-            S.Workspace.Terrain.Decoration = originalSettings.decoration ~= false
+            Workspace.Terrain.Decoration = originalSettings.decoration ~= false
         end)
     end
 end
@@ -791,11 +790,11 @@ end
 
 local function disableAnimations()
     pcall(function()
-        for _, obj in ipairs(S.Workspace:GetDescendants()) do
+        for _, obj in ipairs(Workspace:GetDescendants()) do
             if obj:IsA("Animator") then
                 pcall(function()
                     local model = obj:FindFirstAncestorOfClass("Model")
-                    local isPlayer = model and S.Players:GetPlayerFromCharacter(model) ~= nil
+                    local isPlayer = model and Players:GetPlayerFromCharacter(model) ~= nil
                     if not isPlayer then
                         for _, track in pairs(obj:GetPlayingAnimationTracks()) do
                             track:Stop(0)
@@ -813,12 +812,12 @@ end
 local function enableAnimDisabler()
     disableAnimations()
 
-    table.insert(animDisablerConnections, S.Workspace.DescendantAdded:Connect(function(obj)
+    table.insert(animDisablerConnections, Workspace.DescendantAdded:Connect(function(obj)
         if not Config.AnimDisabler then return end
         if obj:IsA("Animator") then
             pcall(function()
                 local model = obj:FindFirstAncestorOfClass("Model")
-                local isPlayer = model and S.Players:GetPlayerFromCharacter(model) ~= nil
+                local isPlayer = model and Players:GetPlayerFromCharacter(model) ~= nil
                 if not isPlayer then
                     for _, track in pairs(obj:GetPlayingAnimationTracks()) do
                         track:Stop(0)
@@ -904,7 +903,7 @@ end
 
 local function tryApplyInvisibleWalls()
     if not xrayBaseEnabled or invisibleWallsLoaded then return end
-    local plots = S.Workspace:FindFirstChild("Plots")
+    local plots = Workspace:FindFirstChild("Plots")
     if not plots or #plots:GetChildren() == 0 then return end
     for _, plot in pairs(plots:GetChildren()) do
         for _, obj in pairs(plot:GetDescendants()) do
@@ -924,7 +923,7 @@ local function enableXrayBase()
     xrayBaseEnabled = true
     invisibleWallsLoaded = false
     tryApplyInvisibleWalls()
-    xrayBaseConnection = S.Workspace.DescendantAdded:Connect(function(obj)
+    xrayBaseConnection = Workspace.DescendantAdded:Connect(function(obj)
         if not xrayBaseEnabled then return end
         task.wait(0.1)
         if isBaseWall(obj) and obj:IsA("BasePart") and obj.Anchored and obj.CanCollide then
@@ -955,7 +954,7 @@ end
 
 local function enableCarpetSpeed()
     if carpetSpeedConn then carpetSpeedConn:Disconnect(); carpetSpeedConn = nil end
-    carpetSpeedConn = S.RunService.Heartbeat:Connect(function()
+    carpetSpeedConn = RunService.Heartbeat:Connect(function()
         local char = player.Character
         if not char then return end
         local hum = char:FindFirstChild("Humanoid")
@@ -1111,7 +1110,7 @@ local function enableAntiLag()
         end
     end
 
-    table.insert(antiLagConnections, S.Players.PlayerAdded:Connect(function(plr)
+    table.insert(antiLagConnections, Players.PlayerAdded:Connect(function(plr)
         table.insert(antiLagConnections, plr.CharacterAdded:Connect(function(char)
             if not antiLagRunning then return end
             task.wait(0.5)
@@ -1139,7 +1138,7 @@ local function enableAntiLag()
         end
     end))
 
-    for _, plr in ipairs(S.Players:GetPlayers()) do
+    for _, plr in ipairs(Players:GetPlayers()) do
         table.insert(antiLagConnections, plr.CharacterAdded:Connect(function(char)
             if antiLagRunning then
                 task.wait(0.5)
@@ -1162,7 +1161,7 @@ local function enableAntiLag()
     task.spawn(function()
         while antiLagRunning do
             task.wait(3)
-            for _, plr in ipairs(S.Players:GetPlayers()) do
+            for _, plr in ipairs(Players:GetPlayers()) do
                 if plr.Character and not cleanedCharacters[plr.Character] then
                     antiLagCleanCharacter(plr.Character)
                     destroyBackpackTools(plr)
@@ -1186,7 +1185,7 @@ end
 
 local function startStealSpeed()
     if stealSpeedConn then return end
-    stealSpeedConn = S.RunService.Heartbeat:Connect(function()
+    stealSpeedConn = RunService.Heartbeat:Connect(function()
         if not Config.StealSpeed then return end
         if not player:GetAttribute("Stealing") then return end
         local char = player.Character
@@ -1292,7 +1291,7 @@ task.spawn(function()
     local function getClosestSentry()
         local _, hrp = getChar()
         local closest, shortestDist = nil, math.huge
-        for _, inst in ipairs(S.Workspace:GetDescendants()) do
+        for _, inst in ipairs(Workspace:GetDescendants()) do
             if inst.Name:match("^Sentry_") then
                 if hasExclamation(inst) then
                     local root = inst:IsA("BasePart") and inst or inst:FindFirstChildWhichIsA("BasePart", true)
@@ -1356,7 +1355,7 @@ local function scanSinglePlot(plot)
     pcall(function()
         if isPlayerPlot(plot) then return end
         local plotUID = plot.Name
-        local channel = S.Synchronizer:Get(plotUID)
+        local channel = Synchronizer:Get(plotUID)
         if not channel then return end
         local animalList = channel:Get("AnimalList")
         local currentHash = getAnimalHash(animalList)
@@ -1366,22 +1365,22 @@ local function scanSinglePlot(plot)
             if allAnimalsCache[i].plot == plot.Name then table.remove(allAnimalsCache, i) end
         end
         local owner = channel:Get("Owner")
-        if not owner or not S.Players:FindFirstChild(owner.Name) then return end
+        if not owner or not Players:FindFirstChild(owner.Name) then return end
         local ownerName = owner and owner.Name or "Unknown"
-        local ownerPlayer = S.Players:FindFirstChild(ownerName)
+        local ownerPlayer = Players:FindFirstChild(ownerName)
         local isDuelBase = ownerPlayer and ownerPlayer:GetAttribute("__duels_block_steal") == true or false
         if not animalList then return end
         for slot, animalData in pairs(animalList) do
             if type(animalData) == "table" then
                 local animalName = animalData.Index
-                local animalInfo = S.AnimalsData[animalName]
+                local animalInfo = AnimalsData[animalName]
                 if not animalInfo then continue end
                 local rarity = animalInfo.Rarity
-                local rarityColor = (S.RaritiesData[rarity] and S.RaritiesData[rarity].Color) or Color3.fromRGB(255, 255, 255)
+                local rarityColor = (RaritiesData[rarity] and RaritiesData[rarity].Color) or Color3.fromRGB(255, 255, 255)
                 local mutation = animalData.Mutation or "None"
                 local traits = (animalData.Traits and #animalData.Traits > 0) and table.concat(animalData.Traits, ", ") or "None"
-                local genValue = S.AnimalsShared:GetGeneration(animalName, animalData.Mutation, animalData.Traits, nil)
-                local genText = "$" .. S.NumberUtils:ToString(genValue) .. "/s"
+                local genValue = AnimalsShared:GetGeneration(animalName, animalData.Mutation, animalData.Traits, nil)
+                local genText = "$" .. NumberUtils:ToString(genValue) .. "/s"
                 table.insert(allAnimalsCache, {
                     name        = animalInfo.DisplayName or animalName,
                     genText     = genText,
@@ -1409,7 +1408,7 @@ local function setupPlotListener(plot)
     local channel
     local retries = 0
     while not channel and retries < 10 do
-        local ok, result = pcall(function() return S.Synchronizer:Get(plot.Name) end)
+        local ok, result = pcall(function() return Synchronizer:Get(plot.Name) end)
         if ok and result then channel = result; break
         else retries += 1; if retries < 10 then task.wait(0.5) end end
     end
@@ -1448,7 +1447,7 @@ local function initializePlotScanner()
     table.insert(scannerConnections, removedPlotConn)
 end
 
-S.Players.PlayerRemoving:Connect(function(leavingPlayer)
+Players.PlayerRemoving:Connect(function(leavingPlayer)
     for i = #allAnimalsCache, 1, -1 do
         if allAnimalsCache[i].owner == leavingPlayer.Name then table.remove(allAnimalsCache, i) end
     end
@@ -1467,7 +1466,7 @@ local function setupDuelListener(p)
 end
 
 for _, p in ipairs(S.Players:GetPlayers()) do setupDuelListener(p) end
-S.Players.PlayerAdded:Connect(function(p) setupDuelListener(p) end)
+Players.PlayerAdded:Connect(function(p) setupDuelListener(p) end)
 
 local C = {
     white        = Color3.fromRGB(255, 255, 255),
@@ -1654,13 +1653,13 @@ pingLabel.Parent = creditFrame
 
 local frames = 0
 local last = tick()
-S.RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function()
     frames += 1
     local now = tick()
     if now - last >= 1 then
         local fps = frames; frames = 0; last = now
         local ok, rawPing = pcall(function()
-            return S.Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+            return Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
         end)
         local ping = ok and math.floor(rawPing + 0.5) or 0
         fpsLabel.Text = "FPS: " .. fps
@@ -1936,11 +1935,11 @@ playerInfoLabel.TextYAlignment = Enum.TextYAlignment.Center
 playerInfoLabel.TextTruncate = Enum.TextTruncate.AtEnd
 playerInfoLabel.Parent = playerInfoFrame
 
-S.RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function()
     local elapsed = os.clock() - scriptStartTime
     local mins = math.floor(elapsed / 60)
     local secs = math.floor(elapsed % 60)
-    local playerCount = #S.Players:GetPlayers()
+    local playerCount = #Players:GetPlayers()
     playerInfoLabel.Text = player.Name .. " • " .. playerCount .. " players • " .. mins .. "m " .. secs .. "s"
 end)
 
@@ -2231,11 +2230,11 @@ local function createTabToggle(parent, name, configKey, callback)
         toggleEnabled = not toggleEnabled
         local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         if toggleEnabled then
-            S.TweenService:Create(toggleSwitch, ti, {BackgroundColor3 = C.accent}):Play()
-            S.TweenService:Create(toggleCircle, ti, {Position = UDim2.new(0, 14, 0.5, -6)}):Play()
+            TweenService:Create(toggleSwitch, ti, {BackgroundColor3 = C.accent}):Play()
+            TweenService:Create(toggleCircle, ti, {Position = UDim2.new(0, 14, 0.5, -6)}):Play()
         else
-            S.TweenService:Create(toggleSwitch, ti, {BackgroundColor3 = Color3.fromRGB(40, 30, 60)}):Play()
-            S.TweenService:Create(toggleCircle, ti, {Position = UDim2.new(0, 2, 0.5, -6)}):Play()
+            TweenService:Create(toggleSwitch, ti, {BackgroundColor3 = Color3.fromRGB(40, 30, 60)}):Play()
+            TweenService:Create(toggleCircle, ti, {Position = UDim2.new(0, 2, 0.5, -6)}):Play()
         end
         if callback then callback(toggleEnabled, setToggle) end
     end)
@@ -2335,7 +2334,7 @@ local function createTabKeybind(parent, name, configKey, default, onChanged)
         keyBtn.TextColor3 = C.primary
         keyBtnStroke.Transparency = 0
         local con
-        con = S.UserInputService.InputBegan:Connect(function(inp)
+        con = UserInputService.InputBegan:Connect(function(inp)
             if inp.UserInputType == Enum.UserInputType.Keyboard then
                 Config.Keybinds[configKey] = inp.KeyCode.Name
                 keyBtn.Text = inp.KeyCode.Name
@@ -2405,11 +2404,11 @@ local function createPillToggle(parent, labelText, configKey, callback)
         toggleEnabled = not toggleEnabled
         local ti = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         if toggleEnabled then
-            S.TweenService:Create(pillBg, ti, {BackgroundColor3 = C.primary}):Play()
+            TweenService:Create(pillBg, ti, {BackgroundColor3 = C.primary}):Play()
             pillStroke.Color = C.primary
             pillLabel.Text = "ON"
         else
-            S.TweenService:Create(pillBg, ti, {BackgroundColor3 = Color3.fromRGB(30, 30, 50)}):Play()
+            TweenService:Create(pillBg, ti, {BackgroundColor3 = Color3.fromRGB(30, 30, 50)}):Play()
             pillStroke.Color = Color3.fromRGB(80, 80, 120)
             pillLabel.Text = "OFF"
         end
@@ -2502,19 +2501,19 @@ local function createTabSlider(parent, name, configKey, min, max, default, suffi
             dragging = true
 
             local function update()
-                local inputX = isTouch and input.Position.X or S.UserInputService:GetMouseLocation().X
+                local inputX = isTouch and input.Position.X or UserInputService:GetMouseLocation().X
                 local delta = math.clamp((inputX - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
                 local value = math.floor(min + delta * (max - min))
                 Config[configKey] = value
                 valueLabel.Text = tostring(value) .. (suffix or "")
-                S.TweenService:Create(sliderFill, TweenInfo.new(0.05), {Size = UDim2.new(delta, 0, 1, 0)}):Play()
-                S.TweenService:Create(thumb, TweenInfo.new(0.05), {Position = UDim2.new(delta, -5, 0.5, -5)}):Play()
+                TweenService:Create(sliderFill, TweenInfo.new(0.05), {Size = UDim2.new(delta, 0, 1, 0)}):Play()
+                TweenService:Create(thumb, TweenInfo.new(0.05), {Position = UDim2.new(delta, -5, 0.5, -5)}):Play()
                 if callback then callback(value) end
             end
 
             update()
-            moveConn = S.RunService.RenderStepped:Connect(update)
-            releaseConn = S.UserInputService.InputEnded:Connect(function(endInput)
+            moveConn = RunService.RenderStepped:Connect(update)
+            releaseConn = UserInputService.InputEnded:Connect(function(endInput)
                 if endInput == input then
                     if moveConn then moveConn:Disconnect() end
                     if releaseConn then releaseConn:Disconnect() end
@@ -2545,47 +2544,6 @@ local function createAnimalCard(parent, animalData, rank)
     cardStroke.Transparency = 0.7
     cardStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     cardStroke.Parent = cardFrame
-
-    local vpFrame = Instance.new("ViewportFrame")
-    vpFrame.Size = UDim2.new(0, 42, 0, 42)
-    vpFrame.Position = UDim2.new(0, 6, 0, 6)
-    vpFrame.BackgroundColor3 = C.darkPurple
-    vpFrame.BorderSizePixel = 0
-    vpFrame.Ambient = Color3.fromRGB(180, 180, 180)
-    vpFrame.LightDirection = Vector3.new(-1, -2, -1)
-    vpFrame.Parent = cardFrame
-    Instance.new("UICorner", vpFrame).CornerRadius = UDim.new(0, 6)
-
-    local vpStroke = Instance.new("UIStroke")
-    vpStroke.Thickness = 1
-    vpStroke.Color = C.dividerGrey
-    vpStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    vpStroke.Parent = vpFrame
-
-    pcall(function()
-        local modelsFolder = S.ReplicatedStorage:FindFirstChild("Models")
-        if not modelsFolder then return end
-        local animalModels = modelsFolder:FindFirstChild("Animals")
-        if not animalModels then return end
-        local animalModel = animalModels:FindFirstChild(animalData.modelName)
-        if not animalModel then return end
-        local cloned = animalModel:Clone()
-        cloned.Parent = vpFrame
-        for _, part in ipairs(cloned:GetDescendants()) do
-            if part:IsA("BasePart") then part.Anchored = false; part.CanCollide = false end
-        end
-        local rootPart = cloned.PrimaryPart or cloned:FindFirstChildWhichIsA("BasePart")
-        if rootPart then rootPart.Anchored = true end
-        local cf, _ = cloned:GetBoundingBox()
-        cloned:PivotTo(CFrame.new(cf.Position) * CFrame.Angles(0, math.rad(125), 0))
-        local cf2, size2 = cloned:GetBoundingBox()
-        local distance = math.max(size2.X, size2.Y, size2.Z) * 1.5
-        local vpCamera = Instance.new("Camera")
-        vpCamera.FieldOfView = 50
-        vpCamera.CFrame = CFrame.new(cf2.Position + Vector3.new(0, size2.Y * 0.1, distance), cf2.Position)
-        vpCamera.Parent = vpFrame
-        vpFrame.CurrentCamera = vpCamera
-    end)
 
     local strokeColor, iconId
     if rank == 1 then strokeColor = Color3.fromRGB(255, 215, 0); iconId = "rbxassetid://75275446742454"
@@ -2777,7 +2735,7 @@ local kickSelfBtn = createButton("Kick Self", 150, function()
 end, Config.Keybinds.KickSelfKey)
 
 local rejoinBtn       = createButton("Rejoin", 185, function()
-    S.TeleportService:Teleport(game.PlaceId, player)
+    TeleportService:Teleport(game.PlaceId, player)
 end, Config.Keybinds.RejoinKey)
 
 local hopActive = false
@@ -2798,7 +2756,7 @@ local hopServerBtn = createToggle("Hop Server", 220, "HopServer", function(ns, s
                     for _, server in ipairs(result.data) do
                         if server.id ~= game.JobId and server.playing < server.maxPlayers then
                             pcall(function()
-                                S.TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
+                                TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
                             end)
                             found = true; break
                         end
@@ -3114,9 +3072,9 @@ if brainrotContent then
     end)
 end
 
-S.UserInputService.InputBegan:Connect(function(input, processed)
+UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
-    if S.UserInputService:GetFocusedTextBox() then return end
+    if UserInputService:GetFocusedTextBox() then return end
 
     if Config.Keybinds.CloneKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.CloneKey] then
         task.spawn(instantClone)
@@ -3127,7 +3085,7 @@ S.UserInputService.InputBegan:Connect(function(input, processed)
     end
 
     if Config.Keybinds.RejoinKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.RejoinKey] then
-        S.TeleportService:Teleport(game.PlaceId, player)
+        TeleportService:Teleport(game.PlaceId, player)
     end
 
     if Config.Keybinds.KickSelfKey ~= "" and input.KeyCode == Enum.KeyCode[Config.Keybinds.KickSelfKey] then
