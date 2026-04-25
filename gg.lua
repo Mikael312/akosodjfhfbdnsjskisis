@@ -22,21 +22,31 @@ do
     end)
 end
 
-local S = {
+local Services = {
     Players = game:GetService("Players"),
+    RunService = game:GetService("RunService"),
+    UserInputService = game:GetService("UserInputService"),
+    ReplicatedStorage = game:GetService("ReplicatedStorage"),
     TweenService = game:GetService("TweenService"),
     HttpService = game:GetService("HttpService"),
-    TeleportService = game:GetService("TeleportService"),
-    RunService = game:GetService("RunService"),
-    Stats = game:GetService("Stats"),
-    ReplicatedStorage = game:GetService("ReplicatedStorage"),
     Workspace = game:GetService("Workspace"),
-    UserInputService = game:GetService("UserInputService"),
     Lighting = game:GetService("Lighting"),
     VirtualInputManager = game:GetService("VirtualInputManager"),
+    GuiService = game:GetService("GuiService"),
+    TeleportService = game:GetService("TeleportService"),
 }
-
-local player = S.Players.LocalPlayer
+local Players = Services.Players
+local RunService = Services.RunService
+local UserInputService = Services.UserInputService
+local ReplicatedStorage = Services.ReplicatedStorage
+local TweenService = Services.TweenService
+local HttpService = Services.HttpService
+local Workspace = Services.Workspace
+local Lighting = Services.Lighting
+local VirtualInputManager = Services.VirtualInputManager
+local GuiService = Services.GuiService
+local TeleportService = Services.TeleportService
+local LocalPlayer = Players.LocalPlayer
 
 local Packages = S.ReplicatedStorage:WaitForChild("Packages")
 local Datas = S.ReplicatedStorage:WaitForChild("Datas")
