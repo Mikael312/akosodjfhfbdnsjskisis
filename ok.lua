@@ -763,7 +763,7 @@ local function toggleOptimizer(state)
             end)
         end))
 
-        for _, p in ipairs(S.Players:GetPlayers()) do
+        for _, p in ipairs(Players:GetPlayers()) do
             if p.Character then optimizeCharacter(p.Character) end
             table.insert(optimizerConnections, p.CharacterAdded:Connect(function(char)
                 if getgenv().OPTIMIZER_ACTIVE then optimizeCharacter(char) end
@@ -862,7 +862,7 @@ local function setupJumpRequest()
         jumpRequestConnection:Disconnect()
         jumpRequestConnection = nil
     end
-    jumpRequestConnection = S.UserInputService.JumpRequest:Connect(function()
+    jumpRequestConnection = UserInputService.JumpRequest:Connect(function()
         if infiniteJumpEnabled then doJump() end
     end)
 end
