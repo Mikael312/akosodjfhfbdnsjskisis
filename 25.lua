@@ -179,7 +179,7 @@ end
 
 local creditFrame = Instance.new("Frame")
 creditFrame.Name = "CreditFrame"
-creditFrame.Size = UDim2.new(0, 255, 0, 34)
+creditFrame.Size = UDim2.new(0, 249, 0, 34)
 local creditPos = Config.Positions.CreditFrame
 creditFrame.Position = UDim2.new(creditPos.X, -127, creditPos.Y, -17)
 creditFrame.BackgroundColor3 = C.black
