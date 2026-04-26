@@ -235,7 +235,7 @@ addTextGradient(discordLabel, C.primary, C.accent, 45)
 
 local div2 = Instance.new("Frame")
 div2.Size = UDim2.new(0, 1, 0, 18)
-div2.Position = UDim2.new(0, 158, 0.5, -9)
+div2.Position = UDim2.new(0, 162, 0.5, -9)
 div2.BackgroundColor3 = C.gold
 div2.BorderSizePixel = 0
 div2.Parent = creditFrame
@@ -254,14 +254,14 @@ fpsLabel.Parent = creditFrame
 
 local div3 = Instance.new("Frame")
 div3.Size = UDim2.new(0, 1, 0, 18)
-div3.Position = UDim2.new(0, 215, 0.5, -9)
+div3.Position = UDim2.new(0, 192, 0.5, -9)
 div3.BackgroundColor3 = C.gold
 div3.BorderSizePixel = 0
 div3.Parent = creditFrame
 
 local pingLabel = Instance.new("TextLabel")
 pingLabel.Size = UDim2.new(0, 50, 1, 0)
-pingLabel.Position = UDim2.new(0, 222, 0, 0)
+pingLabel.Position = UDim2.new(0, 203, 0, 0)
 pingLabel.BackgroundTransparency = 1
 pingLabel.Text = "0ms"
 pingLabel.TextColor3 = C.green
