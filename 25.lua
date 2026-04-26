@@ -215,7 +215,7 @@ Instance.new("UICorner", logoImage).CornerRadius = UDim.new(1, 0)
 
 local div1 = Instance.new("Frame")
 div1.Size = UDim2.new(0, 1, 0, 18)
-div2.Position = UDim2.new(0, 158, 0.5, -9)
+div1.Position = UDim2.new(0, 38, 0.5, -9)
 div1.BackgroundColor3 = C.gold
 div1.BorderSizePixel = 0
 div1.Parent = creditFrame
@@ -235,7 +235,7 @@ addTextGradient(discordLabel, C.primary, C.accent, 45)
 
 local div2 = Instance.new("Frame")
 div2.Size = UDim2.new(0, 1, 0, 18)
-div2.Position = UDim2.new(0, 172, 0.5, -9)
+div2.Position = UDim2.new(0, 158, 0.5, -9)
 div2.BackgroundColor3 = C.gold
 div2.BorderSizePixel = 0
 div2.Parent = creditFrame
