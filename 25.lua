@@ -179,9 +179,9 @@ end
 
 local creditFrame = Instance.new("Frame")
 creditFrame.Name = "CreditFrame"
-creditFrame.Size = UDim2.new(0, 280, 0, 34)
+creditFrame.Size = UDim2.new(0, 255, 0, 34)
 local creditPos = Config.Positions.CreditFrame
-creditFrame.Position = UDim2.new(creditPos.X, -140, creditPos.Y, -17)
+creditFrame.Position = UDim2.new(creditPos.X, -127, creditPos.Y, -17)
 creditFrame.BackgroundColor3 = C.black
 creditFrame.BorderSizePixel = 0
 creditFrame.Active = true
@@ -215,7 +215,7 @@ Instance.new("UICorner", logoImage).CornerRadius = UDim.new(1, 0)
 
 local div1 = Instance.new("Frame")
 div1.Size = UDim2.new(0, 1, 0, 18)
-div1.Position = UDim2.new(0, 38, 0.5, -9)
+div2.Position = UDim2.new(0, 158, 0.5, -9)
 div1.BackgroundColor3 = C.gold
 div1.BorderSizePixel = 0
 div1.Parent = creditFrame
@@ -242,7 +242,7 @@ div2.Parent = creditFrame
 
 local fpsLabel = Instance.new("TextLabel")
 fpsLabel.Size = UDim2.new(0, 50, 1, 0)
-fpsLabel.Position = UDim2.new(0, 179, 0, 0)
+fpsLabel.Position = UDim2.new(0, 165, 0, 0)
 fpsLabel.BackgroundTransparency = 1
 fpsLabel.Text = "60 fps"
 fpsLabel.TextColor3 = C.green
@@ -254,14 +254,14 @@ fpsLabel.Parent = creditFrame
 
 local div3 = Instance.new("Frame")
 div3.Size = UDim2.new(0, 1, 0, 18)
-div3.Position = UDim2.new(0, 232, 0.5, -9)
+div3.Position = UDim2.new(0, 215, 0.5, -9)
 div3.BackgroundColor3 = C.gold
 div3.BorderSizePixel = 0
 div3.Parent = creditFrame
 
 local pingLabel = Instance.new("TextLabel")
 pingLabel.Size = UDim2.new(0, 50, 1, 0)
-pingLabel.Position = UDim2.new(0, 239, 0, 0)
+pingLabel.Position = UDim2.new(0, 222, 0, 0)
 pingLabel.BackgroundTransparency = 1
 pingLabel.Text = "0ms"
 pingLabel.TextColor3 = C.green
