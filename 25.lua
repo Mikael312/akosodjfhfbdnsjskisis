@@ -242,7 +242,7 @@ div2.Parent = creditFrame
 
 local fpsLabel = Instance.new("TextLabel")
 fpsLabel.Size = UDim2.new(0, 50, 1, 0)
-fpsLabel.Position = UDim2.new(0, 165, 0, 0)
+fpsLabel.Position = UDim2.new(0, 167, 0, 0)
 fpsLabel.BackgroundTransparency = 1
 fpsLabel.Text = "60 fps"
 fpsLabel.TextColor3 = C.green
@@ -254,7 +254,7 @@ fpsLabel.Parent = creditFrame
 
 local div3 = Instance.new("Frame")
 div3.Size = UDim2.new(0, 1, 0, 18)
-div3.Position = UDim2.new(0, 192, 0.5, -9)
+div3.Position = UDim2.new(0, 195, 0.5, -9)
 div3.BackgroundColor3 = C.gold
 div3.BorderSizePixel = 0
 div3.Parent = creditFrame
